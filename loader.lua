@@ -1,6 +1,6 @@
 --[[
     BetterRise Loader
-    Simplified single-entry loader — replaces the original 8-step chain.
+    Simplified single-entry loader -- replaces the original 8-step chain.
     All files are loaded from: github.com/1AreYouMental110/betterrise
 ]]
 
@@ -135,7 +135,7 @@ pcall(function()
     if not isfile("vape/assetversion.txt") then writefile("vape/assetversion.txt", "") end
 end)
 
--- Core file loader — fetches from betterrise repo
+-- Core file loader -- fetches from betterrise repo
 local function vapeGithubRequest(scripturl, isImportant)
     if isfile(baseDirectory..scripturl) then
         if shared.VoidDev then
