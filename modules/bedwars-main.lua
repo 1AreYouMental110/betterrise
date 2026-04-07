@@ -10207,40 +10207,6 @@ task.spawn(function()
     end)
 end)
 
-run(function()
-	local ChangeLog = {Enabled = false}
-	ChangeLog = vape.Categories.World:CreateModule({
-		Name = ".ChangeLog ⭐",
-		Function = function(call)
-			if call then
-				ChangeLog:Toggle()
-                InfoNotification("ChangeLog", "Loading changelog...", 3)
-                shared.UpdateLogBypass = true
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/PWUpdateLog.lua", true))()
-			end
-		end
-	})
-	pcall(function()
-		ChangeLog.Object.TextSize = 20
-	end)
-end)
-
-run(function()
-	local ChangeLog = {Enabled = false}
-	ChangeLog = vape.Categories.World:CreateModule({
-		Name = ".Config Installer ⭐",
-		Function = function(call)
-			if call then
-				ChangeLog:Toggle()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/installer.lua", true))()
-			end
-		end
-	})
-	pcall(function()
-		ChangeLog.Object.TextSize = 20
-	end)
-end)
-
 run(function() local CloudMods = {}
 	local CloudNeon = {}
 	local clouds = {}
@@ -10676,67 +10642,7 @@ run(function()
 		end
 	})
 end)
-
-run(function()
-	local PealzwarePrivateDetector = {Enabled = false}
-	local VPLeave = {Enabled = false}
-	local alreadydetected = {}
-	PealzwarePrivateDetector = vape.Categories.Blatant:CreateModule({
-		Name = "PealzwarePrivateDetector",
-		Function = function(callback)
-			if callback then
-				task.spawn(function()
-					if not shared.vapewhitelist.loaded then
-						repeat task.wait() until shared.vapewhitelist.loaded or not PealzwarePrivateDetector.Enabled
-					end
-					if not PealzwarePrivateDetector.Enabled then
-						return
-					end
-					for i,v in pairs(playersService:GetPlayers()) do
-						if v ~= lplr then
-							local rank = shared.vapewhitelist:get(v)
-							if rank > 0 and not table.find(alreadydetected, v) then
-								local rankstring = rank == 1 and "Private Member" or rank > 1 and "Owner"
-								warningNotification("PealzwarePrivateDetector", "Pealzware "..rankstring.." Detected! | "..v.DisplayName, 120)
-								table.insert(alreadydetected, v)
-								if VPLeave.Enabled then
-									local newserver = nil
-									repeat newserver = findnewserver() until newserver
-									game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, newserver, lplr)
-								end
-							end
-						end
-					end
-					PealzwarePrivateDetector:Clean(playersService.PlayerAdded:Connect(function(v)
-						local rank = shared.vapewhitelist:get(v)
-						if rank > 0 and not table.find(alreadydetected, v) then
-							local rankstring = rank == 1 and "Private Member" or rank > 1 and "Owner"
-							warningNotification("PealzwarePrivateDetector", "Pealzware "..rankstring.." Detected! | "..v.DisplayName, 120)
-							table.insert(alreadydetected, v)
-							if VPLeave.Enabled then
-								local newserver = nil
-								repeat newserver = findnewserver() until newserver
-								game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, newserver, lplr)
-							end
-						end
-					end))
-				end)
-			end
-		end
-	})
-	VPLeave = PealzwarePrivateDetector:CreateToggle({
-		Name = "ServerHop",
-		Tooltip = "switches servers on detection.",
-		Function = function() end
-	})
-	--[[task.spawn(function()
-		repeat task.wait() until shared.vapewhitelist.loaded
-		if shared.vapewhitelist:get(lplr) ~= 0 then
-			pcall(GuiLibrary.RemoveObject, "PealzwarePrivateDetectorOptionsButton")
-		end
-	end)--]]
-end)
-
+									
 run(function() local InfiniteYield = {Enabled = false}
 	InfiniteYield = vape.Categories.Blatant:CreateModule({
 		Name = "InfiniteYield",
