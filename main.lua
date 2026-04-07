@@ -28,7 +28,7 @@ local baseLoadstring = loadstring
 local loadstring = function(...)
 	local res, err = baseLoadstring(...)
 	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+		vape:CreateNotification('Pealzware', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end

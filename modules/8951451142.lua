@@ -3,7 +3,7 @@ local baseLoadstring = loadstring
 local loadstring = function(...)
 	local res, err = baseLoadstring(...)
 	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+		vape:CreateNotification('Pealzware', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end
@@ -16,7 +16,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/'..readfile('vape/profiles/commit.txt')..'/'..select(1, path:gsub('vape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/1AreYouMental110/pealzware/'..readfile('vape/profiles/commit.txt')..'/'..select(1, path:gsub('vape/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -35,7 +35,7 @@ if isfile('vape/games/'..vape.Place..'.lua') then
 else
 	if not shared.VapeDeveloper then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/'..readfile('vape/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true)
+			return game:HttpGet('https://raw.githubusercontent.com/1AreYouMental110/pealzware/'..readfile('vape/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true)
 		end)
 		if suc and res ~= '404: Not Found' then
 			loadstring(downloadFile('vape/games/'..vape.Place..'.lua'), 'skywars')()

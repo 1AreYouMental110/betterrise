@@ -11,9 +11,9 @@ local entityLibrary = entitylib
 
 local function run(func)
 	if shared.PealzDev then
-		return func() 
+		return func()
 	end
-	
+
 	local success, errorMsg = pcall(func)
 	if not success then
 		errorNotification("99 Nights In The Forest", "Failure executing function: " .. tostring(errorMsg), 3)
@@ -204,20 +204,20 @@ local HealthbarManager = {
 function HealthbarManager:customHealthbar(resource, health, maxHealth, changeHealth)
     if not resource:GetAttribute("Health") then return end
     local resourceKey = tostring(resource)
-    
+
     -- Store initial health if not already cached
     if not self.resourceHealthCache[resourceKey] then
         self.resourceHealthCache[resourceKey] = maxHealth or resource:GetAttribute("Health") or 50
     end
     maxHealth = self.resourceHealthCache[resourceKey]
-    
+
     local blockPosition = resource:GetPrimaryPartCFrame().p / 3 -- Adjust for scaling if needed
     local blockRef = {blockPosition = blockPosition}
-    
+
     if not self.healthbarPart or not self.healthbarBlockRef or self.healthbarBlockRef.blockPosition ~= blockRef.blockPosition then
         self.healthbarMaid:DoCleaning()
         self.healthbarBlockRef = blockRef
-        
+
         local percent = math.clamp(health / maxHealth, 0, 1)
         local cleanCheck = true
         local part = Instance.new("Part")
@@ -228,7 +228,7 @@ function HealthbarManager:customHealthbar(resource, health, maxHealth, changeHea
         part.CanCollide = false
         part.Parent = Workspace
         self.healthbarPart = part
-        
+
         local mounted = CustomRoact.mount(CustomRoact.createElement("BillboardGui", {
             Size = UDim2.fromOffset(160, 50),
             StudsOffset = Vector3.new(0, 3, 0),
@@ -269,7 +269,7 @@ function HealthbarManager:customHealthbar(resource, health, maxHealth, changeHea
                 })
             })
         }), part)
-        
+
         self.healthbarMaid:GiveTask(function()
             cleanCheck = false
             self.healthbarBlockRef = nil
@@ -280,7 +280,7 @@ function HealthbarManager:customHealthbar(resource, health, maxHealth, changeHea
             end
             self.resourceHealthCache[resourceKey] = nil
         end)
-        
+
         task.spawn(function()
             task.wait(VISUALIZER_TIMEOUT)
             if cleanCheck then
@@ -288,7 +288,7 @@ function HealthbarManager:customHealthbar(resource, health, maxHealth, changeHea
             end
         end)
     end
-    
+
     local newPercent = math.clamp((health - changeHealth) / maxHealth, 0, 1)
     if self.healthbarProgressRef:getValue() then
         TweenService:Create(self.healthbarProgressRef:getValue(), TweenInfo.new(0.3), {
@@ -638,10 +638,10 @@ local Functions = {
         end
         for i, v in pairs(item:GetAttributes()) do
             if table.find(INTERACTABLE_ATTRIBUTES, i) then
-                return true 
+                return true
             end
         end
-    end, 
+    end,
     isFood = function(item)
         return item:GetAttribute("RestoreHunger")
     end,
@@ -650,7 +650,7 @@ local Functions = {
     end,
     isFuel = function(item)
         return item:GetAttribute("BurnFuel")
-    end, 
+    end,
     acceptPlayAgain = function()
         game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("AcceptPlayAgain"):FireServer()
     end,
@@ -1251,7 +1251,7 @@ run(function()
                 if not workspace:WaitForChild("Structures"):FindFirstChild("Biofuel Processor") then
                     errorNotification("Biofuel All", "Biofuel Processor required!", 3)
                 end
-                
+
                 pcall(function()
                     for _, item in pairs(lplr:WaitForChild("ItemBag"):GetChildren()) do
                         if Functions.isFuel(item) or Functions.isFood(item) then
@@ -1278,7 +1278,7 @@ run(function()
                 if not workspace:WaitForChild("Structures"):FindFirstChild("Crock Pot") then
                     errorNotification("Cook Stew All", "Crock Pot required!", 3)
                 end
-                
+
                 pcall(function()
                     for _, item in pairs(lplr:WaitForChild("ItemBag"):GetChildren()) do
                         print(item, Functions.isFood(item), tostring(item) == "Berry")
@@ -1474,12 +1474,12 @@ run(function()
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	local part
-	
+
 	AntiVoid = SNF.utilityWindow:CreateModule({
 		Name = 'AntiVoid',
 		Function = function(callback)
 			if callback then
-				if Method.Value == 'Part' then 
+				if Method.Value == 'Part' then
 					local debounce = tick()
 					part = Instance.new('Part')
 					part.Size = Vector3.new(10000, 1, 10000)
@@ -1500,9 +1500,9 @@ run(function()
 							end
 						end
 					end))
-	
+
 					repeat
-						if entitylib.isAlive then 
+						if entitylib.isAlive then
 							local root = entitylib.character.RootPart
 							rayCheck.FilterDescendantsInstances = {gameCamera, lplr.Character, part}
 							rayCheck.CollisionGroup = root.CollisionGroup
@@ -1535,12 +1535,12 @@ run(function()
 		Name = 'Method',
 		List = {'Part', 'Classic'},
 		Function = function(val)
-			if Mode.Object then 
+			if Mode.Object then
 				Mode.Object.Visible = val == 'Part'
 				Material.Object.Visible = val == 'Part'
 				Color.Object.Visible = val == 'Part'
 			end
-			if AntiVoid.Enabled then 
+			if AntiVoid.Enabled then
 				AntiVoid:Toggle()
 				AntiVoid:Toggle()
 			end
@@ -1569,8 +1569,8 @@ run(function()
 		List = materials,
 		Darker = true,
 		Function = function(val)
-			if part then 
-				part.Material = Enum.Material[val] 
+			if part then
+				part.Material = Enum.Material[val]
 			end
 		end
 	})
@@ -1588,7 +1588,7 @@ run(function()
 end)
 
 local vec3 = function(a, b, c) return Vector3.new(a, b, c) end
-run(function() 
+run(function()
 	local CustomJump = {Enabled = false}
 	local CustomJumpMode = {Value = "Normal"}
 	local CustomJumpVelocity = {Value = 50}
@@ -1603,7 +1603,7 @@ run(function()
 						entityLibrary.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 					elseif CustomJumpMode.Value == "Velocity" then
 						entityLibrary.character.HumanoidRootPart.Velocity += vec3(0,CustomJumpVelocity.Value,0)
-					end 
+					end
 				end)
 			else
 				pcall(function()
@@ -1634,7 +1634,7 @@ end)
 
 local PromptButtonHoldBegan = nil
 run(function()
-    local IPP 
+    local IPP
     IPP = SNF.utilityWindow:CreateModule({
         Name = "Instant Proximity Prompts",
         Function = function(call)

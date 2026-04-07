@@ -22,8 +22,8 @@ local function getTool()
 	return lplr.Character and lplr.Character:FindFirstChildWhichIsA('Tool', true) or nil
 end
 
-local function notif(...) 
-	return vape:CreateNotification(...) 
+local function notif(...)
+	return vape:CreateNotification(...)
 end
 
 local function parsePositions(v, func)
@@ -64,23 +64,23 @@ run(function()
 
 	task.spawn(function()
 		local map = game.Workspace:WaitForChild('Map', 99999)
-		if map and vape.Loaded ~= nil then 
+		if map and vape.Loaded ~= nil then
 			vape:Clean(map.DescendantAdded:Connect(function(v)
-				parsePositions(v, function(pos) 
-					store.blocks[pos] = v 
+				parsePositions(v, function(pos)
+					store.blocks[pos] = v
 				end)
 			end))
 			vape:Clean(map.DescendantRemoving:Connect(function(v)
-				parsePositions(v, function(pos) 
+				parsePositions(v, function(pos)
 					if store.blocks[pos] == v then
-						store.blocks[pos] = nil 
-						store.serverBlocks[pos] = nil 
+						store.blocks[pos] = nil
+						store.serverBlocks[pos] = nil
 					end
 				end)
 			end))
 			for _, v in map:GetDescendants() do
-				parsePositions(v, function(pos) 
-					store.blocks[pos] = v 
+				parsePositions(v, function(pos)
+					store.blocks[pos] = v
 					store.serverBlocks[pos] = v
 				end)
 			end
@@ -99,7 +99,7 @@ end
 run(function()
 	local AutoClicker
 	local CPS
-	
+
 	AutoClicker = vape.Categories.Combat:CreateModule({
 		Name = 'AutoClicker',
 		Function = function(callback)
@@ -123,16 +123,16 @@ run(function()
 		DefaultMax = 12
 	})
 end)
-	
+
 run(function()
 	local Reach
 	local Value
 	local old
-	
+
 	Reach = vape.Categories.Combat:CreateModule({
 		Name = 'Reach',
 		Function = function(callback)
-			if callback then 
+			if callback then
 				old = rawget(bd.CombatConstants, 'REACH_IN_STUDS')
 				rawset(bd.CombatConstants, 'REACH_IN_STUDS', Value.Value)
 				rawset(bd.Entity.LocalEntity, 'Reach', Value.Value)
@@ -150,12 +150,12 @@ run(function()
 		Max = 16,
 		Default = 16,
 		Decimal = 10,
-		Suffix = function(val) 
-			return val == 1 and 'stud' or 'studs' 
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
 		end
 	})
 end)
-	
+
 run(function()
 	local Velocity = {Enabled = false}
 	local VelocityHorizontal = {Value = 100}
@@ -164,7 +164,7 @@ run(function()
 	local VelocityTargeting = {Enabled = false}
 	local applyKnockback
 	local connection
-	
+
 	local function velocityFunction(velo, ...)
 		if Random.new():NextNumber(0, 100) > VelocityChance.Value then return end
 		local check = (not VelocityTargeting.Enabled) or entitylib.EntityPosition({
@@ -179,7 +179,7 @@ run(function()
 		end
 		return applyKnockback(velo, ...)
 	end
-	
+
 	Velocity = vape.Categories.Combat:CreateModule({
 		Name = 'Velocity',
 		Function = function(callback)
@@ -219,17 +219,17 @@ run(function()
 	})
 	VelocityTargeting = Velocity:CreateToggle({Name = 'Only when targeting'})
 end)
-	
+
 run(function()
 	local old
-	
+
 	vape.Categories.Blatant:CreateModule({
 		Name = 'Criticals',
 		Function = function(callback)
-			if callback then 
+			if callback then
 				old = hookfunction(bd.Blink.item_action.attack_entity.fire, function(...)
 					local data = ...
-					if type(data) == 'table' then 
+					if type(data) == 'table' then
 						rawset(data, 'is_crit', true)
 					end
 					return old(...)
@@ -242,7 +242,7 @@ run(function()
 		Tooltip = 'Always hit criticals'
 	})
 end)
-	
+
 run(function()
 	local Killaura
 	local Targets
@@ -262,30 +262,30 @@ run(function()
 	local ParticleSize
 	local LegitAura
 	local Particles, Boxes, AttackDelay, SwingDelay, ClickDelay = {}, {}, tick(), tick(), tick()
-	
+
 	local function getAttackData()
 		if Mouse.Enabled then
 			if not inputService:IsMouseButtonPressed(0) then return false end
 		end
-		if LegitAura.Enabled then 
+		if LegitAura.Enabled then
 			if ClickDelay < tick() then return false end
 		end
-		
+
 		return getTool()
 	end
-	
+
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				if LegitAura.Enabled then 
+				if LegitAura.Enabled then
 					Killaura:Clean(inputService.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
 							ClickDelay = tick() + 0.1
 						end
 					end))
 				end
-	
+
 				repeat
 					local tool = getAttackData()
 					local attacked = {}
@@ -298,11 +298,11 @@ run(function()
 							NPCs = Targets.NPCs.Enabled,
 							Limit = Max.Value
 						})
-	
+
 						if #plrs > 0 then
 							local selfpos = entitylib.character.RootPart.Position
 							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-	
+
 							for _, v in plrs do
 								local delta = (v.RootPart.Position - selfpos)
 								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
@@ -315,21 +315,21 @@ run(function()
 								if Block.Enabled then
 									if bd.Entity.LocalEntity.IsBlocking then continue end
 								end
-								
+
 								if not Swing.Enabled and SwingDelay < tick() then
 									SwingDelay = tick() + 0.25
 									entitylib.character.Humanoid.Animator:LoadAnimation(tool.Animations.Swing):Play()
-									
+
 									setthreadidentity(2)
 									bd.ViewmodelController:PlayAnimation(tool.Name)
-									setthreadidentity(8) 
+									setthreadidentity(8)
 								end
-	
+
 								if delta.Magnitude > AttackRange.Value then continue end
 								if AttackDelay < tick() then
 									AttackDelay = tick() + (1 / CPS.GetRandomValue())
 									local bdent = bd.Entity.FindByCharacter(v.Character)
-									if bdent then 
+									if bdent then
 										bd.Blink.item_action.attack_entity.fire({
 											target_entity_id = bdent.Id,
 											is_crit = entitylib.character.RootPart.AssemblyLinearVelocity.Y < 0,
@@ -340,7 +340,7 @@ run(function()
 							end
 						end
 					end
-	
+
 					for i, v in Boxes do
 						v.Adornee = attacked[i] and attacked[i].Entity.RootPart or nil
 						if v.Adornee then
@@ -348,12 +348,12 @@ run(function()
 							v.Transparency = 1 - attacked[i].Check.Opacity
 						end
 					end
-	
+
 					for i, v in Particles do
 						v.Position = attacked[i] and attacked[i].Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
 						v.Parent = attacked[i] and gameCamera or nil
 					end
-	
+
 					task.wait()
 				until not Killaura.Enabled
 			else
@@ -480,8 +480,8 @@ run(function()
 					Particles[i] = part
 				end
 			else
-				for _, v in Particles do 
-					v:Destroy() 
+				for _, v in Particles do
+					v:Destroy()
 				end
 				table.clear(Particles)
 			end
@@ -541,7 +541,7 @@ run(function()
 	LegitAura = Killaura:CreateToggle({
 		Name = 'Swing only',
 		Function = function()
-			if Killaura.Enabled then 
+			if Killaura.Enabled then
 				Killaura:Toggle()
 				Killaura:Toggle()
 			end
@@ -549,14 +549,14 @@ run(function()
 		Tooltip = 'Only attacks while swinging manually'
 	})
 end)
-	
+
 run(function()
 	local old
-	
+
 	vape.Categories.Blatant:CreateModule({
 		Name = 'NoFall',
 		Function = function(callback)
-			if callback then 
+			if callback then
 				old = hookfunction(bd.Blink.player_state.take_fall_damage.fire, function() end)
 			else
 				hookfunction(bd.Blink.player_state.take_fall_damage.fire, old)
@@ -566,21 +566,21 @@ run(function()
 		Tooltip = 'Prevents taking fall damage.'
 	})
 end)
-	
+
 run(function()
 	local old
-	
+
 	vape.Categories.Blatant:CreateModule({
 		Name = 'NoSlowdown',
 		Function = function(callback)
 			local func = debug.getproto(bd.MovementController.KnitStart, 5)
 			if callback then
 				old = debug.getconstants(debug.getproto(bd.MovementController.KnitStart, 5))
-				for i, v in old do 
+				for i, v in old do
 					debug.setconstant(func, i, v == 'IsSneaking' and v or 'IsSpectating')
 				end
 			else
-				for i, v in old do 
+				for i, v in old do
 					debug.setconstant(func, i, v)
 				end
 				table.clear(old)
@@ -589,11 +589,11 @@ run(function()
 		Tooltip = 'Prevents slowing down when using items.'
 	})
 end)
-	
+
 run(function()
 	local AutoPlay
 	local Delay
-	
+
 	AutoPlay = vape.Categories.Utility:CreateModule({
 		Name = 'AutoPlay',
 		Function = function(callback)
@@ -608,7 +608,7 @@ run(function()
 		Tooltip = 'Automatically queues after the match ends.'
 	})
 end)
-	
+
 run(function()
 	local Scaffold
 	local Expand
@@ -617,7 +617,7 @@ run(function()
 	local Diagonal
 	local LimitItem
 	local adjacent, lastpos = {}, Vector3.zero
-	
+
 	for x = -3, 3, 3 do
 		for y = -3, 3, 3 do
 			for z = -3, 3, 3 do
@@ -625,14 +625,14 @@ run(function()
 				if vec.Y ~= 0 and (vec.X ~= 0 or vec.Z ~= 0) then
 					continue
 				end
-	
-				if vec ~= Vector3.zero then 
+
+				if vec ~= Vector3.zero then
 					table.insert(adjacent, vec)
 				end
 			end
 		end
 	end
-	
+
 	local function getBlocksInPoints(s, e)
 		local list = {}
 		for x = s.X, e.X, 3 do
@@ -647,11 +647,11 @@ run(function()
 		end
 		return list
 	end
-	
+
 	local function roundPos(vec)
 		return Vector3.new(math.round(vec.X / 3) * 3, math.round(vec.Y / 3) * 3, math.round(vec.Z / 3) * 3)
 	end
-	
+
 	local function nearCorner(poscheck, pos)
 		local startpos = poscheck - Vector3.new(3, 3, 3)
 		local endpos = poscheck + Vector3.new(3, 3, 3)
@@ -661,7 +661,7 @@ run(function()
 		end
 		return Vector3.new(math.clamp(check.X, startpos.X, endpos.X), math.clamp(check.Y, startpos.Y, endpos.Y), math.clamp(check.Z, startpos.Z, endpos.Z))
 	end
-	
+
 	local function blockProximity(pos)
 		local mag, returned = 60
 		local tab = getBlocksInPoints(pos - Vector3.new(21, 21, 21), pos + Vector3.new(21, 21, 21))
@@ -675,21 +675,21 @@ run(function()
 		table.clear(tab)
 		return returned
 	end
-	
+
 	local function checkAdjacent(pos)
 		for _, v in adjacent do
 			if store.blocks[pos + v] then return true end
 		end
 		return false
 	end
-	
+
 	local function getBlock()
 		for slot, item in store.inventory do
 			item = skywars.ItemMeta[item.Type]
 			if item.Rewrite then return item, slot end
 		end
 	end
-	
+
 	Scaffold = vape.Categories.Utility:CreateModule({
 		Name = 'Scaffold',
 		Function = function(callback)
@@ -697,17 +697,17 @@ run(function()
 				repeat
 					if entitylib.isAlive then
 						local tool = true
-						if LimitItem.Enabled then 
+						if LimitItem.Enabled then
 							tool = getTool()
 							tool = tool and tool.Name:find('Block')
 						end
-						
+
 						if tool then
 							local root = entitylib.character.RootPart
 							if Tower.Enabled and inputService:IsKeyDown(Enum.KeyCode.Space) and (not inputService:GetFocusedTextBox()) then
 								root.Velocity = Vector3.new(root.Velocity.X, 38, root.Velocity.Z)
 							end
-	
+
 							for i = Expand.Value, 1, -1 do
 								local currentpos = roundPos(root.Position - Vector3.new(0, entitylib.character.HipHeight + (Downwards.Enabled and inputService:IsKeyDown(Enum.KeyCode.LeftShift) and 4.5 or 1.5), 0) + entitylib.character.Humanoid.MoveDirection * (i * 3))
 								if Diagonal.Enabled then
@@ -718,7 +718,7 @@ run(function()
 										end
 									end
 								end
-	
+
 								local block = store.blocks[currentpos]
 								if not block then
 									blockpos = checkAdjacent(currentpos) and currentpos or blockProximity(currentpos)
@@ -733,11 +733,11 @@ run(function()
 										fake.Parent = game.Workspace.Map
 										bd.EffectsController:PlaySound(blockpos)
 										bd.Entity.LocalEntity:RemoveTool('Blocks', 1)
-	
+
 										task.spawn(function()
 											local suc, block = bd.Blink.item_action.place_block.invoke(blockpos)
 											fake:Destroy()
-											if not (suc or block) then 
+											if not (suc or block) then
 												bd.Entity.LocalEntity:RemoveTool('Blocks', 1)
 											end
 										end)

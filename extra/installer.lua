@@ -74,7 +74,7 @@ function API:CreateDownloadingContainer(parent)
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(52, 31, 261, 502)
 	})
-	
+
 	local progress = self:CreateElement({
 		ClassName = "Frame",
 		Parent = container,
@@ -90,7 +90,7 @@ function API:CreateDownloadingContainer(parent)
 		Rotation = 45,
 		Offset = Vector2.new(0, 0)
 	})
-	
+
 	local info = self:CreateElement({
 		ClassName = "TextLabel",
 		Parent = parent,
@@ -111,7 +111,7 @@ function API:CreateDownloadingContainer(parent)
 		Color = self.ThemeColor,
 		Transparency = 0.5
 	})
-	
+
 	return {Container = container, Progress = progress, Gradient = gradient, Info = info}
 end
 
@@ -138,7 +138,7 @@ function API:CreateConfigButton(parent, config)
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(52, 31, 261, 502)
 	})
-	
+
 	local title = self:CreateElement({
 		ClassName = "TextLabel",
 		Parent = button,
@@ -152,7 +152,7 @@ function API:CreateConfigButton(parent, config)
 		RichText = true,
 		Font = Enum.Font.FredokaOne
 	})
-	
+
 	local desc = self:CreateElement({
 		ClassName = "TextLabel",
 		Parent = button,
@@ -166,7 +166,7 @@ function API:CreateConfigButton(parent, config)
 		TextWrapped = true,
 		Font = Enum.Font.SourceSans
 	})
-	
+
 	local install = self:CreateElement({
 		ClassName = "TextButton",
 		Parent = button,
@@ -187,7 +187,7 @@ function API:CreateConfigButton(parent, config)
 		Color = Color3.fromRGB(100, 255, 100),
 		Transparency = 0.6
 	})
-	
+
 	button.MouseEnter:Connect(function()
 		self:CreateTween(button, {BackgroundColor3 = Color3.fromRGB(50, 50, 60)}, 0.3, Enum.EasingStyle.Sine):Play()
 		self:CreateTween(glow, {ImageTransparency = 0.6}, 0.3, Enum.EasingStyle.Sine):Play()
@@ -204,7 +204,7 @@ function API:CreateConfigButton(parent, config)
 		self:CreateTween(install, {BackgroundColor3 = Color3.fromRGB(80, 255, 80)}, 0.3, Enum.EasingStyle.Sine):Play()
 		self:CreateTween(installGlow, {Transparency = 0.6}, 0.3, Enum.EasingStyle.Sine):Play()
 	end)
-	
+
 	return {Button = button, Install = install}
 end
 
@@ -218,7 +218,7 @@ function API:CreateUI()
 		ResetOnSpawn = false
 	})
 	self.Instance = core
-	
+
 	local background = self:CreateElement({
 		ClassName = "Frame",
 		Parent = core,
@@ -241,7 +241,7 @@ function API:CreateUI()
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(52, 31, 261, 502)
 	})
-	
+
 	local title = self:CreateElement({
 		ClassName = "TextLabel",
 		Parent = background,
@@ -261,7 +261,7 @@ function API:CreateUI()
 		Color = Color3.fromRGB(255, 255, 255),
 		Transparency = 0.4
 	})
-	
+
 	local closeButton = self:CreateElement({
 		ClassName = "TextButton",
 		Parent = background,
@@ -286,7 +286,7 @@ function API:CreateUI()
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(52, 31, 261, 502)
 	})
-	
+
 	closeButton.MouseEnter:Connect(function()
 		self:CreateTween(closeButton, {BackgroundColor3 = Color3.fromRGB(255, 120, 120)}, 0.3, Enum.EasingStyle.Sine):Play()
 		self:CreateTween(closeGlow, {ImageTransparency = 0.5}, 0.3, Enum.EasingStyle.Sine):Play()
@@ -307,7 +307,7 @@ function API:CreateUI()
 			self:SelfDestruct()
 		end)
 	end)
-	
+
 	local configs = self:CreateElement({
 		ClassName = "ScrollingFrame",
 		Parent = background,
@@ -326,7 +326,7 @@ function API:CreateUI()
 		Padding = UDim.new(0, 12),
 		SortOrder = Enum.SortOrder.LayoutOrder
 	})
-	
+
 	local downloading = self:CreateElement({
 		ClassName = "Frame",
 		Parent = background,
@@ -336,22 +336,22 @@ function API:CreateUI()
 		Visible = false
 	})
 	local downloadContainer = self:CreateDownloadingContainer(downloading)
-	
+
 	self:CreateTween(background, {Size = UDim2.new(0.55, 0, 0.75, 0)}, 0.8, Enum.EasingStyle.Cubic):Play()
 	self:CreateTween(glow, {ImageTransparency = 0.6}, 0.8, Enum.EasingStyle.Sine):Play()
-	
+
 	local uiAPI = {
 		Configs = configs,
 		Downloading = downloading,
 		DownloadAPI = downloadContainer,
-		OpenConfigs = function() 
+		OpenConfigs = function()
 			self:CreateTween(downloading, {Position = UDim2.new(0, 15, 1, 0)}, 0.5, Enum.EasingStyle.Sine):Play()
 			self:CreateTween(configs, {Position = UDim2.new(0, 15, 0, 60)}, 0.5, Enum.EasingStyle.Sine):Play()
 			task.wait(0.1)
 			downloading.Visible = false
 			configs.Visible = true
 		end,
-		OpenDownloading = function() 
+		OpenDownloading = function()
 			self:CreateTween(configs, {Position = UDim2.new(0, 15, -1, 0)}, 0.5, Enum.EasingStyle.Sine):Play()
 			self:CreateTween(downloading, {Position = UDim2.new(0, 15, 0, 60)}, 0.5, Enum.EasingStyle.Sine):Play()
 			task.wait(0.1)
@@ -360,7 +360,7 @@ function API:CreateUI()
 		end,
 		Destroy = function() self:SelfDestruct() end
 	}
-	
+
 	return uiAPI
 end
 
@@ -372,13 +372,13 @@ function API:CreateDownloadAPI(ui)
 		Progress = ui.DownloadAPI.Progress,
 		Gradient = ui.DownloadAPI.Gradient
 	}
-	
+
 	download.Init = function()
 		local conn1 = self.Services.RunService.RenderStepped:Connect(function()
 			self:CreateTween(download.Progress, {Size = UDim2.new(download.Status / 100, 0, 1, 0)}, 0.4, Enum.EasingStyle.Sine):Play()
 		end)
 		local conn2 = self.Services.RunService.RenderStepped:Connect(function(dt)
-			local offset = download.Gradient.Offset.X + dt * 0.5 
+			local offset = download.Gradient.Offset.X + dt * 0.5
 			if offset > 1 then offset = -1 end
 			download.Gradient.Offset = Vector2.new(offset, 0)
 		end)
@@ -386,11 +386,11 @@ function API:CreateDownloadAPI(ui)
 		table.insert(self.Register.Download.Connections, conn1)
 		table.insert(self.Register.Download.Connections, conn2)
 	end
-	
+
 	download.AddTask = function(task, weight)
 		table.insert(download.Tasks, {Task = task, Weight = weight})
 	end
-	
+
 	download.Run = function(callback)
 		self:Clean("Download")
 		download.Init()
@@ -413,12 +413,12 @@ function API:CreateDownloadAPI(ui)
 		if callback then callback() end
 		self:SelfDestruct()
 	end
-	
-	download.UpdateText = function(text) 
-		download.Info.Text = text 
+
+	download.UpdateText = function(text)
+		download.Info.Text = text
 		self:CreateTween(download.Info, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.3, Enum.EasingStyle.Sine):Play()
 	end
-	
+
 	return download
 end
 
@@ -492,7 +492,7 @@ function Installer:InstallFiles(files, config, download)
 end
 
 local ui = API:CreateUI()
-local metaUrl = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/InstallerMeta.json" 
+local metaUrl = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/InstallerMeta.json"
 local metaData = API.Services.HttpService:JSONDecode(game:HttpGet(metaUrl))
 if not metaData or not metaData.configs then error("Failed to load metafile") end
 
@@ -501,15 +501,15 @@ for _, config in pairs(metaData.configs) do
 	btn.Install.MouseButton1Click:Connect(function()
 		API.ThemeColor = Color3.fromRGB(unpack(config.color))
 		local download = API:CreateDownloadAPI(ui)
-		download.AddTask(function() 
+		download.AddTask(function()
 			download.UpdateText("Fetching files...")
 			local files = Installer:FetchFiles(config)
 			download.Files = files
 		end, 20)
-		download.AddTask(function() 
+		download.AddTask(function()
 			Installer:InstallFiles(download.Files, config, download)
 		end, 70)
-		download.AddTask(function() 
+		download.AddTask(function()
 			download.UpdateText("Finalizing...")
 			task.wait(1)
 		end, 10)

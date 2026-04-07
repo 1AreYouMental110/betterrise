@@ -41,8 +41,8 @@ task.spawn(function()
 
 		local function filterStackTrace(stackTrace)
 			stackTrace = stackTrace or "Unknown"
-			if type(stackTrace) ~= "string" then 
-				stackTrace = "INVALID: " .. tostring(stackTrace) 
+			if type(stackTrace) ~= "string" then
+				stackTrace = "INVALID: " .. tostring(stackTrace)
 			end
 			if type(stackTrace) == "string" then
 				return string.split(stackTrace, "\n") or {stackTrace}
@@ -53,7 +53,7 @@ task.spawn(function()
 		local function saveError(message, stackTrace)
 			stackTrace = stackTrace or ''
 			local errorLog = {
-				Message = tostring(message), 
+				Message = tostring(message),
 				StackTrace = filterStackTrace(stackTrace)
 			}
 			local S_Name = "CONSOLE"
@@ -65,7 +65,7 @@ task.spawn(function()
 			main["LogInfo"] = {
 				Version = "Normal",
 				Executor = identifyexecutor and ({identifyexecutor()})[1] or "Unknown executor",
-				CheatEngineMode = tostring(shared.CheatEngineMode or "Unknown") 
+				CheatEngineMode = tostring(shared.CheatEngineMode or "Unknown")
 			}
 			local function toTime(timestamp)
 				timestamp = timestamp or os.time()
@@ -101,7 +101,7 @@ task.spawn(function()
 			end
 		end
 
-		if shared.DEBUGLOGGING then 
+		if shared.DEBUGLOGGING then
 			pcall(function()
 				shared.DEBUGLOGGING:Disconnect()
 			end)
@@ -159,7 +159,7 @@ pcall(function() core = game:GetService('CoreGui') end)
 
 local newcolor = function() return {Hue = 0, Sat = 0, Value = 0} end
 
-run(function() 
+run(function()
     local Search = {Enabled = false}
 	local SearchTextList = {RefreshValues = function() end, ObjectList = {}}
 	local SearchColor = {Value = 0.44}
@@ -202,7 +202,7 @@ run(function()
 						highlight.FillColor = Color3.fromHSV(SearchColor.Hue, SearchColor.Sat, SearchColor.Value)
 						highlight.Adornee = v
 						highlight.Parent = SearchFolder
-					end 
+					end
 				end))
 				Search:Clean(game.Workspace.DescendantRemoving:Connect(function(v)
 					if v:IsA("BasePart") or v:IsA("Model") then
@@ -289,7 +289,7 @@ run(function()
                         windsnow.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0,0),NumberSequenceKeypoint.new(0.039760299026966,1.3114800453186,0.32786899805069),NumberSequenceKeypoint.new(0.7554469704628,0.98360699415207,0.44038599729538),NumberSequenceKeypoint.new(1,0,0)})
                         windsnow.Parent = snowpart
                         repeat task.wait(0)
-                            if entityLibrary.isAlive then 
+                            if entityLibrary.isAlive then
                                 snowpart.Position = entityLibrary.character.HumanoidRootPart.Position + Vector3.new(0, WeatherHigh.Value, 0)
                             end
                         until not shared.VapeExecuted
@@ -437,7 +437,7 @@ run(function()
 		Leaves = false,
 		Enabled = false,
         Transparency = 1,
-        MaxMessages = 50 
+        MaxMessages = 50
     }
 	local GradientEnabled = false
     local scale
@@ -844,7 +844,7 @@ run(function()
                             for _, child in ipairs(messages) do
                                 if child:IsA("Frame") then
                                     child:Destroy()
-                                    break 
+                                    break
                                 end
                             end
                         end
@@ -1183,8 +1183,8 @@ run(function()
         if i == "TypeWrite" or i == "DragEnabled" or i == "CleanOld" or i == "Transparency" or i == "MaxMessages" or i == "Enabled" then continue end
         CustomChat:CreateToggle({
             Name = "Display "..tostring(i),
-            Function = function(call) 
-				Config[i] = call; 
+            Function = function(call)
+				Config[i] = call;
 			end,
             Default = true
         })
@@ -1261,7 +1261,7 @@ run(function()
 						else continue end
 					end
 				end
-				
+
 				local function newobj(v)
 					if v:IsA("TextLabel") or v:IsA("TextButton") then
 						plrthing(v, "Text")
@@ -1317,7 +1317,7 @@ run(function()
 	end
 end)
 
-run(function() 
+run(function()
     local function setIconID(iconId)
         local lplr = game:GetService("Players").LocalPlayer
         local playerlist = game:GetService("CoreGui"):FindFirstChild("PlayerList")
@@ -1338,7 +1338,7 @@ run(function()
     CustomIcon = vape.Categories.Misc:CreateModule({
         Name = 'CustomPlayerListIcon',
         Function = function(calling)
-            if calling then 
+            if calling then
                 if string.find(IconID.Value, "rbxassetid://") then
                     setIconID(iconId)
 				elseif IconID.Value == "" then
@@ -1348,7 +1348,7 @@ run(function()
 				end
             end
         end
-    }) 
+    })
     IconID = CustomIcon:CreateTextBox({
         Name = "IconID",
         TempText = "Type here the iconID",
@@ -1383,7 +1383,7 @@ run(function() local Shader = {Enabled = false}
 		Name = "RichShader",
 		Tooltip = "pro shader",
 		Function = function(callback)
-			if callback then 
+			if callback then
 				task.spawn(function()
 					pcall(function()
 					ShaderBlur = Instance.new("BlurEffect")
@@ -1426,11 +1426,11 @@ run(function() local Shader = {Enabled = false}
 				end)
 			end
 		end
-	})	
+	})
 	ShaderColor = Shader:CreateColorSlider({
 		Name = "Main Color",
 		Function = function(h, s, v)
-			if Shader.Enabled then 
+			if Shader.Enabled then
 				pcall(function()
 					lightingService.ColorShift_Bottom = Color3.fromHSV(h, s, v)
 					lightingService.ColorShift_Top = Color3.fromHSV(h, s, v)
@@ -1446,8 +1446,8 @@ end)
 		repeat task.wait() until shared.VapeFullyLoaded
 		if shared.GuiLibrary.ObjectsThatCanBeSaved["ChatTagOptionsButton"].Api.Enabled then
 		else
-			repeat task.wait() until shared.vapewhitelist.loaded 
-			if shared.vapewhitelist.localprio < 1 then 
+			repeat task.wait() until shared.vapewhitelist.loaded
+			if shared.vapewhitelist.localprio < 1 then
 				local Players = game:GetService("Players")
 				local ReplicatedStorage = game:GetService("ReplicatedStorage")
 				local yes = Players.LocalPlayer.Name
@@ -1499,7 +1499,7 @@ end)
 							return tab
 						end
 					end
-				end	
+				end
 			end
 		end
 	end)
@@ -1546,13 +1546,13 @@ run(function() local CharacterOutline = {}
 		Name = 'CharacterOutline',
 		Tooltip = 'Adds a cool outline to your character.',
 		Function = function(calling)
-			if calling then 
+			if calling then
 				task.spawn(function()
 					repeat task.wait() until (lplr.Character or not CharacterOutline.Enabled)
-					if CharacterOutline.Enabled then 
+					if CharacterOutline.Enabled then
 						local oldhighlight = lplr.Character:FindFirstChildWhichIsA('Highlight')
-						if oldhighlight then 
-							oldhighlight.Adornee = nil 
+						if oldhighlight then
+							oldhighlight.Adornee = nil
 						end
 						outline.FillTransparency = 1
 						outline.Adornee = lplr.Character
@@ -1574,9 +1574,9 @@ run(function() local CharacterOutline = {}
 							end
 						end
 						CharacterOutline:Clean(lplr.Character.DescendantAdded:Connect(function(instance)
-							if instance:IsA('Highlight') then 
+							if instance:IsA('Highlight') then
 								instance.Adornee = nil
-							end 
+							end
 						end))
 						CharacterOutline:Clean(runService.Heartbeat:Connect(function()
 							outline.Adornee = (CharacterOutline.Enabled and lplr.Character or outline.Adornee)
@@ -1595,7 +1595,7 @@ run(function() local CharacterOutline = {}
 	GuiSync = CharacterOutline:CreateToggle({
 		Name = "Sync with GUI Color",
 		Function = function()
-			if CharacterOutline.Enabled then 
+			if CharacterOutline.Enabled then
 				CharacterOutline:Toggle(false)
 				CharacterOutline:Toggle(false)
 			end
@@ -1660,31 +1660,31 @@ run(function() local CloudMods = {}
 	local cloudFunction = function(cloud)
 		pcall(function()
 			cloud.Color = Color3.fromHSV(CloudColor.Hue, CloudColor.Sat, CloudColor.Value)
-			cloud.Material = (CloudNeon.Enabled and Enum.Material.Neon or Enum.Material.SmoothPlastic) 
+			cloud.Material = (CloudNeon.Enabled and Enum.Material.Neon or Enum.Material.SmoothPlastic)
 		end)
 	end
 	CloudMods = vape.Categories.Misc:CreateModule({
 		Name = 'CloudMods',
 		Tooltip = 'Recolorizes the clouds to your liking.',
 		Function = function(calling)
-			if calling then 
+			if calling then
 				clouds = game.Workspace:WaitForChild('Clouds'):GetChildren()
-				if not CloudMods.Enabled then 
-					return 
+				if not CloudMods.Enabled then
+					return
 				end
-				for i,v in next, clouds do 
+				for i,v in next, clouds do
 					cloudFunction(v)
 				end
 				CloudMods:Clean(game.Workspace.Clouds.ChildAdded:Connect(function(cloud)
 					cloudFunction(cloud)
 					table.insert(clouds, cloud)
 				end))
-			else 
-				for i,v in next, clouds do 
-					pcall(function() 
+			else
+				for i,v in next, clouds do
+					pcall(function()
 						v.Color = Color3.fromRGB(255, 255, 255)
 						v.Material = Enum.Material.SmoothPlastic
-					end) 
+					end)
 				end
 			end
 		end
@@ -1692,41 +1692,41 @@ run(function() local CloudMods = {}
 	CloudColor = CloudMods:CreateColorSlider({
 		Name = 'Color',
 		Function = function()
-			for i,v in next, clouds do 
+			for i,v in next, clouds do
 				cloudFunction(v)
 			end
 		end
 	})
 	CloudNeon = CloudMods:CreateToggle({
 		Name = 'Neon',
-		Function = function() 
-			for i,v in next, clouds do 
+		Function = function()
+			for i,v in next, clouds do
 				cloudFunction(v)
 			end
 		end
 	})
 end)
 
-run(function() 
+run(function()
 	local RestartPealzware = {}
 	RestartPealzware = vape.Categories.Blatant:CreateModule({
 		Name = 'Restart',
 		Function = function(calling)
-			if calling then 
+			if calling then
 				RestartPealzware:Toggle()
 				vape:Uninject()
 				task.wait(0.1)
 				loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 			end
 		end
-	}) 
+	})
 end)
 
 run(function() local ReinstallProfiles = {}
 	ReinstallProfiles = vape.Categories.Blatant:CreateModule({
 		Name = 'ReinstallProfiles',
 		Function = function(calling)
-			if calling then 
+			if calling then
 				ReinstallProfiles:Toggle()
 				GuiLibrary:Uninject()
 				delfile(baseDirectory..'Libraries/profilesinstalled4.txt')
@@ -1734,10 +1734,10 @@ run(function() local ReinstallProfiles = {}
 				pload('loader.lua', true)
 			end
 		end
-	}) 
+	})
 end)
 local vec3 = function(a, b, c) return Vector3.new(a, b, c) end
-run(function() 
+run(function()
 	local CustomJump = {Enabled = false}
 	local CustomJumpMode = {Value = "Normal"}
 	local CustomJumpVelocity = {Value = 50}
@@ -1752,7 +1752,7 @@ run(function()
 						entityLibrary.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 					elseif CustomJumpMode.Value == "Velocity" then
 						entityLibrary.character.HumanoidRootPart.Velocity += vec3(0,CustomJumpVelocity.Value,0)
-					end 
+					end
 				end)
 			else
 				pcall(function()
@@ -1968,7 +1968,7 @@ run(function()
         }
     }
     local function AnimateCharacter()
-        local animate = lplr.Character:FindFirstChild("Animate") 
+        local animate = lplr.Character:FindFirstChild("Animate")
         if AnimFreeze.Enabled then
             animate.Enabled = false
         end
@@ -1998,7 +1998,7 @@ run(function()
 							AnimationChanger:Clean(lplr.CharacterAdded:Connect(function()
 					        	if not entityLibrary.isAlive then repeat task.wait(10) until entityLibrary.isAlive end
 					            pcall(AnimateCharacter)
-					        end))                   
+					        end))
 					        pcall(AnimateCharacter)
                         end)
                     end)
@@ -2020,7 +2020,7 @@ run(function()
 	AnimRun = AnimationChanger:CreateDropdown({
 		Name = "Run",
 		List = RunAnimations,
-		Function = function() 
+		Function = function()
 			if AnimationChanger.Enabled then
 				AnimationChanger:Toggle(false)
 				AnimationChanger:Toggle(false)
@@ -2030,7 +2030,7 @@ run(function()
 	AnimWalk = AnimationChanger:CreateDropdown({
 		Name = "Walk",
 		List = WalkAnimations,
-		Function = function() 
+		Function = function()
 			if AnimationChanger.Enabled then
 				AnimationChanger:Toggle(false)
 				AnimationChanger:Toggle(false)
@@ -2040,7 +2040,7 @@ run(function()
 	AnimFall = AnimationChanger:CreateDropdown({
 		Name = "Fall",
 		List = FallAnimations,
-		Function = function() 
+		Function = function()
 			if AnimationChanger.Enabled then
 				AnimationChanger:Toggle(false)
 				AnimationChanger:Toggle(false)
@@ -2050,7 +2050,7 @@ run(function()
 	AnimJump = AnimationChanger:CreateDropdown({
 		Name = "Jump",
 		List = JumpAnimations,
-		Function = function() 
+		Function = function()
 			if AnimationChanger.Enabled then
 				AnimationChanger:Toggle(false)
 				AnimationChanger:Toggle(false)
@@ -2060,7 +2060,7 @@ run(function()
 	AnimIdle = AnimationChanger:CreateDropdown({
 		Name = "Idle",
 		List = IdleAnimations,
-		Function = function() 
+		Function = function()
 			if AnimationChanger.Enabled then
 				AnimationChanger:Toggle(false)
 				AnimationChanger:Toggle(false)
@@ -2070,7 +2070,7 @@ run(function()
 	AnimIdleB = AnimationChanger:CreateDropdown({
 		Name = "Idle 2",
 		List = IdleAnimationsB,
-		Function = function() 
+		Function = function()
 			if AnimationChanger.Enabled then
 				AnimationChanger:Toggle(false)
 				AnimationChanger:Toggle(false)
@@ -2089,62 +2089,62 @@ run(function()
 	})
 end)
 
-run(function() 
-	local VapePrivateDetector = {Enabled = false}
+run(function()
+	local PealzwarePrivateDetector = {Enabled = false}
 	local VPLeave = {Enabled = false}
 	local alreadydetected = {}
-	VapePrivateDetector = vape.Categories.Blatant:CreateModule({
-		Name = "VapePrivateDetector",
+	PealzwarePrivateDetector = vape.Categories.Blatant:CreateModule({
+		Name = "PealzwarePrivateDetector",
 		Function = function(callback)
 			if callback then
 				task.spawn(function()
-					if not shared.vapewhitelist.loaded then 
-						repeat task.wait() until shared.vapewhitelist.loaded or not VapePrivateDetector.Enabled
+					if not shared.vapewhitelist.loaded then
+						repeat task.wait() until shared.vapewhitelist.loaded or not PealzwarePrivateDetector.Enabled
 					end
-					if not VapePrivateDetector.Enabled then 
-						return 
+					if not PealzwarePrivateDetector.Enabled then
+						return
 					end
 					for i,v in pairs(playersService:GetPlayers()) do
 						if v ~= lplr then
 							local rank = shared.vapewhitelist:get(v)
 							if rank > 0 and not table.find(alreadydetected, v) then
 								local rankstring = rank == 1 and "Private Member" or rank > 1 and "Owner"
-								warningNotification("VapePrivateDetector", "Vape "..rankstring.." Detected! | "..v.DisplayName, 120)
+								warningNotification("PealzwarePrivateDetector", "Pealzware "..rankstring.." Detected! | "..v.DisplayName, 120)
 								table.insert(alreadydetected, v)
 								if VPLeave.Enabled then
 									local newserver = nil
-									repeat newserver = findnewserver() until newserver 
+									repeat newserver = findnewserver() until newserver
 									game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, newserver, lplr)
 								end
 							end
 						end
 					end
-					VapePrivateDetector:Clean(playersService.PlayerAdded:Connect(function(v)
+					PealzwarePrivateDetector:Clean(playersService.PlayerAdded:Connect(function(v)
 						local rank = shared.vapewhitelist:get(v)
 						if rank > 0 and not table.find(alreadydetected, v) then
 							local rankstring = rank == 1 and "Private Member" or rank > 1 and "Owner"
-							warningNotification("VapePrivateDetector", "Vape "..rankstring.." Detected! | "..v.DisplayName, 120)
+							warningNotification("PealzwarePrivateDetector", "Pealzware "..rankstring.." Detected! | "..v.DisplayName, 120)
 							table.insert(alreadydetected, v)
 							if VPLeave.Enabled then
 								local newserver = nil
-								repeat newserver = findnewserver() until newserver 
+								repeat newserver = findnewserver() until newserver
 								game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, newserver, lplr)
 							end
-						end 
+						end
 					end))
 				end)
 			end
 		end
 	})
-	VPLeave = VapePrivateDetector:CreateToggle({
+	VPLeave = PealzwarePrivateDetector:CreateToggle({
 		Name = "ServerHop",
 		Tooltip = "switches servers on detection.",
 		Function = function() end
 	})
 	--[[task.spawn(function()
-		repeat task.wait() until shared.vapewhitelist.loaded 
-		if shared.vapewhitelist:get(lplr) ~= 0 then 
-			pcall(GuiLibrary.RemoveObject, "VapePrivateDetectorOptionsButton")
+		repeat task.wait() until shared.vapewhitelist.loaded
+		if shared.vapewhitelist:get(lplr) ~= 0 then
+			pcall(GuiLibrary.RemoveObject, "PealzwarePrivateDetectorOptionsButton")
 		end
 	end)--]]
 end)
@@ -2154,9 +2154,9 @@ run(function() local InfiniteYield = {Enabled = false}
 		Name = "InfiniteYield",
 		Tooltip = "Loads the Infinite Yield script.",
 		Function = function(callback)
-			if callback then 
+			if callback then
 				task.spawn(function()
-					loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))() 
+					loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
 				end)
 			end
 		end
@@ -2168,7 +2168,7 @@ run(function() local Dex = {Enabled = false}
 		Name = "Dex",
 		Tooltip = "Loads Dex",
 		Function = function(callback)
-			if callback then 
+			if callback then
 				task.spawn(function()
 					loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
 				end)
@@ -2183,9 +2183,9 @@ end)
 	pcall(function()
 		if shared.GuiLibrary.ObjectsThatCanBeSaved["ChatTagOptionsButton"].Api.Enabled then
 		else
-			repeat task.wait() until shared.vapewhitelist.loaded 
+			repeat task.wait() until shared.vapewhitelist.loaded
 			local lplr = game:GetService("Players").LocalPlayer
-			if shared.vapewhitelist:get(lplr) == 0 then 
+			if shared.vapewhitelist:get(lplr) == 0 then
 				local Players = game:GetService("Players")
 				local ReplicatedStorage = game:GetService("ReplicatedStorage")
 				local yes = Players.LocalPlayer.Name
@@ -2237,14 +2237,14 @@ end)
 							return tab
 						end
 					end
-				end	
+				end
 			end
 		end
 	end)
 end)--]]
 
 --[[local cooldown = 0
-run(function() 
+run(function()
 	local function setCooldown()
 		cooldown = 5
 		task.spawn(function()
@@ -2296,7 +2296,7 @@ run(function()
 				return false, nil, true
 			end
 		else
-			if Tag_Color.Value ~= "" then 
+			if Tag_Color.Value ~= "" then
 				local color
 				for i,v in pairs(Color_Table) do
 					if Color_Table[i]["name"] == Tag_Color.Value then color = Color_Table[i]["hex"] break end
@@ -2326,8 +2326,8 @@ run(function()
 		Name = 'EditWL',
 		Tooltip = "Use this to edit your whitelist data (whitelisted users only!)",
 		Function = function(calling)
-			if calling then 
-				EditWL["ToggleButton"](false) 
+			if calling then
+				EditWL["ToggleButton"](false)
 				if cooldown ~= 0 then
 					errorNotification("EditWL-Cooldown", "Please wait "..tostring(cooldown).." seconds.", cooldown)
 					return
@@ -2349,8 +2349,8 @@ run(function()
 					local response = PealzwareFunctions.EditWL(ArgTable)
 					task.spawn(function()
 						repeat task.wait() until response
-						if type(response) == "string" then 
-							errorNotification("EditWL-Response_Handler", "Failure! Error: "..tostring(response), 5) 
+						if type(response) == "string" then
+							errorNotification("EditWL-Response_Handler", "Failure! Error: "..tostring(response), 5)
 						elseif type(response) == "table" then
 							if response["StatusCode"] then
 								if response["StatusCode"] == 200 then
@@ -2373,7 +2373,7 @@ run(function()
 				end
 			end
 		end
-	}) 
+	})
 	API_KEY = EditWL:CreateTextBox({
 		Name = "WL-API-Key",
 		TempText = "Type here your whitelist api-key",
@@ -2456,12 +2456,12 @@ end)
 				end
 				local clone
 				if thing_to_clone then
-					clone = thing_to_clone:Clone() 
+					clone = thing_to_clone:Clone()
 					local coreGui
 					local suc, err = pcall(function()
 						coreGui = game:GetService("CoreGui")
 					end)
-					if err then 
+					if err then
 						clone.Parent = topbarappgui
 						GuiLibrary.SelfDestructEvent.Event:Connect(function()
 							clone:Destroy()
@@ -2479,7 +2479,7 @@ end)
 					clone:WaitForChild("2"):WaitForChild("3").Image = "rbxassetid://18518244636"
 					print(tostring(clone:WaitForChild("2"):WaitForChild("3").ClassName))
 					table.insert(vapeConnections, clone:WaitForChild("2").MouseButton1Click:Connect(function()
-						shared.GUIKeybindFunction() 
+						shared.GUIKeybindFunction()
 					end))
 				end
 			end
@@ -2544,8 +2544,8 @@ run(function()
 	customIcon = mouseMod:CreateTextBox({
 		Name = 'Custom Mouse Icon',
 		TempText = 'Image ID (not decal)',
-		FocusLost = function(enter) 
-			if mouseMod.Enabled then 
+		FocusLost = function(enter)
+			if mouseMod.Enabled then
 				mouseMod:Toggle(false)
 				mouseMod:Toggle(false)
 			end
@@ -2609,8 +2609,8 @@ end)
 		Name = 'IconPath',
 		TempText = 'Icon Path',
 		Tooltip = 'Notificatiion Icon Path',
-		FocusLost = function(enter) 
-			if CustomNotification.Enabled then 
+		FocusLost = function(enter)
+			if CustomNotification.Enabled then
 				CustomNotification:Toggle(false)
 				CustomNotification:Toggle(false)
 			end
@@ -2683,9 +2683,9 @@ run(function()
 		Name = 'Trails',
 		Tooltip = 'cool trail for your character.',
 		Function = function(calling)
-			if calling then 
-				repeat 
-					if isAlive(lplr, true) and (lastpos == nil or (lplr.Character.PrimaryPart.Position - lastpos).Magnitude > traildistance.Value) then 
+			if calling then
+				repeat
+					if isAlive(lplr, true) and (lastpos == nil or (lplr.Character.PrimaryPart.Position - lastpos).Magnitude > traildistance.Value) then
 						createtrailpart()
 					end
 					task.wait()
@@ -2702,7 +2702,7 @@ run(function()
 	trailcolor = trails:CreateColorSlider({
 		Name = 'Color',
 		Function = function()
-			for i,v in trailparts do 
+			for i,v in trailparts do
 				v.Color = Color3.fromHSV(trailcolor.Hue, trailcolor.Sat, trailcolor.Value);
 			end
 		end
@@ -2869,11 +2869,11 @@ run(function()
 		Name = 'Wave Trails',
 		Tooltip = 'cool trail for your character.',
 		Function = function(calling)
-			if calling then 
+			if calling then
 				local lastTrailPos = nil
 				local minSpawnInterval = 0.05
 				local lastSpawnTime = 0
-				repeat 
+				repeat
 					local now = tick()
 					local currPos = lplr.Character and lplr.Character.PrimaryPart and lplr.Character.PrimaryPart.Position or nil
 					if isAlive(lplr, true) and currPos then
@@ -2899,7 +2899,7 @@ run(function()
 	trailcolor_in = trails:CreateColorSlider({
 		Name = 'Color',
 		Function = function()
-			for i,v in trailparts do 
+			for i,v in trailparts do
 				v.Color = Color3.fromHSV(trailcolor_in.Hue, trailcolor_in.Sat, trailcolor_in.Value);
 			end
 		end
@@ -2920,7 +2920,7 @@ run(function()
 	})
 end)
 
-run(function() 
+run(function()
 	local AestheticLighting = {}
 	AestheticLighting = vape.Categories.Misc:CreateModule({
 		Name = 'AestheticLighting',
@@ -2934,7 +2934,7 @@ run(function()
 				local SunRays = Instance.new("SunRaysEffect")
 				local Sky = Instance.new("Sky")
 				local Atm = Instance.new("Atmosphere")
-	
+
 				for i, v in pairs(Lighting:GetChildren()) do
 					if v then
 						v:Destroy()
@@ -2950,7 +2950,7 @@ run(function()
 					local Gui = Instance.new("ScreenGui")
 					Gui.Parent = StarterGui
 					Gui.IgnoreGuiInset = true
-					
+
 					local ShadowFrame = Instance.new("ImageLabel")
 					ShadowFrame.Parent = Gui
 					ShadowFrame.AnchorPoint = Vector2.new(0.5,1)
@@ -2992,7 +2992,7 @@ run(function()
 				Lighting.ExposureCompensation = 0.5
 			end
 		end
-	}) 
+	})
 end)
 
 if shared.ProfilesSavedCustom then
@@ -3076,7 +3076,7 @@ run(function()
 	PlayerChanger = vape.Categories.Misc:CreateModule({
 		Name = "PlayerChanger",
 		Function = function(call) if call then else
-			for i,v in pairs(PlayerChanger_DisconnectActions) do pcall(function() PlayerChanger_DisconnectActions[i]() end) end end 
+			for i,v in pairs(PlayerChanger_DisconnectActions) do pcall(function() PlayerChanger_DisconnectActions[i]() end) end end
 		end
 	})
 	PlayerChanger_GUI_Elements.PlayersDropdown = PlayerChanger:CreateDropdown({
@@ -3706,8 +3706,8 @@ run(function()
 		Name = "LightingTheme",
 		Tooltip = "Add a whole new look to your game.",
 		ExtraText = function() return LightingThemeType.Value end,
-		Function = function(callback) 
-			if callback then 
+		Function = function(callback)
+			if callback then
 				task.spawn(function()
 					task.wait()
 					themesky = Instance.new("Sky")
@@ -3716,27 +3716,27 @@ run(function()
 					vapeAssert(success, "LightingTheme", "Failed to load the "..LightingThemeType.Value.." theme."..err, 5)
 					themesky.Parent = success and lightingService or nil
 					LightingTheme:Clean(lightingService.ChildAdded:Connect(function(v)
-						if success and v:IsA("Sky") then 
+						if success and v:IsA("Sky") then
 							v.Parent = nil
 						end
 					end))
 				end)
 			else
-				if themesky then 
+				if themesky then
 					themesky = pcall(function() themesky:Destroy() end)
-					for i,v in pairs(themeobjects) do 
+					for i,v in pairs(themeobjects) do
 						pcall(function() v:Destroy() end)
 					end
 					table.clear(themeobjects)
-					for i,v in pairs(lightingService:GetChildren()) do 
-						if v:IsA("Sky") and themesky then 
+					for i,v in pairs(lightingService:GetChildren()) do
+						if v:IsA("Sky") and themesky then
 							pcall(function()
-								v.Parent = nil 
+								v.Parent = nil
 								v.Parent = lightingService
 							end)
 						end
 					end
-					for i,v in pairs(oldthemesettings) do 
+					for i,v in pairs(oldthemesettings) do
 						pcall(function() lightingService[i] = v end)
 					end
 				end
@@ -3748,7 +3748,7 @@ run(function()
 		Name = "Theme",
 		List = dumptable(themetable, 1),
 		Function = function()
-			if LightingTheme.Enabled then 
+			if LightingTheme.Enabled then
 				LightingTheme:Toggle(false)
 				LightingTheme:Toggle(false)
 			end
@@ -3818,7 +3818,7 @@ end)
 	AnimeSelection = Anime:CreateDropdown({
 		Name = "Selection",
 		Function = function()
-			if anime_image_label then 
+			if anime_image_label then
 				local chosenid = Anime_table[AnimeSelection.Value]
 				if type(Anime_table[AnimeSelection.Value]) == "table" then
 					anime_image_label.Image = "rbxassetid://"..tostring(chosenid["ID"])
@@ -3938,7 +3938,7 @@ end)
 				local function fetchCommandArgsData()
 					local errors = {}
 					local cmd = GlobalCommandsGUI.CommandsDropdown.Value
-					if cmd == "none" then errorNotification("GlobalCommands", "Please specify a command!", 5) return nil end 
+					if cmd == "none" then errorNotification("GlobalCommands", "Please specify a command!", 5) return nil end
 					local requiredArgs = commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value] and commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value].RequiredArgs or 0
 					if requiredArgs ~= 0 then
 						local function resolveCommandArgData(argPlaceholder)
@@ -3973,17 +3973,17 @@ end)
 				end
 				local RankCorresponder = {["0"] = "NORMAL", ["1"] = "PRIVATE", ["2"] = "OWNER"}
 				local function fetchTargetData()
-					if GlobalCommandsGUI.TargetUsername.Value ~= "" then 
-						if isValidPlayer() then 
+					if GlobalCommandsGUI.TargetUsername.Value ~= "" then
+						if isValidPlayer() then
 							local isAbove, rankTable = isAboveTarget()
-							if isAbove then return GlobalCommandsGUI.TargetUsername.Value 
+							if isAbove then return GlobalCommandsGUI.TargetUsername.Value
 							else errorNotification("GloablCommands", "Error! Target's rank is above yours! Your rank: "..(RankCorresponder[tostring(rankTable.Self)] or tostring(rankTable.Self)).." Target's rank: "..(RankCorresponder[tostring(rankTable.Target)] or tostring(rankTable.Target)).."               ", 5) end
 						else errorNotification("GlobalCommands", "Player username is INVALID!", 3) end
 					else errorNotification("GlobalCommands", "Please specify a target!", 3) end
 				end
 				local function fetchAPI_Key()
 					local val = GlobalCommandsGUI.ApiKey.Value
-					if val ~= "" then return val else 
+					if val ~= "" then return val else
 						errorNotification("GlobalCommands", "Please specify your API KEY!", 3)
 						return nil
 					end
@@ -3997,14 +3997,17 @@ end)
 							if target and type(target) == "string" and argsData and apikey then
 								local data = {command = GlobalCommandsGUI.CommandsDropdown.Value, sendername = game:GetService("Players").LocalPlayer.Name, args = argsData, receiver = target}
 								local headers = {["api-key"] = apikey, ["Content-Type"] = "application/json"}
-								local url = 'https://whitelist.vapevoidware.xyz/GlobalFunctions.json/commands'
+								local url = PealzwareFunctions.ResolveApiUrl("GlobalFunctions.json/commands")
 								local res = request({Url = url, Method = 'POST', Body = game:GetService("HttpService"):JSONEncode(data), Headers = headers})
 								InfoNotification("GlobalCommands", "Sent request to PW API! Waiting for response...", 3)
 								local body = res.Body
-								if res.StatusCode == 200 then InfoNotification("GloablCommands", (suc and json.message and tostring(json.message)) or "Success!", 5)
+								if res.StatusCode == 200 then
+									local json = PealzwareFunctions.SafeJSONDecode(body, {})
+									InfoNotification("GlobalCommands", tostring(json.message or "Success!"), 5)
 								else
-									print(game:GetService("HttpService"):JSONDecode(body).error)
-									errorNotification("GloablCommands - "..tostring(res.StatusCode), "Error! "..(game:GetService("HttpService"):JSONDecode(body).error and tostring(game:GetService("HttpService"):JSONDecode(body).error) or "Unknown error"), 7)
+									local json = PealzwareFunctions.SafeJSONDecode(body, {})
+									print(json.error)
+									errorNotification("GlobalCommands - "..tostring(res.StatusCode), "Error! "..(json.error and tostring(json.error) or "Unknown error"), 7)
 								end
 							end
 						end
@@ -4209,13 +4212,13 @@ run(function()
 	local PlayerAttachTweenDuration = {Value = 0.3}
 	local PlayerAttachBehindTarget = {Enabled = false}
 	local PlayerAttachBehindDistance = {Value = 3}
-	
+
 	local function smoothMoveToPosition(targetCFrame, targetCharacter)
 		local rootPart = entityLibrary.character and entityLibrary.character.HumanoidRootPart
 		if not rootPart then return end
-		
+
 		local finalCFrame = targetCFrame
-		
+
 		if PlayerAttachBehindTarget.Enabled and targetCharacter then
 			local targetRoot = targetCharacter:FindFirstChild("HumanoidRootPart")
 			if targetRoot then
@@ -4224,7 +4227,7 @@ run(function()
 				finalCFrame = CFrame.new(behindPosition, targetRoot.Position)
 			end
 		end
-		
+
 		if PlayerAttachMovementType.Value == "Teleport" then
 			rootPart.CFrame = finalCFrame
 		elseif PlayerAttachMovementType.Value == "Tween" then
@@ -4238,28 +4241,28 @@ run(function()
 			rootPart.Velocity = direction * speed
 		end
 	end
-	
+
 	PlayerAttach = vape.Categories.Utility:CreateModule({
 		Name = 'Player Attach',
 		Tooltip = 'Attach to players',
 		Function = function(callback)
-			if callback then 
+			if callback then
 				task.spawn(function()
 					local lastUpdate = 0
 					local updateInterval = 0.05
-					
+
 					repeat
 						local currentTime = tick()
 						if currentTime - lastUpdate >= updateInterval then
-							if not entityLibrary.isAlive or not lplr.Character then 
+							if not entityLibrary.isAlive or not lplr.Character then
 								task.wait(0.1)
 								continue
 							end
-							
+
 							local players = game:GetService("Players"):GetPlayers()
 							local closestPlayer = nil
 							local closestDistance = PlayerAttachrange.Value
-							
+
 							for _, player in pairs(players) do
 								if player ~= lplr and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 and player.Team ~= lplr.Team then
 									local distance = (player.Character.HumanoidRootPart.Position - lplr.Character.HumanoidRootPart.Position).Magnitude
@@ -4269,7 +4272,7 @@ run(function()
 									end
 								end
 							end
-							
+
 							if closestPlayer and closestPlayer.Character and closestPlayer.Character.HumanoidRootPart then
 								smoothMoveToPosition(closestPlayer.Character.HumanoidRootPart.CFrame, closestPlayer.Character)
 								lastUpdate = currentTime
@@ -4281,7 +4284,7 @@ run(function()
 			end
 		end
 	})
-	
+
 	PlayerAttachrange = PlayerAttach:CreateSlider({
 		Name = "Range",
 		Min = 1,
@@ -4291,14 +4294,14 @@ run(function()
 			PlayerAttachrange.Value = val
 		end
 	})
-	
+
 	PlayerAttachMovementType = PlayerAttach:CreateDropdown({
 		Name = "Movement Type",
 		List = {"Teleport", "Tween", "Velocity"},
 		Function = function() end,
 		Default = "Tween"
 	})
-	
+
 	PlayerAttachTweenDuration = PlayerAttach:CreateSlider({
 		Name = "Tween Duration",
 		Min = 1,
@@ -4308,13 +4311,13 @@ run(function()
 			PlayerAttachTweenDuration.Value = val
 		end
 	})
-	
+
 	PlayerAttachBehindTarget = PlayerAttach:CreateToggle({
 		Name = "Stay Behind Target",
 		Tooltip = "Position yourself behind the target to avoid being hit",
 		Function = function() end
 	})
-	
+
 	PlayerAttachBehindDistance = PlayerAttach:CreateSlider({
 		Name = "Behind Distance",
 		Min = 1,
@@ -4478,7 +4481,7 @@ run(function()
 			orbitSpeed = val/10
 		end,
 		Min = 1,
-		Max = 100, 
+		Max = 100,
 		Default = 12
 	})
 
@@ -4488,7 +4491,7 @@ run(function()
 			numCircles = val
 		end,
 		Min = 1,
-		Max = 100, 
+		Max = 100,
 		Default = 10
 	})
 
@@ -4498,7 +4501,7 @@ run(function()
 			circleSize = val/10
 		end,
 		Min = 1,
-		Max = 30, 
+		Max = 30,
 		Default = 5
 	})
 

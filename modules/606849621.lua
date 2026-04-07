@@ -1,7 +1,7 @@
 local baseLoadstring = loadstring
 local loadstring = function(...)
 	local res, err = baseLoadstring(...)
-	if err and vape then vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert') end
+	if err and vape then vape:CreateNotification('Pealzware', 'Failed to load : '..err, 30, 'alert') end
 	return res
 end
 local isfile = isfile or function(file)
@@ -10,7 +10,7 @@ local isfile = isfile or function(file)
 end
 local function downloadFile(path, func)
 	if not isfile(path) then
-		local suc, res = pcall(function() return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/'..readfile('vape/profiles/commit.txt')..'/'..select(1, path:gsub('vape/', '')), true) end)
+		local suc, res = pcall(function() return game:HttpGet('https://raw.githubusercontent.com/1AreYouMental110/pealzware/'..readfile('vape/profiles/commit.txt')..'/'..select(1, path:gsub('vape/', '')), true) end)
 		if not suc or res == '404: Not Found' then error(res) end
 		if path:find('.lua') then res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res end
 		writefile(path, res)
@@ -319,7 +319,7 @@ run(function()
 
 	function jb:FireServer(id, ...)
 		if not remotes[id] then
-			notif('Vape', 'Failed to find remote ('..id..')', 10, 'alert')
+			notif('Pealzware', 'Failed to find remote ('..id..')', 10, 'alert')
 			return
 		end
 		return hook(remotetable, remotes[id], ...)
@@ -383,7 +383,7 @@ run(function()
 	local Hooked
 	local ProjectileRaycast = RaycastParams.new()
 	ProjectileRaycast.RespectCanCollide = true
-	
+
 	SilentAim = vape.Categories.Combat:CreateModule({
 		Name = 'SilentAim',
 		Function = function(callback)
@@ -401,7 +401,7 @@ run(function()
 						Players = Target.Players.Enabled,
 						NPCs = Target.NPCs.Enabled
 					})
-	
+
 					if ent then
 						local item = jb.ItemSystemController:GetLocalEquipped()
 						if item and ((self.Tip.CFrame.Position - ent.RootPart.Position).Magnitude / (item.Config.BulletSpeed or 1000)) < item.BulletEmitter.LifeSpan then
@@ -414,16 +414,16 @@ run(function()
 							end
 						end
 					end
-	
+
 					return pos
 				end
-	
+
 				repeat
-					if CircleObject then 
-						CircleObject.Position = inputService:GetMouseLocation() 
+					if CircleObject then
+						CircleObject.Position = inputService:GetMouseLocation()
 					end
-	
-					if Instant.Enabled then 
+
+					if Instant.Enabled then
 						local item = jb.ItemSystemController:GetLocalEquipped()
 						if item and item.BulletEmitter then
 							rawset(item.BulletEmitter, 'LastUpdate', tick() - (item.BulletEmitter.LifeSpan - 0.1))
@@ -458,8 +458,8 @@ run(function()
 				CircleObject.Radius = val
 			end
 		end,
-		Suffix = function(val) 
-			return val == 1 and 'stud' or 'studs' 
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
 		end
 	})
 	SilentAim:CreateToggle({
@@ -486,13 +486,13 @@ run(function()
 		end
 	})
 	CircleColor = SilentAim:CreateColorSlider({
-		Name = 'Circle Color', 
+		Name = 'Circle Color',
 		Function = function(hue, sat, val)
 			if CircleObject then
 				CircleObject.Color = Color3.fromHSV(hue, sat, val)
 			end
-		end, 
-		Darker = true, 
+		end,
+		Darker = true,
 		Visible = false
 	})
 	CircleTransparency = SilentAim:CreateSlider({
@@ -510,21 +510,21 @@ run(function()
 		Visible = false
 	})
 	CircleFilled = SilentAim:CreateToggle({
-		Name = 'Circle Filled', 
+		Name = 'Circle Filled',
 		Function = function(callback)
 			if CircleObject then
 				CircleObject.Filled = callback
 			end
-		end, 
-		Darker = true, 
+		end,
+		Darker = true,
 		Visible = false
 	})
 	Instant = SilentAim:CreateToggle({Name = 'Hitscan Bullets'})
 end)
-	
+
 run(function()
 	local Wallbang = {Enabled = false}
-	
+
 	Wallbang = vape.Categories.Combat:CreateModule({
 		Name = 'Wallbang',
 		Function = function(callback)
@@ -536,7 +536,7 @@ run(function()
 					shotData.isHeadshot = true
 					return hook(...)
 				end)
-	
+
 				repeat
 					local item = jb.ItemSystemController:GetLocalEquipped()
 					if item and item.BulletEmitter then
@@ -551,10 +551,10 @@ run(function()
 		Tooltip = 'Modifies bullets to always do headshot damage & shooting through most walls.'
 	})
 end)
-	
+
 run(function()
 	local AutoArrest = {Enabled = false}
-	
+
 	AutoArrest = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoArrest',
 		Function = function(callback)
@@ -568,7 +568,7 @@ run(function()
 							Part = 'RootPart',
 							Range = 50
 						})
-	
+
 						for _, ent in plrs do
 							if not AutoArrest.Enabled then break end
 							if ent.Player and isIllegal(ent) then
@@ -589,16 +589,16 @@ run(function()
 		Tooltip = 'Automatically uses handcuffs on nearby entities'
 	})
 end)
-	
+
 run(function()
 	local AutoPop
 	local Range
 	local HandCheck
 	local TeamCheck
-	
+
 	local function getEntitiesInVehicle(car)
 		local entities = {}
-	
+
 		for _, seat in car:GetChildren() do
 			if (seat.Name == 'Seat' or seat.Name == 'Passenger') then
 				seat = seat:FindFirstChild('PlayerName')
@@ -611,13 +611,13 @@ run(function()
 				end
 			end
 		end
-	
+
 		return entities
 	end
-	
+
 	local function getVehiclesNear()
 		local allowed = {}
-	
+
 		if entitylib.isAlive then
 			local localPosition = entitylib.character.HumanoidRootPart.Position
 			for _, car in collectionService:GetTagged('Vehicle') do
@@ -626,23 +626,23 @@ run(function()
 					local check = #entities > 0
 					if TeamCheck.Enabled then
 						for _, ent in entities do
-							if not ent.Targetable then 
-								check = false 
-								break 
+							if not ent.Targetable then
+								check = false
+								break
 							end
 						end
 					end
-					
-					if check then 
-						table.insert(allowed, car) 
+
+					if check then
+						table.insert(allowed, car)
 					end
 				end
 			end
 		end
-	
+
 		return allowed
 	end
-	
+
 	AutoPop = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoPop',
 		Function = function(callback)
@@ -673,17 +673,17 @@ run(function()
 	HandCheck = AutoPop:CreateToggle({Name = 'Hand Check'})
 	TeamCheck = AutoPop:CreateToggle({Name = 'Team Check'})
 end)
-	
+
 run(function()
 	local Punch = {Enabled = false}
-	
+
 	Punch = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoPunch',
 		Function = function(callback)
 			if callback then
 				repeat
-					if entitylib.isAlive then 
-						jb:FireServer('Punch') 
+					if entitylib.isAlive then
+						jb:FireServer('Punch')
 					end
 					task.wait(0.3)
 				until not Punch.Enabled
@@ -692,11 +692,11 @@ run(function()
 		Tooltip = 'Always punches people infront of you'
 	})
 end)
-	
+
 run(function()
 	local AutoTaze = {Enabled = false}
 	local AutoTazeHandCheck = {Enabled = false}
-	
+
 	AutoTaze = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoTaze',
 		Function = function(callback)
@@ -710,10 +710,10 @@ run(function()
 							Part = 'RootPart',
 							Range = 50
 						})
-	
+
 						if ent and isIllegal(ent) and not isArrested(ent.Player.Name) then
-							if item then 
-								jb:FireServer('TaseReplicate', ent.Head.Position) 
+							if item then
+								jb:FireServer('TaseReplicate', ent.Head.Position)
 							end
 							jb:FireServer('Tase', ent.Humanoid, ent.Head, ent.Head.Position)
 							task.wait(10)
@@ -727,11 +727,11 @@ run(function()
 	})
 	AutoTazeHandCheck = AutoTaze:CreateToggle({Name = 'Hand Check'})
 end)
-	
+
 run(function()
 	LazerGodmode = vape.Categories.Blatant:CreateModule({Name = 'LazerGodmode'})
 end)
-	
+
 run(function()
 	vape.Categories.Blatant:CreateModule({
 		Name = 'NoFall',
@@ -741,12 +741,12 @@ run(function()
 		Tooltip = 'Disables ragdoll handling & fall damage'
 	})
 end)
-	
+
 run(function()
 	local InfiniteNitro
 	local nitrotable = debug.getupvalue(jb.VehicleController.NitroShopVisible, 1)
 	local oldnitro
-	
+
 	InfiniteNitro = vape.Categories.Utility:CreateModule({
 		Name = 'InfiniteNitro',
 		Function = function(callback)
@@ -765,7 +765,7 @@ run(function()
 		Tooltip = 'Infinite boost for the local car'
 	})
 end)
-	
+
 run(function()
 	vape.Categories.Utility:CreateModule({
 		Name = 'InstantAction',
@@ -775,14 +775,14 @@ run(function()
 		Tooltip = 'Allows you to instantly complete ProximityPrompt actions'
 	})
 end)
-	
+
 run(function()
 	vape.Categories.Utility:CreateModule({
 		Name = 'KeySpoofer',
 		Function = function(callback)
 			if callback then
-				hookfunction(jb.PlayerUtils.hasKey, function() 
-					return true 
+				hookfunction(jb.PlayerUtils.hasKey, function()
+					return true
 				end)
 			else
 				restorefunction(jb.PlayerUtils.hasKey)
@@ -791,4 +791,4 @@ run(function()
 		Tooltip = 'Enables most doors to be walked through'
 	})
 end)
-	
+

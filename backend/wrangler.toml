@@ -1,0 +1,7 @@
+name = "pealzware-api"
+main = "src/index.js"
+compatibility_date = "2026-04-06"
+
+[[kv_namespaces]]
+binding = "PEALZWARE_STORE"
+id = "1b926433ef6b488987d91c4c304bfda4"

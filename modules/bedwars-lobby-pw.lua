@@ -67,7 +67,7 @@ if shared.TeleportExploitAutowinEnabled then
 			["Name"] = "No",
 			["Function"] = function()
 				shared.TeleportExploitAutowinEnabled = nil
-				shared.MadeChoice = true 
+				shared.MadeChoice = true
 			end
 		}
 	}
@@ -113,20 +113,20 @@ run(function()
 	local CoreConnection
 
     local function enhanceQueueDisplay()
-		pcall(function() 
+		pcall(function()
 			CoreConnection:Disconnect()
 		end)
         local success, err = pcall(function()
             if not lplr.PlayerGui:FindFirstChild('QueueApp') then return end
-            
+
             for attempt = 1, 3 do
                 if QueueDisplayConfig.GradientControl.Enabled then
                     local queueFrame = lplr.PlayerGui.QueueApp['1']
                     queueFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                    
+
                     local gradient = DisplayUtils.createGradient(queueFrame)
                     gradient.Rotation = 180
-                    
+
                     local displayInterface = {
                         module = vape.watermark,
                         gradient = gradient,
@@ -148,7 +148,7 @@ run(function()
                 task.wait(0.1)
             end
         end)
-        
+
         if not success then
             warn("Queue display enhancement failed: " .. tostring(err))
         end
@@ -164,7 +164,7 @@ run(function()
                 enhanceQueueDisplay()
                 QueueDisplayEnhancer:Clean(lplr.PlayerGui.ChildAdded:Connect(enhanceQueueDisplay))
 			else
-				pcall(function() 
+				pcall(function()
 					CoreConnection:Disconnect()
 				end)
 			end
@@ -271,7 +271,7 @@ end)
 
 local GuiLibrary = shared.GuiLibrary
 shared.slowmode = 0
---[[run(function() 
+--[[run(function()
     local function resetSlowmode()
         task.spawn(function()
             repeat shared.slowmode = shared.slowmode - 1 task.wait(1) until shared.slowmode < 1
@@ -313,18 +313,18 @@ shared.slowmode = 0
         if cursor then
             url = url .. "&cursor=" .. cursor
         end
-    
+
         local response = request({
             Url = url,
             Method = "GET"
         })
-    
+
         return game:GetService("HttpService"):JSONDecode(response.Body)
     end
     local function getUserPresence(userIds)
         local url = "https://presence.roblox.com/v1/presence/users"
         local requestBody = game:GetService("HttpService"):JSONEncode({userIds = userIds})
-    
+
         local response = request({
             Url = url,
             Method = "POST",
@@ -381,10 +381,10 @@ shared.slowmode = 0
             if Custom_GroupId.Value ~= "" then
                 suc1 = true
                 custom_group_id = tonumber(Custom_GroupId.Value)
-            else 
+            else
                 suc1 = false
                 custom_group_id = nil
-                err1 = "Custom GroupID not specified!" 
+                err1 = "Custom GroupID not specified!"
             end
             local suc2, roles, err2 = false, {}, nil
             if #Roles_List.ObjectList < 1 then
@@ -446,9 +446,9 @@ shared.slowmode = 0
 	StaffDetector = vape.Categories.Utility:CreateModule({
 		Name = 'StaffDetector',
 		Function = function(calling)
-			if calling then 
+			if calling then
 				if (not AutoCheck.Enabled) then
-					StaffDetector["ToggleButton"](false) 
+					StaffDetector["ToggleButton"](false)
 				end
 				if AutoCheck.Enabled then errorNotification("StaffDetector-AutoCheck", "Please disable auto check to manually use this module!", 5) end
                 if shared.slowmode > 0 then if (not AutoCheck.Enabled) then return errorNotification("StaffDetector-Slowmode", "You are currently on slowmode! Wait "..tostring(shared.slowmode).."seconds!", shared.slowmode) end end
@@ -459,9 +459,9 @@ shared.slowmode = 0
 					local limit = Staff_Members_Limit.Value
 					local tbl1, tbl2, Type = getData()
                     local suc1, res1, err1 = tbl1[1], tbl1[2], tbl1[3]
-                    local suc2, res2, err2 = tbl2[1], tbl2[2], tbl2[3]    
-					local handle_table = {}    
-					local number = 0      
+                    local suc2, res2, err2 = tbl2[1], tbl2[2], tbl2[3]
+					local handle_table = {}
+					local number = 0
 					if (suc1 and suc2) then
 						for i,v in pairs(res2) do handle_checks(res1, v) end
 						for i,v in pairs(core_table) do
@@ -505,16 +505,16 @@ shared.slowmode = 0
 					dostuff()
 				else
 					task.spawn(function()
-						repeat 
+						repeat
 							dostuff()
 							task.wait(30)
 						until (not StaffDetector.Enabled) or (not AutoCheck.Enabled)
-						StaffDetector["ToggleButton"](false) 
+						StaffDetector["ToggleButton"](false)
 					end)
 				end
 			end
 		end
-	}) 
+	})
     local list = {}
     for i,v in pairs(Games_StaffTable) do table.insert(list, i) end
     StaffDetector_Games = StaffDetector:CreateDropdown({
@@ -575,19 +575,19 @@ shared.slowmode = 0
 	end)
 end)--]]
 
-run(function() 
+run(function()
 	local ScytheFunny = {}
 	ScytheFunny = vape.Categories.Blatant:CreateModule({
 		Name = 'ScytheFunny',
 		Function = function(calling)
-			if calling then 
-				repeat 
+			if calling then
+				repeat
 					task.wait()
 					game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("node_modules"):WaitForChild("@rbxts"):WaitForChild("net"):WaitForChild("out"):WaitForChild("_NetManaged"):WaitForChild("SkyScytheSpin"):FireServer()
 				until (not ScytheFunny.Enabled)
 			end
 		end
-	}) 
+	})
 end)
 
 --[[run(function()
@@ -644,7 +644,7 @@ end)
             if LeaderboardRank then leaderboard_data.Place = tonumber(LeaderboardRank.Text); leaderboard_editor.Place = LeaderboardRank end
             if PlayerUsername then leaderboard_data.User.Name = ExtraFunctions.extractUsername(PlayerUsername.Text); leaderboard_editor.User.Name = PlayerUsername end
             if PlayerAvatar then leaderboard_data.User.Profile = PlayerAvatar.Image; leaderboard_editor.User.Profile = PlayerAvatar end
-        end 
+        end
         if StatValuesContainer then
             local StatValue, frame_2 = findChild("StatValue", "TextLabel", StatValuesContainer:GetChildren()), findChild("2", "Frame", StatValuesContainer:GetChildren())
             if StatValue then leaderboard_data.Rank.RP = ExtraFunctions.extractNumberBeforeRP(StatValue.Text); leaderboard_editor.Rank.RP = StatValue end
@@ -663,12 +663,12 @@ end)
         local a = MethodTypeMethods[methodType](res.editor)
         if a == methodArg or a == tostring(methodArg) or a == tonumber(methodArg) then return true, res else return false, nil end
     end
-    local function getResolveResponseOfLeaderboard(leaderboard_frame, methodType, methodArg) 
+    local function getResolveResponseOfLeaderboard(leaderboard_frame, methodType, methodArg)
         if leaderboard_frame then
             for i,v in pairs(leaderboard_frame:GetChildren()) do
                 local LeaderboardElementBody = findChild("LeaderboardElementBody", "Frame", v:GetChildren())
                 if LeaderboardElementBody then
-                    local UserLeaderBoardDataContainer = findChild("UserLeaderBoardDataContainer", "Frame", LeaderboardElementBody:GetChildren()) 
+                    local UserLeaderBoardDataContainer = findChild("UserLeaderBoardDataContainer", "Frame", LeaderboardElementBody:GetChildren())
                     if UserLeaderBoardDataContainer then
                         --return resolveLeaderboardChildData(UserLeaderBoardDataContainer)
                         local suc, res = checkResolveResponseOfLeaderboard(methodType, methodArg, resolveLeaderboardChildData(UserLeaderBoardDataContainer))
@@ -775,9 +775,9 @@ end)
     local function fetchRankIconNames() local iconNames = {}; for i,v in pairs(RankIconTable) do table.insert(iconNames, i) end; return iconNames end
 
     local function registerType(typeName)
-        if typeName == "Place" then LeaderboardEditor_Editors["Place"] = {Value = 1}; Leaderboard_AddOnCreator_Helper["Place"] = {Type = "CreateTextBox", Args = {Name = "Place", TempText = "PlaceNumber", Function = fetchDefaultFunction}, ResType = "Value"}; 
+        if typeName == "Place" then LeaderboardEditor_Editors["Place"] = {Value = 1}; Leaderboard_AddOnCreator_Helper["Place"] = {Type = "CreateTextBox", Args = {Name = "Place", TempText = "PlaceNumber", Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "Username" then LeaderboardEditor_Editors["Username"] = {Value = game:GetService("Players").LocalPlayer.Name}; Leaderboard_AddOnCreator_Helper["Username"] = {Type = "CreateTextBox", Args = {Name = "Username", TempText = "username", Function = fetchDefaultFunction}, ResType = "Value"};
-        elseif typeName == "RP" then LeaderboardEditor_Editors["RP"] = {Value = 9999}; Leaderboard_AddOnCreator_Helper["RP"] = {Type = "CreateTextBox", Args = {Name = "RP", TempText = "RP (number)", Function = fetchDefaultFunction}, ResType = "Value"}; 
+        elseif typeName == "RP" then LeaderboardEditor_Editors["RP"] = {Value = 9999}; Leaderboard_AddOnCreator_Helper["RP"] = {Type = "CreateTextBox", Args = {Name = "RP", TempText = "RP (number)", Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "RankIcon" then LeaderboardEditor_Editors["RankIcon"] = {Value = "Pealzware"}; Leaderboard_AddOnCreator_Helper["RankIcon"] = {Type = "CreateDropdown", Args = {Name = "RankIcon", List = fetchRankIconNames(), Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "RankName" then LeaderboardEditor_Editors["RankName"] = {Value = "INFINITY"}; Leaderboard_AddOnCreator_Helper["RankName"] = {Type = "CreateTextBox", Args = {Name = "RankName", TempText = "rankname", Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "CrownIconColor" then LeaderboardEditor_Editors["CrownIconColor"] = {Hue = 255, Sat = 0, Value = 0}; Leaderboard_AddOnCreator_Helper["CrownIconColor"] = {Type = "CreateColorSlider", Args = {Name = "CrownIconColor", Function = fetchDefaultFunction}, ResType = {"Hue", "Sat", "Value"}}
@@ -801,7 +801,7 @@ run(function()
 
     local function fetchReports(username)
         if not username then return {Suc = false, Error = "Username not specified!"} end
-        local url = 'https://detections.vapevoidware.xyz/reportdetector?user=' .. tostring(username)
+        local url = PealzwareFunctions.ResolveApiUrl('reportdetector?user=' .. tostring(username))
         local res = request({Url = url, Method = "GET"})
 
         if res and res.StatusCode == 200 then
@@ -896,7 +896,7 @@ run(function()
 		}
 		local val = ReportDetector_GUIObjects["Mode"].Value
 		local function verifyVal(value) if value ~= nil and value ~= "" then return true, value else return false, value end end
-		if val ~= "Self" then 
+		if val ~= "Self" then
 			local suc, res = verifyVal(ReportDetector_GUIObjects[CorresponderTable[val]].Value)
 			if suc then return res else return nil, {Step = 1, ErrorInfo = "Invalid value!", Debug = {Type = val, Res = tostring(res)}} end
 		else
@@ -1012,13 +1012,13 @@ end)
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 300, 0, 500)
     mainFrame.Position = UDim2.new(1, 0, 0.8, -250)
-    mainFrame.AnchorPoint = Vector2.new(0, 0.5) 
+    mainFrame.AnchorPoint = Vector2.new(0, 0.5)
     mainFrame.BackgroundTransparency = 1
     mainFrame.Parent = shared.vape.gui.ScaledGui
     shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()
         mainFrame:Destroy()
     end)
-    
+
     local groupId = 5774246
     local roleIds = {
         79029254,
@@ -1028,20 +1028,20 @@ end)
         87049509,
         37929138
     }
-    
+
     local scrollingFrame = Instance.new("ScrollingFrame")
     scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
     scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1000)
     scrollingFrame.ScrollBarThickness = 5
-    scrollingFrame.BackgroundTransparency = 1 
+    scrollingFrame.BackgroundTransparency = 1
     scrollingFrame.Parent = mainFrame
-    
+
     local function createUICorner(instance, radius)
         local uiCorner = Instance.new("UICorner")
         uiCorner.CornerRadius = UDim.new(0, radius)
         uiCorner.Parent = instance
     end
-    
+
     local tweenService = game:GetService("TweenService")
     local function fadeOut(frame)
         local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -1049,7 +1049,7 @@ end)
         tween:Play()
         tween.Completed:Connect(function() frame:Destroy() end)
     end
-    
+
     local function fadeIn(frame)
         frame.Transparency = 1
         frame.Position = frame.Position - UDim2.new(0, 100, 0, 0)
@@ -1057,30 +1057,30 @@ end)
         local tween = tweenService:Create(frame, tweenInfo, {Position = frame.Position + UDim2.new(0, 100, 0, 0)})
         tween:Play()
     end
-    
+
     local function updateUsers(users)
         for _, child in pairs(scrollingFrame:GetChildren()) do
             if child:IsA("Frame") then
                 fadeOut(child)
             end
         end
-    
+
         for index, user in ipairs(users) do
             local userFrame = Instance.new("Frame")
             userFrame.Size = UDim2.new(1, -10, 0, 50)
-            userFrame.Position = UDim2.new(0, 5, 0, (index - 1) * 55) 
+            userFrame.Position = UDim2.new(0, 5, 0, (index - 1) * 55)
             userFrame.BackgroundTransparency = 1
             userFrame.Parent = scrollingFrame
-    
+
             local avatar = Instance.new("ImageLabel")
             avatar.Size = UDim2.new(0, 40, 0, 40)
             avatar.Position = UDim2.new(0, 5, 0, 5)
             avatar.Image = "rbxthumb://type=AvatarHeadShot&id="..user.userId.."&w=420&h=420"
             avatar.Parent = userFrame
             avatar.BackgroundTransparency = 1
-    
+
             createUICorner(avatar, 40)
-    
+
             local statusIndicator = Instance.new("Frame")
             statusIndicator.Size = UDim2.new(0, 10, 0, 10)
             statusIndicator.Position = UDim2.new(1, -10, 1, -10)
@@ -1088,9 +1088,9 @@ end)
             statusIndicator.BorderSizePixel = 2
             statusIndicator.BorderColor3 = Color3.fromRGB(255, 255, 255)
             statusIndicator.Parent = avatar
-    
+
             createUICorner(statusIndicator, 10)
-    
+
             local userInfo = Instance.new("TextLabel")
             userInfo.Size = UDim2.new(1, -60, 1, 0)
             userInfo.Position = UDim2.new(0, 55, 0, 0)
@@ -1102,30 +1102,30 @@ end)
             userInfo.TextSize = 14
             userInfo.Parent = userFrame
             userInfo.BackgroundTransparency = 1
-    
+
             fadeIn(userFrame)
         end
     end
-    
+
     local function getUsersInRole(groupId, roleId, cursor)
         local limit = 100
         local url = "https://groups.roblox.com/v1/groups/"..groupId.."/roles/"..roleId.."/users?limit="..limit
         if cursor then
             url = url .. "&cursor=" .. cursor
         end
-    
+
         local response = request({
             Url = url,
             Method = "GET"
         })
-    
+
         return game:GetService("HttpService"):JSONDecode(response.Body)
     end
-    
+
     local function getUserPresence(userIds)
         local url = "https://presence.roblox.com/v1/presence/users"
         local requestBody = game:GetService("HttpService"):JSONEncode({userIds = userIds})
-    
+
         local response = request({
             Url = url,
             Method = "POST",
@@ -1136,7 +1136,7 @@ end)
         })
         return game:GetService("HttpService"):JSONDecode(response.Body)
     end
-    
+
     local function getUsersForRolesWithPresence(groupId, roleIds)
         local users = {}
         local userIds = {}
@@ -1151,7 +1151,7 @@ end)
                 cursor = data.nextPageCursor
             until not cursor
         end
-    
+
         local presenceData = getUserPresence(userIds)
         for _, user in pairs(users) do
             for _, presence in pairs(presenceData.userPresences) do
@@ -1164,7 +1164,7 @@ end)
         end
         return users
     end
-    
+
     local function filterUsersByPresence(users, presenceType)
         local filteredUsers = {}
         for _, user in pairs(users) do
@@ -1174,16 +1174,16 @@ end)
         end
         updateUsers(filteredUsers)
     end
-    
+
     local function getUsersForRolesPresence(groupId, roleIds)
         local users = getUsersForRolesWithPresence(groupId, roleIds)
-    
+
         local StatusTypes = {
             ["0"] = "Offline",
             ["1"] = "Online",
             ["2"] = "InGame"
         }
-        
+
         for _, user in pairs(users) do
             local statusColor = Color3.fromRGB(0, 255, 0)
             if user.presenceType == 0 then
@@ -1196,7 +1196,7 @@ end)
         end
         updateUsers(users)
     end
-    
+
     local refreshButton = Instance.new("TextButton")
     refreshButton.Size = UDim2.new(0, 80, 0, 30)
     refreshButton.Position = UDim2.new(0.5, -40, 0, -40)
@@ -1209,7 +1209,7 @@ end)
     refreshButton.MouseButton1Click:Connect(function()
         getUsersForRolesPresence(groupId, roleIds)
     end)
-    getUsersForRolesPresence(groupId, roleIds)    
+    getUsersForRolesPresence(groupId, roleIds)
 end)--]]
 
 run(function()
@@ -1222,22 +1222,22 @@ run(function()
 		Function = function(call)
 			if call then
 				local l__GameQueryUtil__8
-				if (not shared.CheatEngineMode) then 
-					l__GameQueryUtil__8 = require(game:GetService("ReplicatedStorage")['rbxts_include']['node_modules']['@easy-games']['game-core'].out).GameQueryUtil 
+				if (not shared.CheatEngineMode) then
+					l__GameQueryUtil__8 = require(game:GetService("ReplicatedStorage")['rbxts_include']['node_modules']['@easy-games']['game-core'].out).GameQueryUtil
 				else
 					local backup = {}; function backup:setQueryIgnored() end; l__GameQueryUtil__8 = backup;
 				end
 				local l__TweenService__9 = game:GetService("TweenService")
 				local player = game:GetService("Players").LocalPlayer
 				local p6 = player.Character
-				
+
 				if not p6 then NightmareEmote:Toggle() return end
-				
+
 				local v10 = game:GetService("ReplicatedStorage"):WaitForChild("Assets"):WaitForChild("Effects"):WaitForChild("NightmareEmote"):Clone();
 				asset = v10
 				v10.Parent = game.Workspace
 				lastPosition = p6.PrimaryPart and p6.PrimaryPart.Position or Vector3.new()
-				
+
 				task.spawn(function()
 					while asset ~= nil do
 						local currentPosition = p6.PrimaryPart and p6.PrimaryPart.Position
@@ -1252,7 +1252,7 @@ run(function()
 						task.wait()
 					end
 				end)
-				
+
 				local v11 = v10:GetDescendants();
 				local function v12(p8)
 					if p8:IsA("BasePart") then
@@ -1280,13 +1280,13 @@ run(function()
 				anim.AnimationId = "rbxassetid://9191822700"
 				anim = p6.Humanoid:LoadAnimation(anim)
 				anim:Play()
-			else 
-                if anim then 
+			else
+                if anim then
 					anim:Stop()
 					anim = nil
 				end
 				if asset then
-					asset:Destroy() 
+					asset:Destroy()
 					asset = nil
 				end
 			end

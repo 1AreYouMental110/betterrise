@@ -1,8 +1,8 @@
-local run = function(func) 
-	func() 
+local run = function(func)
+	func()
 end
-local cloneref = cloneref or function(obj) 
-	return obj 
+local cloneref = cloneref or function(obj)
+	return obj
 end
 
 local playersService = cloneref(game:GetService('Players'))
@@ -26,8 +26,8 @@ local clientData = require(replicatedStorage.modules.player.ClientData)
 local aiController = require(lplr.PlayerScripts.AIController)
 local projectiles = require(replicatedStorage.modules.game.Projectiles).Projectile
 local itemData = {}
-for _, v in debug.getupvalue(require(replicatedStorage.game.Items).getItemData, 1) do 
-	itemData[v.id] = v 
+for _, v in debug.getupvalue(require(replicatedStorage.game.Items).getItemData, 1) do
+	itemData[v.id] = v
 end
 local Crypt = require(replicatedStorage.Crypt)
 
@@ -38,11 +38,11 @@ local topY = top.Position.Y + top.Size.Y / 2
 local function getSpeed()
 	local factor = 3.25
 	local realSpeed = math.max(clientData.getSpeedFactor(), 0.8)
-	if entitylib.isAlive and entitylib.character.RootPart.Position.Y < (topY - 1) and realSpeed >= 1 then 
+	if entitylib.isAlive and entitylib.character.RootPart.Position.Y < (topY - 1) and realSpeed >= 1 then
 		factor += 1
 	end
 	return 16 * (realSpeed * factor)
-end	
+end
 
 local function getTool(breakType)
 	local bestTool, bestToolData, bestToolDamage = nil, nil, 0
@@ -75,14 +75,14 @@ run(function()
 	entitylib.start = function()
 		oldstart()
 		if entitylib.Running then
-			for _, ent in game.Workspace.AI_Client:GetChildren() do 
-				task.spawn(entitylib.addEntity, ent) 
+			for _, ent in game.Workspace.AI_Client:GetChildren() do
+				task.spawn(entitylib.addEntity, ent)
 			end
-			table.insert(entitylib.Connections, game.Workspace.AI_Client.ChildAdded:Connect(function(v) 
-				entitylib.addEntity(v) 
+			table.insert(entitylib.Connections, game.Workspace.AI_Client.ChildAdded:Connect(function(v)
+				entitylib.addEntity(v)
 			end))
-			table.insert(entitylib.Connections, game.Workspace.AI_Client.ChildRemoved:Connect(function(v) 
-				entitylib.removeEntity(v) 
+			table.insert(entitylib.Connections, game.Workspace.AI_Client.ChildRemoved:Connect(function(v)
+				entitylib.removeEntity(v)
 			end))
 		end
 	end
@@ -143,11 +143,11 @@ entitylib.start()
 
 run(function()
 	local InfiniteStamina
-	
+
 	InfiniteStamina = vape.Categories.Blatant:CreateModule({
 		Name = 'InfiniteStamina',
 		Function = function(callback)
-			if callback then 
+			if callback then
 				repeat
 					lplr:SetAttribute('stamina', 1)
 					task.wait(0.1)
@@ -157,7 +157,7 @@ run(function()
 		Tooltip = 'Tiredless simulator'
 	})
 end)
-	
+
 local Attacking
 run(function()
 	local Killaura
@@ -183,7 +183,7 @@ run(function()
 		if Mouse.Enabled then
 			if not inputService:IsMouseButtonPressed(0) then return false end
 		end
-		
+
 		local tool = getTool('meleeDamage')
 		return tool
 	end
@@ -237,15 +237,15 @@ run(function()
 						end
 					end
 
-					for i, v in KillauraFunctions do 
-						v(attacked) 
+					for i, v in KillauraFunctions do
+						v(attacked)
 					end
 
 					task.wait(Attacking and 0.15 or 0.03)
 				until not Killaura.Enabled
 			else
-				for i, v in KillauraFunctions do 
-					v({}) 
+				for i, v in KillauraFunctions do
+					v({})
 				end
 				Attacking = false
 				block(false)
@@ -262,8 +262,8 @@ run(function()
 		Min = 1,
 		Max = 15,
 		Default = 15,
-		Suffix = function(val) 
-			return val == 1 and 'stud' or 'studs' 
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
 		end
 	})
 	AngleSlider = Killaura:CreateSlider({
@@ -286,8 +286,8 @@ run(function()
 			BoxAttackColor.Object.Visible = callback
 			if callback then
 				KillauraFunctions.Box = function(attacked)
-					if vape.ThreadFix then 
-						setthreadidentity(8) 
+					if vape.ThreadFix then
+						setthreadidentity(8)
 					end
 
 					for i, v in Boxes do
@@ -310,8 +310,8 @@ run(function()
 				end
 			else
 				KillauraFunctions.Box = nil
-				for i, v in Boxes do 
-					v:Destroy() 
+				for i, v in Boxes do
+					v:Destroy()
 				end
 				table.clear(Boxes)
 			end
@@ -339,8 +339,8 @@ run(function()
 			ParticleSize.Object.Visible = callback
 			if callback then
 				KillauraFunctions.Particles = function(attacked)
-					if vape.ThreadFix then 
-						setthreadidentity(8) 
+					if vape.ThreadFix then
+						setthreadidentity(8)
 					end
 					for i, v in Particles do
 						v.Position = attacked[i] and attacked[i].Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
@@ -367,15 +367,15 @@ run(function()
 					particles.Shape = Enum.ParticleEmitterShape.Sphere
 					particles.ShapePartial = 1
 					particles.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromHSV(ParticleColor1.Hue, ParticleColor1.Sat, ParticleColor1.Value)), 
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(ParticleColor1.Hue, ParticleColor1.Sat, ParticleColor1.Value)),
 						ColorSequenceKeypoint.new(1, Color3.fromHSV(ParticleColor2.Hue, ParticleColor2.Sat, ParticleColor2.Value))
 					})
 					particles.Parent = part
 					Particles[i] = part
 				end
 			else
-				for i, v in Particles do 
-					v:Destroy() 
+				for i, v in Particles do
+					v:Destroy()
 				end
 				table.clear(Particles)
 			end
@@ -397,7 +397,7 @@ run(function()
 		Function = function(hue, sat, val)
 			for i, v in Particles do
 				v.ParticleEmitter.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromHSV(hue, sat, val)), 
+					ColorSequenceKeypoint.new(0, Color3.fromHSV(hue, sat, val)),
 					ColorSequenceKeypoint.new(1, Color3.fromHSV(ParticleColor2.Hue, ParticleColor2.Sat, ParticleColor2.Value))
 				})
 			end
@@ -410,7 +410,7 @@ run(function()
 		Function = function(hue, sat, val)
 			for i, v in Particles do
 				v.ParticleEmitter.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromHSV(ParticleColor1.Hue, ParticleColor1.Sat, ParticleColor1.Value)), 
+					ColorSequenceKeypoint.new(0, Color3.fromHSV(ParticleColor1.Hue, ParticleColor1.Sat, ParticleColor1.Value)),
 					ColorSequenceKeypoint.new(1, Color3.fromHSV(hue, sat, val))
 				})
 			end
@@ -433,11 +433,11 @@ run(function()
 		Visible = false
 	})
 end)
-	
+
 run(function()
 	local NoFall
 	local connections = {}
-	
+
 	NoFall = vape.Categories.Blatant:CreateModule({
 		Name = 'NoFall',
 		Function = function(callback)
@@ -450,7 +450,7 @@ run(function()
 						end
 					end)
 				end))
-	
+
 				if entitylib.isAlive then
 					for _, v in getconnections(entitylib.character.Humanoid.StateChanged) do
 						table.insert(connections, v)
@@ -458,8 +458,8 @@ run(function()
 					end
 				end
 			else
-				for _, v in connections do 
-					v:Enable() 
+				for _, v in connections do
+					v:Enable()
 				end
 				table.clear(connections)
 			end
@@ -467,7 +467,7 @@ run(function()
 		Tooltip = 'Prevents you from taking fall damage.'
 	})
 end)
-	
+
 run(function()
 	local Speed
 	local Value
@@ -476,7 +476,7 @@ run(function()
 	local AlwaysJump
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
-	
+
 	Speed = vape.Categories.Blatant:CreateModule({
 		Name = 'Speed',
 		Function = function(callback)
@@ -485,27 +485,27 @@ run(function()
 					if entitylib.isAlive then
 						local state = entitylib.character.Humanoid:GetState()
 						if state == Enum.HumanoidStateType.Climbing then return end
-	
+
 						local root, velo = entitylib.character.RootPart, getSpeed()
 						local moveDirection = AntiFallDirection or entitylib.character.Humanoid.MoveDirection
 						local destination = (moveDirection * math.max(velo - entitylib.character.Humanoid.WalkSpeed, 0) * dt)
-	
+
 						if WallCheck.Enabled then
 							rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
 							rayCheck.CollisionGroup = root.CollisionGroup
 							local ray = game.Workspace:Raycast(root.Position, destination, rayCheck)
-							if ray then 
-								destination = ((ray.Position + ray.Normal) - root.Position) 
+							if ray then
+								destination = ((ray.Position + ray.Normal) - root.Position)
 							end
 						end
-	
+
 						root.CFrame += destination
 					end
 				end))
 			end
 		end,
-		ExtraText = function() 
-			return 'TSG' 
+		ExtraText = function()
+			return 'TSG'
 		end,
 		Tooltip = 'Increases your movement with various methods.'
 	})
@@ -514,19 +514,19 @@ run(function()
 		Default = true
 	})
 end)
-	
+
 run(function()
 	local AutoEat
 	local Health
 	local eatRemote = replicatedStorage.remoteInterface.interactions.eat
 	local maxHunger = replicatedStorage.game.maxHunger.Value
 	local regenTick = tick()
-	
+
 	local function getEatenItem()
 		local inv, hunger = clientData.getInventory(lplr), clientData.getHunger()
 		if inv and entitylib.isAlive then
 			local chosen, lowest = nil, math.huge
-	
+
 			for i, v in inv do
 				v = itemData[i]
 				local food = v and v.itemStats and v.itemStats.food
@@ -535,11 +535,11 @@ run(function()
 					if ((hunger + food) < maxHunger or healthCheck) and food < lowest and not table.find(v.effectsOnEat or {}, "Food_Poisoning") then
 						chosen, lowest = i, food
 					end
-	
+
 					if entitylib.character.Humanoid.Health < entitylib.character.Humanoid.MaxHealth and Health.Enabled then
 						if (v.instantHealth or v.durationHealth) and regenTick < tick() then
-							if v.durationHealth then 
-								regenTick = tick() + (v.durationHealth / v.durationHealthRate) 
+							if v.durationHealth then
+								regenTick = tick() + (v.durationHealth / v.durationHealthRate)
 							end
 							chosen = i
 							break
@@ -547,19 +547,19 @@ run(function()
 					end
 				end
 			end
-	
+
 			return chosen
 		end
 	end
-	
+
 	AutoEat = vape.Categories.Utility:CreateModule({
 		Name = 'AutoEat',
 		Function = function(callback)
 			if callback then
 				repeat
 					local item = getEatenItem()
-					if item then 
-						eatRemote:FireServer(item) 
+					if item then
+						eatRemote:FireServer(item)
 					end
 					task.wait(0.1)
 				until not AutoEat.Enabled
@@ -572,33 +572,33 @@ run(function()
 		Default = true
 	})
 end)
-	
+
 run(function()
 	local AutoPickup
 	local dropped = game.Workspace.droppedItems
 	local pickupRemote =  replicatedStorage.remoteInterface.inventory.pickupItem
 	local pickuptable = {}
 	local pickupdelay = {}
-	
+
 	AutoPickup = vape.Categories.Utility:CreateModule({
 		Name = 'AutoPickup',
 		Function = function(callback)
-			if callback then 
-				AutoPickup:Clean(dropped.ChildAdded:Connect(function(v) 
-					table.insert(pickuptable, v) 
+			if callback then
+				AutoPickup:Clean(dropped.ChildAdded:Connect(function(v)
+					table.insert(pickuptable, v)
 				end))
 				AutoPickup:Clean(dropped.ChildRemoved:Connect(function(v)
 					local ind = table.find(pickuptable, v)
-					if ind then 
-						table.remove(pickuptable, ind) 
+					if ind then
+						table.remove(pickuptable, ind)
 					end
 				end))
 				pickuptable = dropped:GetChildren()
-				
+
 				repeat
-					if entitylib.isAlive then 
-						for i, v in pickuptable do 
-							if (v.Position - entitylib.character.RootPart.Position).Magnitude < 10 then 
+					if entitylib.isAlive then
+						for i, v in pickuptable do
+							if (v.Position - entitylib.character.RootPart.Position).Magnitude < 10 then
 								firetouchinterest(v, entitylib.character.RootPart, 1)
 								firetouchinterest(v, entitylib.character.RootPart, 0)
 							end
@@ -613,7 +613,7 @@ run(function()
 		Tooltip = 'Picks up items within close range'
 	})
 end)
-	
+
 run(function()
 	local Breaker
 	local BreakerDisable
@@ -624,17 +624,17 @@ run(function()
 	local mine = replicatedStorage.remoteInterface.interactions.mine
 	local chop = replicatedStorage.remoteInterface.interactions.chop
 	local old
-	
+
 	local function clean()
 		if not BreakerUI then return end
-		if BreakerPart then 
-			BreakerPart:Destroy() 
+		if BreakerPart then
+			BreakerPart:Destroy()
 		end
 		BreakerUI = nil
 		BreakerPart = nil
 		BreakerRef = nil
 	end
-	
+
 	local function customHealthbar(block, health, maxHealth, changeHealth)
 		if not BreakerPart then
 			local percent = math.clamp(health / maxHealth, 0, 1)
@@ -710,24 +710,24 @@ run(function()
 			healthcorner.CornerRadius = UDim.new(1, 0)
 			healthcorner.Parent = healthbar
 		end
-	
+
 		local newpercent = math.clamp((health - changeHealth) / maxHealth, 0, 1)
-		if newpercent == 0 then 
-			clean() 
-			return 
+		if newpercent == 0 then
+			clean()
+			return
 		end
-		
+
 		tweenService:Create(BreakerRef, TweenInfo.new(0.3), {
 			Size = UDim2.fromScale(newpercent, 1),
 			BackgroundColor3 = Color3.fromHSV(math.clamp(newpercent / 2.5, 0, 1), 0.89, 0.75)
 		}):Play()
 	end
-	
+
 	local function getBreakable()
 		if entitylib.isAlive and (BreakerDisable.Enabled or not Attacking) then
 			local closest, hp = nil, math.huge
 			local localPosition = entitylib.character.RootPart.Position
-	
+
 			for _, v in BreakerObjects do
 				if v:GetAttribute('health') > 0 and v.PrimaryPart and (localPosition - v.PrimaryPart.Position).Magnitude < 30 then
 					local newhp = v:GetAttribute('health')
@@ -736,40 +736,40 @@ run(function()
 					clean()
 				end
 			end
-	
+
 			return closest
 		end
 	end
-	
+
 	Breaker = vape.Categories.Minigames:CreateModule({
 		Name = 'Breaker',
 		Function = function(callback)
 			if callback then
 				local oldhp = -1
-	
+
 				for _, obj in game.Workspace.worldResources:GetDescendants() do
-					if obj:GetAttribute('health') then 
-						table.insert(BreakerObjects, obj) 
+					if obj:GetAttribute('health') then
+						table.insert(BreakerObjects, obj)
 					end
 				end
 				Breaker:Clean(game.Workspace.worldResources.DescendantAdded:Connect(function(obj)
-					if obj:GetAttribute('health') then 
-						table.insert(BreakerObjects, obj) 
+					if obj:GetAttribute('health') then
+						table.insert(BreakerObjects, obj)
 					end
 				end))
 				Breaker:Clean(game.Workspace.worldResources.DescendantRemoving:Connect(function(obj)
 					local ind = table.find(BreakerObjects, obj)
-					if ind then 
-						table.remove(BreakerObjects, ind) 
+					if ind then
+						table.remove(BreakerObjects, ind)
 					end
 				end))
-	
+
 				repeat
 					local obj = getBreakable()
 					if obj then
 						local axe, pickaxe = getTool('axeStrength'), getTool('pickaxeStrength')
 						local done
-						if obj:IsDescendantOf(game.Workspace.worldResources.mineable) then 
+						if obj:IsDescendantOf(game.Workspace.worldResources.mineable) then
 							if pickaxe then
 								done = true
 								mine:FireServer(pickaxe, obj, obj.PrimaryPart.CFrame)
@@ -780,7 +780,7 @@ run(function()
 								chop:FireServer(axe, obj, obj.PrimaryPart.CFrame)
 							end
 						end
-	
+
 						if done and (obj:GetAttribute('health') ~= oldhealth or obj ~= old) then
 							if obj ~= old then
 								oldhealth = obj:GetAttribute('health')
@@ -791,7 +791,7 @@ run(function()
 							old = obj
 						end
 					end
-	
+
 					task.wait(0.1)
 				until not Breaker.Enabled
 			else

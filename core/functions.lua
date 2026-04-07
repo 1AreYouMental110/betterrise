@@ -1,5 +1,7 @@
 local PWFunctions = {}
 PWFunctions.Connections = {}
+PWFunctions.RepoBaseUrl = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main"
+PWFunctions.ApiBaseUrl = "https://pealzware-api.romazhub.workers.dev"
 
 PWFunctions.GlobalisedObjects = {}
 PWFunctions.GlobaliseObject = function(name, obj)
@@ -27,6 +29,24 @@ end))
 function PWFunctions.Connections:register(con)
     if (not con) then warn(debug.traceback("[PWFunctions.Connections:register]: con is nil!")) return end
     table.insert(PWFunctions.Connections, con)
+end
+
+function PWFunctions.ResolveApiUrl(path)
+    path = tostring(path or "")
+    if path ~= "" and path:sub(1, 1) ~= "/" then
+        path = "/"..path
+    end
+    return PWFunctions.ApiBaseUrl..path
+end
+
+function PWFunctions.SafeJSONDecode(data, fallback)
+    if type(data) ~= "string" or data == "" then
+        return fallback
+    end
+    local suc, res = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(data)
+    end)
+    return suc and res or fallback
 end
 
 local Base64 = {}
@@ -97,13 +117,13 @@ local GamesFunctions = {
             player = player or lplr
             return player.Character.Humanoid.Health
         end,
-        vapeAssert = function(argument, title, text, duration, hault, moduledisable, module) 
+        vapeAssert = function(argument, title, text, duration, hault, moduledisable, module)
             if not argument then
                 local suc, res = pcall(function()
                     local notification = GuiLibrary.CreateNotification(title or "Pealzware", text or "Failed to call function.", duration or 20, "assets/WarningNotification.png")
                     notification.IconLabel.ImageColor3 = Color3.new(220, 0, 0)
                     notification.Frame.Frame.ImageColor3 = Color3.new(220, 0, 0)
-                    if moduledisable and (module and GuiLibrary.ObjectsThatCanBeSaved[module.."OptionsButton"].Api.Enabled) then 
+                    if moduledisable and (module and GuiLibrary.ObjectsThatCanBeSaved[module.."OptionsButton"].Api.Enabled) then
                         GuiLibrary.ObjectsThatCanBeSaved[module.."OptionsButton"].Api.ToggleButton(false)
                         warn("Module disabled: " .. tostring(debug.traceback(tostring(module))))
                     end
@@ -111,17 +131,17 @@ local GamesFunctions = {
                 if not suc then
                     warn("Error occurred: " .. tostring(debug.traceback(tostring(res))))
                 end
-                if hault then 
-                    while true do 
-                        task.wait() 
-                    end 
+                if hault then
+                    while true do
+                        task.wait()
+                    end
                 end
             end
         end,
         GetEnumItems = function(enum)
             local fonts = {}
-            for i,v in next, Enum[enum]:GetEnumItems() do 
-                table.insert(fonts, v.Name) 
+            for i,v in next, Enum[enum]:GetEnumItems() do
+                table.insert(fonts, v.Name)
             end
             return fonts
         end,
@@ -138,11 +158,11 @@ local GamesFunctions = {
         end,
         isAlive = function(plr, healthblacklist)
             plr = plr or lplr
-            local alive = false 
-            if plr.Character and plr.Character.PrimaryPart and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") and plr.Character:FindFirstChild("Head") then 
+            local alive = false
+            if plr.Character and plr.Character.PrimaryPart and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") and plr.Character:FindFirstChild("Head") then
                 alive = true
             end
-            if not healthblacklist and alive and plr.Character.Humanoid.Health and plr.Character.Humanoid.Health <= 0 then 
+            if not healthblacklist and alive and plr.Character.Humanoid.Health and plr.Character.Humanoid.Health <= 0 then
                 alive = false
             end
             return alive
@@ -166,17 +186,17 @@ local GamesFunctions = {
             repeat task.wait() until shared.vapeentity
             local entityLibrary = shared.vapeentity
             local collectionService = game:GetService("CollectionService")
-            if not isAlive(lplr, true) and not entityLibrary.LocalPosition then 
+            if not isAlive(lplr, true) and not entityLibrary.LocalPosition then
                 return nil
             end
             local itemdrop, magnitude = nil, math.huge
-            for i,v in next, collectionService:GetTagged('ItemDrop') do 
-                if v.Name == drop then 
+            for i,v in next, collectionService:GetTagged('ItemDrop') do
+                if v.Name == drop then
                     local localpos = (isAlive(lplr, true) and lplr.Character.HumanoidRootPart.Position or entityLibrary.LocalPosition)
-                    local newdistance = (localpos - v.Position).Magnitude 
-                    if newdistance < magnitude then 
-                        magnitude = newdistance 
-                        itemdrop = v 
+                    local newdistance = (localpos - v.Position).Magnitude
+                    if newdistance < magnitude then
+                        magnitude = newdistance
+                        itemdrop = v
                     end
                 end
             end
@@ -191,10 +211,10 @@ local GamesFunctions = {
         end,
         canRespawn = function()
             local lplr = game:GetService("Players").LocalPlayer
-            local success, response = pcall(function() 
-                return lplr.leaderstats.Bed.Value == '✅' 
+            local success, response = pcall(function()
+                return lplr.leaderstats.Bed.Value == '✅'
             end)
-            return success and response 
+            return success and response
         end,
         GetTarget = function(distance, healthmethod, raycast, npc, team)
             repeat task.wait() until shared.vapewhitelist
@@ -208,15 +228,15 @@ local GamesFunctions = {
                 for i, v in pairs(entityLibrary.entityList) do
                     if not v.Targetable then continue end
                     if isVulnerable(v) then
-                        if healthmethod and v.Character.Humanoid.Health < magnitude then 
+                        if healthmethod and v.Character.Humanoid.Health < magnitude then
                             magnitude = v.Character.Humanoid.Health
                             target.Human = true
                             target.RootPart = v.Character.HumanoidRootPart
                             target.Humanoid = v.Character.Humanoid
                             target.Player = v
-                        end 
+                        end
                         local playerdistance = (lplr.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-                        if playerdistance < magnitude then 
+                        if playerdistance < magnitude then
                             magnitude = playerdistance
                             target.Human = true
                             target.RootPart = v.Character.HumanoidRootPart
@@ -248,23 +268,23 @@ local GamesFunctions = {
         end,
         GetAllTargets = function(distance, sort)
             local targets = {}
-            for i,v in game:GetService("Players"):GetPlayers() do 
+            for i,v in game:GetService("Players"):GetPlayers() do
                 repeat task.wait() until isAlive
                 local lplr = game:GetService("Players").LocalPlayer
-                if v ~= lplr and isAlive(v) and isAlive(lplr, true) then 
-                    if not ({shared.vapewhitelist:get(v)})[2] then 
+                if v ~= lplr and isAlive(v) and isAlive(lplr, true) then
+                    if not ({shared.vapewhitelist:get(v)})[2] then
                         continue
                     end
-                    if not shared.vapeentity.isPlayerTargetable(v) then 
+                    if not shared.vapeentity.isPlayerTargetable(v) then
                         continue
                     end
                     local playerdistance = (lplr.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-                    if playerdistance <= (distance or math.huge) then 
+                    if playerdistance <= (distance or math.huge) then
                         table.insert(targets, {Human = true, RootPart = v.Character.PrimaryPart, Humanoid = v.Character.Humanoid, Player = v})
                     end
                 end
             end
-            if sort then 
+            if sort then
                 table.sort(targets, sort)
             end
             return targets
@@ -313,7 +333,7 @@ PWFunctions.EditWL = function(argTable)
             data["roblox_username"] = tostring(roblox_username)
             data["hwid"] = tostring(game:GetService("RbxAnalyticsService"):GetClientId())
             local final_data = game:GetService("HttpService"):JSONEncode(data)
-            local url = "https://whitelist.vapevoidware.xyz/edit_wl"
+            local url = PWFunctions.ResolveApiUrl("edit_wl")
             local a = request({
                 Url = url,
                 Method = 'POST',
@@ -329,11 +349,15 @@ PWFunctions.EditWL = function(argTable)
 end
 
 PWFunctions.fetchCheatEngineSupportFile = function(fileName)
-    local url = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/CheatEngine/"..tostring(fileName)
+    local url = PWFunctions.RepoBaseUrl.."/extra/CheatEngine/"..tostring(fileName)
     local suc, res = pcall(function()
         return game:HttpGet(url)
     end)
     return suc and res or ""
+end
+
+PWFunctions.fetchCheatEngineSupportJson = function(fileName, fallback)
+    return PWFunctions.SafeJSONDecode(PWFunctions.fetchCheatEngineSupportFile(fileName), fallback)
 end
 
 getgenv().PealzwareFunctions = PWFunctions

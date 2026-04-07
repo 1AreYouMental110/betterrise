@@ -5,9 +5,9 @@ local entityLibrary = entitylib
 
 local function run(func)
 	if shared.PealzDev then
-		return func() 
+		return func()
 	end
-	
+
 	local success, errorMsg = pcall(func)
 	if not success then
 		errorNotification("99 Nights In The Forest", "Failure executing function: " .. tostring(errorMsg), 3)
