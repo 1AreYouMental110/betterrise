@@ -21,7 +21,7 @@ if not getgenv().debug then getgenv().debug = {traceback = function(s) return s 
 -- Folder setup
 for _, folder in ipairs({
     'vape', 'vape/games', 'vape/profiles', 'vape/assets',
-    'vape/libraries', 'vape/guis', 'vape/Libraries'
+    'vape/libraries', 'vape/Libraries'
 }) do
     if not isfolder(folder) then makefolder(folder) end
 end

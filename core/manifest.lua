@@ -4,17 +4,14 @@ local guiValueAliases = {
 	[""] = "new",
 	new = "new",
 	modern = "new",
-	old = "old",
-	classic = "old",
-	rise = "rise",
-	wurst = "wurst"
+	old = "new",
+	classic = "new",
+	rise = "new",
+	wurst = "new"
 }
 
 local guiFiles = {
-	new = "modern.lua",
-	old = "classic.lua",
-	rise = "rise.lua",
-	wurst = "wurst.lua"
+	new = "modern.lua"
 }
 
 local moduleDefinitions = {

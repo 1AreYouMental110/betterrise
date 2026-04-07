@@ -45,6 +45,7 @@ Canonical gameplay modules now use descriptive names. Numeric place-id reference
 - `*-pealzware.lua` files are PEALZ-specific feature layers that load after the corresponding base module.
 - `*-cheat-engine*.lua` files are restricted fallback paths for executors that cannot run the full module set.
 - `ink-game-copy-discord-link.lua` replaces the old obfuscated `something.lua` helper with readable clipboard code.
+- Legacy GUI themes were removed. Any saved `old`, `classic`, `rise`, or `wurst` GUI setting is now normalized to the modern GUI.
 
 ## Quick Answers
 

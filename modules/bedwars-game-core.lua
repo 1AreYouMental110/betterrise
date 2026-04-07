@@ -3498,14 +3498,7 @@ run(function()
 			if (not shared.CheatEngineMode) then
 				RangeCirclePart = Instance.new("MeshPart")
 				RangeCirclePart.MeshId = "rbxassetid://3726303797"
-				if shared.RiseMode and GuiLibrary.GUICoreColor and GuiLibrary.GUICoreColorChanged then
-					RangeCirclePart.Color = GuiLibrary.GUICoreColor
-					GuiLibrary.GUICoreColorChanged.Event:Connect(function()
-						RangeCirclePart.Color = GuiLibrary.GUICoreColor
-					end)
-				else
-					RangeCirclePart.Color = Color3.fromHSV(BoxColor["Hue"], BoxColor["Sat"], BoxColor.Value)
-				end
+				RangeCirclePart.Color = Color3.fromHSV(BoxColor["Hue"], BoxColor["Sat"], BoxColor.Value)
 				RangeCirclePart.CanCollide = false
 				RangeCirclePart.Anchored = true
 				RangeCirclePart.Material = Enum.Material.Neon

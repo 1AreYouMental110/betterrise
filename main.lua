@@ -58,10 +58,8 @@ local savingTable = {
 	"NoAutoExecute",
 	"VapeDeveloper",
 	"CustomCommit",
-	"RiseVapeMode",
 	"TestingMode",
 	"VapePrivate",
-	"RiseMode",
 	"PealzDev"
 }
 
@@ -141,7 +139,6 @@ local PWFunctions = pload('core/functions.lua', true, true)
 PWFunctions.GlobaliseObject("PealzwareFunctions", PWFunctions)
 PWFunctions.GlobaliseObject("PWFunctions", PWFunctions)
 
-if shared.RiseVapeMode then gui = "rise" end
 local guiFile = manifest.resolveGuiFile(gui)
 vape = pload('gui/'..guiFile, true, true)
 shared.vape = vape

@@ -478,14 +478,14 @@ function Installer:InstallFiles(files, config, download)
 		print("[INSTALLER] Installing file " .. tostring(file))
 		download.UpdateText("Downloading " .. file .. "...")
 		local content = self:ReadProfileContent(config, file)
-		for _, folder in pairs({"vape/profiles", "rise/profiles", "vape/libraries", "rise/libraries"}) do
+		for _, folder in pairs({"vape/profiles", "vape/libraries"}) do
 			if not isfolder(folder) then makefolder(folder) end
 		end
-		for _, path in pairs({"vape/profiles/" .. file, "rise/profiles/" .. file}) do
+		for _, path in pairs({"vape/profiles/" .. file}) do
 			if isfile(path) then delfile(path) end
 			writefile(path, content)
 		end
-		for _, lib in pairs({"vape/libraries/profilesinstalled3.txt", "vape/libraries/profilesinstalled5.txt", "rise/libraries/profilesinstalled3.txt", "rise/libraries/profilesinstalled5.txt"}) do
+		for _, lib in pairs({"vape/libraries/profilesinstalled5.txt"}) do
 			writefile(lib, "true")
 		end
 	end

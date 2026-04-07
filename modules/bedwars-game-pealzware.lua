@@ -6068,25 +6068,18 @@ run(function()
                     --v.Material = Enum.Material[TexturePacksV2_GUI_Elements.Material.Value]
 					v.Material = Enum.Material.ForceField
                     if TexturePacksV2_GUI_Elements.GuiSync.Enabled and TexturePacksV2.Enabled then
-                        if shared.RiseMode and GuiLibrary.GUICoreColor and GuiLibrary.GUICoreColorChanged then
-                            v.Color = GuiLibrary.GUICoreColor
-							TexturePacksV2:Clean(GuiLibrary.GUICoreColorChanged.Event:Connect(function()
-                                if TexturePacksV2_GUI_Elements.GuiSync.Enabled then v.Color = GuiLibrary.GUICoreColor end
-                            end))
-                        else
-                            local color = vape.GUIColor
-                            v.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-							TexturePacksV2:Clean(runService.Heartbeat:Connect(function()
-								if TexturePacksV2_GUI_Elements.GuiSync.Enabled and TexturePacksV2.Enabled then
-                                    local color = vape.GUIColor
+                        local color = vape.GUIColor
+                        v.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
+						TexturePacksV2:Clean(runService.Heartbeat:Connect(function()
+							if TexturePacksV2_GUI_Elements.GuiSync.Enabled and TexturePacksV2.Enabled then
+                                local color = vape.GUIColor
+                                v.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
+                                if TexturePacksV2.Enabled then
+                                    color = {Hue = h, Sat = s, Value = v}
                                     v.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-                                    if TexturePacksV2.Enabled then
-                                        color = {Hue = h, Sat = s, Value = v}
-                                        v.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-                                    end
                                 end
-							end))
-                        end
+                            end
+						end))
                     else
                         v.Color = Color3.fromHSV(TexturePacksV2_GUI_Elements.Color.Hue, TexturePacksV2_GUI_Elements.Color.Sat, TexturePacksV2_GUI_Elements.Color.Value)
                     end
@@ -8277,21 +8270,12 @@ run(function()
 					table.insert(hotbarcoloricons, sloticon.Parent)
 				end
 				if GuiSync.Enabled then
-					if shared.RiseMode and GuiLibrary.GUICoreColor and GuiLibrary.GUICoreColorChanged then
-						sloticon.Parent.BackgroundColor3 = GuiLibrary.GUICoreColor
-						GuiLibrary.GUICoreColorChanged.Event:Connect(function()
-							pcall(function()
-								sloticon.Parent.BackgroundColor3 = GuiLibrary.GUICoreColor
-							end)
-						end)
-					else
-						local color = vape.GUIColor
+					local color = vape.GUIColor
+					sloticon.Parent.BackgroundColor3 = Color3.fromHSV(color.Hue, color.Sat, color.Value)
+					PealzwareFunctions.Connections:register(PealzwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
+						color = {Hue = h, Sat = s, Value = v}
 						sloticon.Parent.BackgroundColor3 = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-						PealzwareFunctions.Connections:register(PealzwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
-							color = {Hue = h, Sat = s, Value = v}
-							sloticon.Parent.BackgroundColor3 = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-						end))
-					end
+					end))
 				end
 				if HotbarModsGradient.Enabled and not HotbarModsGradientAnimate.Enabled and not GuiSync.Enabled then
 					sloticon.Parent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -8330,19 +8314,12 @@ run(function()
 				if HotbarHighlight.Enabled then
 					local highlight = Instance.new('UIStroke')
 					if GuiSync.Enabled then
-						if shared.RiseMode and GuiLibrary.GUICoreColor and GuiLibrary.GUICoreColorChanged then
-							highlight.Color = GuiLibrary.GUICoreColor
-							GuiLibrary.GUICoreColorChanged.Event:Connect(function()
-								highlight.Color = GuiLibrary.GUICoreColor
-							end)
-						else
-							local color = vape.GUIColor
+						local color = vape.GUIColor
+						highlight.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
+						PealzwareFunctions.Connections:register(PealzwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
+							color = {Hue = h, Sat = s, Value = v}
 							highlight.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-							PealzwareFunctions.Connections:register(PealzwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
-								color = {Hue = h, Sat = s, Value = v}
-								highlight.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-							end))
-						end
+						end))
 					else
 						highlight.Color = Color3.fromHSV(HotbarHighlightColor.Hue, HotbarHighlightColor.Sat, HotbarHighlightColor.Value)
 					end

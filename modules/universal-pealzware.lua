@@ -16,7 +16,7 @@ local getfontsize = vape.Libraries.getfontsize
 local getcustomasset = vape.Libraries.getcustomasset
 local entityLibrary = entitylib
 
-local baseDirectory = shared.RiseMode and "rise/" or "vape/"
+local baseDirectory = "vape/"
 
 local runService = game:GetService("RunService")
 local RunService = runService
@@ -1557,21 +1557,14 @@ run(function() local CharacterOutline = {}
 						outline.FillTransparency = 1
 						outline.Adornee = lplr.Character
 						if GuiSync.Enabled then
-							if shared.RiseMode and GuiLibrary.GUICoreColor and GuiLibrary.GUICoreColorChanged then
-								outline.OutlineColor = GuiLibrary.GUICoreColor
-								CharacterOutline:Clean(GuiLibrary.GUICoreColorChanged.Event:Connect(function()
-									outline.OutlineColor = GuiLibrary.GUICoreColor
-								end))
-							else
-								local color = vape.GUIColor
-								outline.OutlineColor = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-								CharacterOutline:Clean(runservice.Heartbeat:Connect(function()
-									if CharacterOutline.Enabled then
-										color = vape.GUIColor
-										outline.OutlineColor = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-									end
-								end))
-							end
+							local color = vape.GUIColor
+							outline.OutlineColor = Color3.fromHSV(color.Hue, color.Sat, color.Value)
+							CharacterOutline:Clean(runservice.Heartbeat:Connect(function()
+								if CharacterOutline.Enabled then
+									color = vape.GUIColor
+									outline.OutlineColor = Color3.fromHSV(color.Hue, color.Sat, color.Value)
+								end
+							end))
 						end
 						CharacterOutline:Clean(lplr.Character.DescendantAdded:Connect(function(instance)
 							if instance:IsA('Highlight') then
@@ -1729,8 +1722,8 @@ run(function() local ReinstallProfiles = {}
 			if calling then
 				ReinstallProfiles:Toggle()
 				GuiLibrary:Uninject()
-				delfile(baseDirectory..'Libraries/profilesinstalled4.txt')
-				delfolder(baseDirectory..'Profiles')
+				delfile(baseDirectory..'libraries/profilesinstalled5.txt')
+				delfolder(baseDirectory..'profiles')
 				pload('loader.lua', true)
 			end
 		end

@@ -281,14 +281,8 @@ end
 
 local coreLoader = shared.pload or (getgenv and getgenv().pload) or pload
 local hash = coreLoader('core/hash.lua', true, true)
---pload('libraries/hash.lua', true, true)
---loadstring(downloadFile('vape/libraries/hash.lua'), 'hash')()
 local prediction = coreLoader('core/prediction.lua', true, true)
---pload('libraries/prediction.lua', true, true)
---loadstring(downloadFile('vape/libraries/prediction.lua'), 'prediction')()
 entitylib = coreLoader('core/entity.lua', true, true)
---pload('libraries/entity.lua', true, true)
---loadstring(downloadFile('vape/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},
 	customtags = {},
