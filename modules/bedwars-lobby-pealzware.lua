@@ -18,7 +18,7 @@ local function run(func)
 	local suc, err = pcall(function()
 		func()
 	end)
-	if err then warn("[PW6872265039.lua Module Error]: "..tostring(debug.traceback(err))) end
+	if err then warn("[bedwars-lobby-pealzware.lua Module Error]: "..tostring(debug.traceback(err))) end
 end
 
 local lplr = game:GetService("Players").LocalPlayer

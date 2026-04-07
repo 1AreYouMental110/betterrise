@@ -185,42 +185,35 @@ local InkGameID = {
 if not shared.VapeIndependent then
 	isInkGame = table.find(InkGameID.main, game.PlaceId)
 	if not isInkGame then
-		pload('modules/universal.lua', true)
+		pload('modules/universal-core.lua', true)
 		if not shared.NoPealzwareModules then
-			pload('modules/pw-universal.lua', true)
+			pload('modules/universal-pealzware.lua', true)
 		end
 	end
-	local fileName1 = game.PlaceId..".lua"
-	local fileName2 = game.PlaceId..".lua"
-	--local fileName3
+	local fileName1 = manifest.resolveModuleFile(game.PlaceId..".lua")
+	local fileName2 = manifest.resolveOptionalModuleFile("PW"..game.PlaceId..".lua")
 	local isGame = table.find(bedwarsID.game, game.PlaceId)
 	local isLobby = table.find(bedwarsID.lobby, game.PlaceId)
-	local CE = shared.CheatEngineMode and "CE" or ""
 	if isGame then
 		if game.PlaceId ~= 6872274481 then vape.Place = 6872274481 end
-		fileName1 = CE.."6872274481.lua"
-		fileName2 = "PW6872274481.lua"
+		fileName1 = shared.CheatEngineMode and "bedwars-game-cheat-engine.lua" or "bedwars-game-core.lua"
+		fileName2 = "bedwars-game-pealzware.lua"
+	elseif isLobby then
+		fileName1 = shared.CheatEngineMode and "bedwars-lobby-cheat-engine-stub.lua" or "bedwars-lobby-core.lua"
+		fileName2 = "bedwars-lobby-pealzware.lua"
 	end
-	if isLobby then
-		fileName1 = CE.."6872265039.lua"
-		fileName2 = "PW6872265039.lua"
-	end
-	if not (isGame or isLobby) then fileName2 = "PW"..fileName2 end
 	if isInkGame then
 		vape.Place = 99567941238278
-		pload('modules/inkgame.lua')
+		pload('modules/ink-game-entry.lua')
 	else
-		local resolvedFileName1 = manifest.resolveModuleFile(fileName1)
-		local resolvedFileName2 = manifest.resolveOptionalModuleFile(fileName2)
-
 		warn("[CheatEngineMode]: ", tostring(shared.CheatEngineMode))
 		warn("[TestingMode]: ", tostring(shared.TestingMode))
-		warn("[FileName1]: ", tostring(fileName1), " -> ", tostring(resolvedFileName1))
-		warn("[FileName2]: ", tostring(fileName2), " -> ", tostring(resolvedFileName2))
+		warn("[FileName1]: ", tostring(fileName1))
+		warn("[FileName2]: ", tostring(fileName2))
 
-		pload('modules/'..resolvedFileName1)
-		if not shared.NoPealzwareModules and resolvedFileName2 and resolvedFileName2 ~= resolvedFileName1 then
-			pload('modules/'..resolvedFileName2)
+		pload('modules/'..fileName1)
+		if not shared.NoPealzwareModules and fileName2 and fileName2 ~= fileName1 then
+			pload('modules/'..fileName2)
 		end
 	end
 	finishLoading()

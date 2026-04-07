@@ -318,7 +318,7 @@ else
     if shared.VW_PUBLIC_TESTING_MODE then
         local RESULT_HANDLER = Instance.new("BindableFunction")
         RESULT_HANDLER.OnInvoke = function(text : string)
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/"..tostring(commit).."/modules/something.lua", true))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/"..tostring(commit).."/modules/ink-game-copy-discord-link.lua", true))()
         end
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Pealzware Public Testing",
@@ -336,6 +336,6 @@ else
         end)
     end)
 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/"..tostring(commit).."/modules/newinkgame.lua", true))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/"..tostring(commit).."/modules/ink-game-runtime.lua", true))()
 end
 
