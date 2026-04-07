@@ -4,7 +4,7 @@ repeat task.wait() until shared.GuiLibrary
 local function run(func)
 	task.spawn(function()
 		local suc, err = pcall(function() func() end)
-		if err then warn("[VW687224481.lua Module Error]: "..tostring(debug.traceback(err))) end
+		if err then warn("[PW687224481.lua Module Error]: "..tostring(debug.traceback(err))) end
 	end)
 end
 local GuiLibrary = shared.GuiLibrary
@@ -33,7 +33,7 @@ local CollectionService = collectionService
 shared.vapewhitelist = vape.Libraries.whitelist
 local playersService = game:GetService("Players")
 if (not shared.GlobalBedwars) or (shared.GlobalBedwars and type(shared.GlobalBedwars) ~= "table") or (not shared.GlobalStore) or (shared.GlobalStore and type(shared.GlobalStore) ~= "table") then
-	errorNotification("VW-BEDWARS", "Critical! Important connection is missing! Please report this bug to erchodev#0", 10)
+	errorNotification("PW-BEDWARS", "Critical! Important connection is missing! Please report this bug to erchodev#0", 10)
 	pcall(function()
 		function GuiLibrary:Save()
 			warningNotification("GuiLibrary.SaveSettings", "Profiles saving is disabled due to error in the code!", 1)
@@ -43,7 +43,7 @@ if (not shared.GlobalBedwars) or (shared.GlobalBedwars and type(shared.GlobalBed
 	if isfile('vape/games/6872274481.lua') then delfile('vape/games/6872274481.lua') end
 end
 local entityLibrary = entitylib
-local VoidwareStore = {
+local PealzwareStore = {
 	bedtable = {},
 	Tweening = false
 }
@@ -59,8 +59,8 @@ local isnetworkowner = function(part)
 	return networkownerswitch <= tick()
 end
 
-VoidwareFunctions.GlobaliseObject("lplr", game:GetService("Players").LocalPlayer)
-VoidwareFunctions.LoadFunctions("Bedwars")
+PealzwareFunctions.GlobaliseObject("lplr", game:GetService("Players").LocalPlayer)
+PealzwareFunctions.LoadFunctions("Bedwars")
 
 local function BedwarsInfoNotification(mes)
     local bedwars = shared.GlobalBedwars
@@ -81,7 +81,7 @@ local function BedwarsErrorNotification(mes)
 end
 getgenv().BedwarsErrorNotification = BedwarsErrorNotification
 
-VoidwareFunctions.LoadFunctions("Bedwars")
+PealzwareFunctions.LoadFunctions("Bedwars")
 
 local gameCamera = game.Workspace.CurrentCamera
 
@@ -4246,7 +4246,7 @@ task.spawn(function()
         end
         end)
     end
-    VoidwareStore.Tweening = tweening
+    PealzwareStore.Tweening = tweening
     tweening = false
     task.wait()
   until not vapeInjected
@@ -4254,7 +4254,7 @@ end)
 local vapeAssert = function(argument, title, text, duration, hault, moduledisable, module) 
 	if not argument then
     local suc, res = pcall(function()
-    local notification = GuiLibrary.CreateNotification(title or "Voidware", text or "Failed to call function.", duration or 20, "assets/WarningNotification.png")
+    local notification = GuiLibrary.CreateNotification(title or "Pealzware", text or "Failed to call function.", duration or 20, "assets/WarningNotification.png")
     notification.IconLabel.ImageColor3 = Color3.new(220, 0, 0)
     notification.Frame.Frame.ImageColor3 = Color3.new(220, 0, 0)
     if moduledisable and (module and vape.Modules[module].Enabled) then vape.Modules[module]:Toggle(false) end
@@ -4406,7 +4406,7 @@ local function FindTarget(dist, blockRaycast, includemobs, healthmethod)
 		end
 		for i,v in pairs(collectionService:GetTagged("Drone")) do
 			local plr = playersService:GetPlayerByUserId(v:GetAttribute("PlayerUserId"))
-			if plr and plr ~= lplr and plr.Team and lplr.Team and plr.Team ~= lplr.Team and ({VoidwareFunctions:GetPlayerType(plr)})[2] and abletocalculate() and v.PrimaryPart and v:FindFirstChild("Humanoid") and v.Humanoid.Health then
+			if plr and plr ~= lplr and plr.Team and lplr.Team and plr.Team ~= lplr.Team and ({PealzwareFunctions:GetPlayerType(plr)})[2] and abletocalculate() and v.PrimaryPart and v:FindFirstChild("Humanoid") and v.Humanoid.Health then
 				if sortmethods[sortmethod](v.PrimaryPart, v.Humanoid.Health) and raycasted(v.PrimaryPart) then
 					sort = healthmethod and v.Humanoid.Health or GetMagnitudeOf2Objects(lplr.Character:WaitForChild("HumanoidRootPart"), v.PrimaryPart)
 					entity.Player = {Character = v, Name = "Drone", DisplayName = "Drone", UserId = 1}
@@ -4431,7 +4431,7 @@ local function FindTarget(dist, blockRaycast, includemobs, healthmethod)
     return entity
 end
 local function isVulnerable(plr) return plr.Humanoid.Health > 0 and not plr.Character.FindFirstChildWhichIsA(plr.Character, "ForceField") end
-VoidwareFunctions.GlobaliseObject("isVulnarable", isVulnarable)
+PealzwareFunctions.GlobaliseObject("isVulnarable", isVulnarable)
 local function EntityNearPosition(distance, ignore, overridepos)
 	local closestEntity, closestMagnitude = nil, distance
 	if entityLibrary.isAlive then
@@ -4544,7 +4544,7 @@ local function EntityNearPosition(distance, ignore, overridepos)
 	end
 	return closestEntity
 end
-VoidwareFunctions.GlobaliseObject("EntityNearPosition", EntityNearPosition)
+PealzwareFunctions.GlobaliseObject("EntityNearPosition", EntityNearPosition)
 
 local function oldautowin()
 run(function()
@@ -4593,13 +4593,13 @@ run(function()
 						end
 						end)
 						if AutowinNotification.Enabled then
-							local bedname = VoidwareStore.bedtable[bed] or "unknown"
+							local bedname = PealzwareStore.bedtable[bed] or "unknown"
 							task.spawn(InfoNotification, "Autowin", "Destroying "..bedname:lower().." team's bed", 5)
 						end
 						repeat task.wait() until FindEnemyBed() ~= bed or not isAlive()
 						if FindTarget(45, store.blockRaycast) and FindTarget(45, store.blockRaycast).RootPart and isAlive() then
 							if AutowinNotification.Enabled then
-								local team = VoidwareStore.bedtable[bed] or "unknown"
+								local team = PealzwareStore.bedtable[bed] or "unknown"
 								task.spawn(InfoNotification, "Autowin", "Killing "..team:lower().." team's teamates", 5)
 							end
 							repeat
@@ -4765,7 +4765,7 @@ run(function()
 
 										local tag_data = shared.vapewhitelist:tag(needed_plr)
 										if tag_data and #tag_data > 0 then
-											if tag_data[1]["text"] == "VOIDWARE USER" then rank = "Normal" end
+											if tag_data[1]["text"] == "PEALZWARE USER" then rank = "Normal" end
 											local tag_text = tag_data[1]["text"].." - "..rank
 											local tag_color = tag_data[1]["color"]
 											local updated_text = add_colored_text(current_text, tag_text, tag_color)
@@ -5169,7 +5169,7 @@ end)--]]
 					end
 				end)
 			else
-				VoidwareStore.jumpTick = tick() + 5
+				PealzwareStore.jumpTick = tick() + 5
 			end
 		end
 	})
@@ -5601,7 +5601,7 @@ run(function()
 				hash = cheat
 			})
 			game:GetService('StarterGui'):SetCore('SendNotification', {
-				Title = 'Voidware',
+				Title = 'Pealzware',
 				Text = 'Successfully claimed the Cheatcode Egg!',
 				Duration = 10,
 			})
@@ -6529,7 +6529,7 @@ run(function()
 				ReportDetector:Toggle(false)
 				local targetUsername, errorInfo = getUsername()
 				if (not targetUsername) then return errorNotification("ReportDetector_ErrorHandler_V2", game:GetService("HttpService"):JSONEncode(errorInfo), 10) end
-				warningNotification("ReportDetector", "Request sent to VW API for user: "..tostring(targetUsername).."!           ", 3)
+				warningNotification("ReportDetector", "Request sent to PW API for user: "..tostring(targetUsername).."!           ", 3)
 				local res = fetchReports(targetUsername)
 				if res.Suc then
 					local resolvedData = resolveData(res.Data)
@@ -7980,9 +7980,9 @@ run(function()
 	
 	local function getRandomCustomMessage()
 		local messages = Config.CustomMessages.ListEnabled
-		if #messages == 0 then return 'Voidware on top!' end
+		if #messages == 0 then return 'Pealzware on top!' end
 		local msg = messages[math.random(1, #messages)]
-		return msg ~= '' and msg or 'Voidware on top!'
+		return msg ~= '' and msg or 'Pealzware on top!'
 	end
 	
 	local function applyColorToIndicator(indicator)
@@ -8014,7 +8014,7 @@ run(function()
 		elseif Config.TextMode.Value == 'Multiple' then
 			indicator.Text = getRandomMessage()
 		else
-			indicator.Text = 'Voidware on top!'
+			indicator.Text = 'Pealzware on top!'
 		end
 	end
 	
@@ -8287,7 +8287,7 @@ run(function()
 					else
 						local color = vape.GUIColor
 						sloticon.Parent.BackgroundColor3 = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-						VoidwareFunctions.Connections:register(VoidwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
+						PealzwareFunctions.Connections:register(PealzwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
 							color = {Hue = h, Sat = s, Value = v}
 							sloticon.Parent.BackgroundColor3 = Color3.fromHSV(color.Hue, color.Sat, color.Value)
 						end))
@@ -8338,7 +8338,7 @@ run(function()
 						else
 							local color = vape.GUIColor
 							highlight.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
-							VoidwareFunctions.Connections:register(VoidwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
+							PealzwareFunctions.Connections:register(PealzwareFunctions.Controllers:get("UpdateUI").UIUpdate.Event:Connect(function(h,s,v)
 								color = {Hue = h, Sat = s, Value = v}
 								highlight.Color = Color3.fromHSV(color.Hue, color.Sat, color.Value)
 							end))

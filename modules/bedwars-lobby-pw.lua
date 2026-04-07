@@ -18,7 +18,7 @@ local function run(func)
 	local suc, err = pcall(function()
 		func()
 	end)
-	if err then warn("[VW6872265039.lua Module Error]: "..tostring(debug.traceback(err))) end
+	if err then warn("[PW6872265039.lua Module Error]: "..tostring(debug.traceback(err))) end
 end
 
 local lplr = game:GetService("Players").LocalPlayer
@@ -33,7 +33,7 @@ local function BedwarsInfoNotification(mes)
 		image = "rbxassetid://18518244636"
 	});
 end
-VoidwareFunctions.GlobaliseObject("BedwarsInfoNotification", BedwarsInfoNotification)
+PealzwareFunctions.GlobaliseObject("BedwarsInfoNotification", BedwarsInfoNotification)
 local function BedwarsErrorNotification(mes)
     local bedwars = shared.GlobalBedwars
 	local NotificationController = bedwars.NotificationController
@@ -42,7 +42,7 @@ local function BedwarsErrorNotification(mes)
 		image = "rbxassetid://18518244636"
 	});
 end
-VoidwareFunctions.GlobaliseObject("BedwarsErrorNotification", BedwarsErrorNotification)
+PealzwareFunctions.GlobaliseObject("BedwarsErrorNotification", BedwarsErrorNotification)
 
 local function queue()
 	local args = {
@@ -73,7 +73,7 @@ if shared.TeleportExploitAutowinEnabled then
 	}
 	--[[local function InfoNotification2(title, text, delay, button_table)
 		local suc, res = pcall(function()
-			local frame = GuiLibrary.CreateInteractableNotification(title or "Voidware", text or "Successfully called function", delay or 7, "assets/InfoNotification.png", button_table)
+			local frame = GuiLibrary.CreateInteractableNotification(title or "Pealzware", text or "Successfully called function", delay or 7, "assets/InfoNotification.png", button_table)
 			return frame
 		end)
 		return (suc and res)
@@ -592,7 +592,7 @@ end)
 
 --[[run(function()
     local LeaderboardEditor = {Enabled = false}
-    local RankIconTable = {["Emerald"] = "rbxassetid://12599231807",["Nightmare"] = "rbxassetid://7904292926",["Voidware"] = "rbxassetid://18518244636"}
+    local RankIconTable = {["Emerald"] = "rbxassetid://12599231807",["Nightmare"] = "rbxassetid://7904292926",["Pealzware"] = "rbxassetid://18518244636"}
     local AllowedMethods = {["Place"] = true,["Username"] = true,["RP"] = true}
     local AllowedEditMethods = {["Place"] = true,["Username"] = true,["RP"] = true, ["CrownIconColor"] = true, ["RankIcon"] = true, ["RankName"] = true}
     local ExtraFunctions = {extractUsername = function(richText) return richText:match("@</font></b>(.+)") end, extractNumberBeforeRP = function(text) return tonumber(text:match("<b>(%d+)%sRP</b>")) end, extractBoldText = function(text) return text:match("<b>(.-)</b>") end, resolvePlayerUserID = function(username) return game:GetService("Players"):GetUserIdFromNameAsync(username) end, resolveProfileImage = function(userid) return "rbxthumb://type=AvatarHeadShot&id="..tostring(userid).."&w=60&h=60" end, resolveUsername = function(username) return string.format('<b><font color="rgb(185, 188, 255)">@</font></b>%s', username) end, resolveNumberBeforeRP = function(number) return string.format('<b>%d RP</b>', number) end, resolveBoldText = function(text) return string.format('<b>%s</b>', text) end, resolveIconID = function(iconName) return RankIconTable[iconName] end, fetchDefaultTable = function() return {Place = nil, CrownIcon = nil, User = {Name = nil, Profile = nil}, Rank = {Name = nil, Icon = nil, RP = nil}} end}
@@ -778,7 +778,7 @@ end)
         if typeName == "Place" then LeaderboardEditor_Editors["Place"] = {Value = 1}; Leaderboard_AddOnCreator_Helper["Place"] = {Type = "CreateTextBox", Args = {Name = "Place", TempText = "PlaceNumber", Function = fetchDefaultFunction}, ResType = "Value"}; 
         elseif typeName == "Username" then LeaderboardEditor_Editors["Username"] = {Value = game:GetService("Players").LocalPlayer.Name}; Leaderboard_AddOnCreator_Helper["Username"] = {Type = "CreateTextBox", Args = {Name = "Username", TempText = "username", Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "RP" then LeaderboardEditor_Editors["RP"] = {Value = 9999}; Leaderboard_AddOnCreator_Helper["RP"] = {Type = "CreateTextBox", Args = {Name = "RP", TempText = "RP (number)", Function = fetchDefaultFunction}, ResType = "Value"}; 
-        elseif typeName == "RankIcon" then LeaderboardEditor_Editors["RankIcon"] = {Value = "Voidware"}; Leaderboard_AddOnCreator_Helper["RankIcon"] = {Type = "CreateDropdown", Args = {Name = "RankIcon", List = fetchRankIconNames(), Function = fetchDefaultFunction}, ResType = "Value"};
+        elseif typeName == "RankIcon" then LeaderboardEditor_Editors["RankIcon"] = {Value = "Pealzware"}; Leaderboard_AddOnCreator_Helper["RankIcon"] = {Type = "CreateDropdown", Args = {Name = "RankIcon", List = fetchRankIconNames(), Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "RankName" then LeaderboardEditor_Editors["RankName"] = {Value = "INFINITY"}; Leaderboard_AddOnCreator_Helper["RankName"] = {Type = "CreateTextBox", Args = {Name = "RankName", TempText = "rankname", Function = fetchDefaultFunction}, ResType = "Value"};
         elseif typeName == "CrownIconColor" then LeaderboardEditor_Editors["CrownIconColor"] = {Hue = 255, Sat = 0, Value = 0}; Leaderboard_AddOnCreator_Helper["CrownIconColor"] = {Type = "CreateColorSlider", Args = {Name = "CrownIconColor", Function = fetchDefaultFunction}, ResType = {"Hue", "Sat", "Value"}}
         else warn("Unknown registerType!", typeName) end
@@ -911,7 +911,7 @@ run(function()
 				ReportDetector:Toggle(false)
 				local targetUsername, errorInfo = getUsername()
 				if (not targetUsername) then return errorNotification("ReportDetector_ErrorHandler_V2", game:GetService("HttpService"):JSONEncode(errorInfo), 10) end
-				warningNotification("ReportDetector", "Request sent to VW API for user: "..tostring(targetUsername).."!           ", 3)
+				warningNotification("ReportDetector", "Request sent to PW API for user: "..tostring(targetUsername).."!           ", 3)
 				local res = fetchReports(targetUsername)
 				if res.Suc then
 					local resolvedData = resolveData(res.Data)
@@ -999,7 +999,7 @@ run(function()
 				hash = cheat
 			})
 			game:GetService('StarterGui'):SetCore('SendNotification', {
-				Title = 'Voidware',
+				Title = 'Pealzware',
 				Text = 'Successfully claimed the Cheatcode Egg!',
 				Duration = 10,
 			})

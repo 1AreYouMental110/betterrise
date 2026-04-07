@@ -42,9 +42,9 @@ local function cprint(tbl)
 		print(tostring(tbl), tostring(i), tostring(v))
 	end
 end
-VoidwareFunctions.GlobaliseObject("encode", encode)
-VoidwareFunctions.GlobaliseObject("decode", decode)
-VoidwareFunctions.GlobaliseObject("cprint", cprint)
+PealzwareFunctions.GlobaliseObject("encode", encode)
+PealzwareFunctions.GlobaliseObject("decode", decode)
+PealzwareFunctions.GlobaliseObject("cprint", cprint)
 
 local function removeTags(str)
 	str = str:gsub('<br%s*/>', '\n')
@@ -198,7 +198,7 @@ local function logRemoteUsage(remoteName, callType)
     local stats = NetworkLogger.usageStats[key]
     stats.count = stats.count + 1
 
-	if shared.VoidDev then
+	if shared.PealzDev then
 		print(`Logged fire from {tostring(remoteName)} | {tostring(stats.count)}`)
 	end
     
@@ -210,7 +210,7 @@ local function logRemoteUsage(remoteName, callType)
         
         if rate > NetworkLogger.threshold then
             if not NetworkLogger.lastWarning[key] or (timeNow - NetworkLogger.lastWarning[key] >= NetworkLogger.warningCooldown) then
-				if shared.VoidDev then
+				if shared.PealzDev then
 					warn(string.format("[NetworkLogger] Excessive remote usage detected!\n" .."Remote: %s\nCallType: %s\nRate: %.2f calls/sec\nPeak: %.2f calls/sec", remoteName, callType, rate, stats.peakRate))
 					warningNotification("NetworkLogger", string.format("Excessive remote usage detected!\n" .."Remote: %s\nCallType: %s\nRate: %.2f calls/sec\nPeak: %.2f calls/sec", remoteName, callType, rate, stats.peakRate), 3)
 				end
@@ -235,7 +235,7 @@ local function shouldThrottle(remoteName)
         remoteThrottleTable[remoteName] = now
         return false
     end
-	if shared.VoidDev and shared.ThrottleDebug then
+	if shared.PealzDev and shared.ThrottleDebug then
    	 	warn("[Remote Throttle] Throttled remote call to '" .. tostring(remoteName) .. "' at " .. tostring(now))
 	end
     return true
@@ -370,17 +370,17 @@ function bedwars.Client:WaitFor(remName)
 end
 bedwars.ClientStoreHandler = {}
 function bedwars.ClientStoreHandler:dispatch() end
-bedwars.KitMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("KitMeta.json"))
-bedwars.QueueMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("QueueMeta.json"))
-bedwars.SoundList = decode(VoidwareFunctions.fetchCheatEngineSupportFile("SoundListMeta.json"))
-bedwars.ShopItemsMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("ShopItemsMeta.json"))
-bedwars.BalanceFile = decode(VoidwareFunctions.fetchCheatEngineSupportFile("BalanceFireMeta.json"))
-bedwars.ProjectileMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("ProjectileMeta.json"))
-bedwars.KillEffectMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("KillEffectMeta.json"))
-bedwars.MageKitUtileMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("MageKitUtileMeta.json"))
-bedwars.AnimationTypeMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("AnimationTypeMeta.json"))
-bedwars.ItemHandler = { ItemMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("ItemMeta.json")) }
-bedwars.ProdAnimationsMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("ProdAnimationsMeta.json"))
+bedwars.KitMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("KitMeta.json"))
+bedwars.QueueMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("QueueMeta.json"))
+bedwars.SoundList = decode(PealzwareFunctions.fetchCheatEngineSupportFile("SoundListMeta.json"))
+bedwars.ShopItemsMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("ShopItemsMeta.json"))
+bedwars.BalanceFile = decode(PealzwareFunctions.fetchCheatEngineSupportFile("BalanceFireMeta.json"))
+bedwars.ProjectileMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("ProjectileMeta.json"))
+bedwars.KillEffectMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("KillEffectMeta.json"))
+bedwars.MageKitUtileMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("MageKitUtileMeta.json"))
+bedwars.AnimationTypeMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("AnimationTypeMeta.json"))
+bedwars.ItemHandler = { ItemMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("ItemMeta.json")) }
+bedwars.ProdAnimationsMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("ProdAnimationsMeta.json"))
 bedwars.ItemHandler.getItemMeta = function(item)
     for i,v in pairs(bedwars.ItemHandler.ItemMeta) do
         if i == item then return v end
@@ -507,7 +507,7 @@ local function getPlacedBlock(pos, strict)
     end
     return nil
 end
-VoidwareFunctions.GlobaliseObject("getPlacedBlock", getPlacedBlock)
+PealzwareFunctions.GlobaliseObject("getPlacedBlock", getPlacedBlock)
 bedwars.BlockController = {
 	isBlockBreakable = function() return true end,
 	getBlockPosition = function(self, block, nearestBed) 
@@ -874,7 +874,7 @@ local function getItem(itemName, inv)
 	end
 	return nil
 end
-VoidwareFunctions.GlobaliseObject("getItem", getItem)
+PealzwareFunctions.GlobaliseObject("getItem", getItem)
 
 local function switchItem(tool, delayTime)
 	if tool ~= nil and type(tool) == "string" then
@@ -888,7 +888,7 @@ local function switchItem(tool, delayTime)
 end
 
 local switchitem = switchItem
-VoidwareFunctions.GlobaliseObject("switchItem", switchItem)
+PealzwareFunctions.GlobaliseObject("switchItem", switchItem)
 local function switchToAndUseTool(block, legit)
 	local tool = getBestTool(block.Name)
 	if tool and (entityLibrary.isAlive and lplr.Character:FindFirstChild("HandInvItem") and lplr.Character.HandInvItem.Value ~= tool.tool) then
@@ -1692,7 +1692,7 @@ bedwars.StoreController = {
 		store.queueType = att
 	end
 }
-VoidwareFunctions.GlobaliseObject("StoreTable", {})
+PealzwareFunctions.GlobaliseObject("StoreTable", {})
 
 function bedwars.StoreController:updateStore()
 	task.spawn(function() pcall(function() self:updateLocalHand() end) end)
@@ -1730,9 +1730,9 @@ for i, v in pairs({"PlaceBlockEvent", "BreakBlockEvent"}) do
 		end))
 	end)
 end
-VoidwareFunctions.GlobaliseObject("vapeEvents", vapeEvents)
+PealzwareFunctions.GlobaliseObject("vapeEvents", vapeEvents)
 table.insert(shared.StoreTable, function()
-	VoidwareFunctions.GlobaliseObject("vapeEvents", vapeEvents)
+	PealzwareFunctions.GlobaliseObject("vapeEvents", vapeEvents)
 end)
 
 store.blocks = collectionService:GetTagged("block")
@@ -1825,7 +1825,7 @@ local isnetworkowner = function(part)
 	end
 	return networkownerswitch <= tick()
 end
-VoidwareFunctions.GlobaliseObject("isnetworkowner", isnetworkowner)
+PealzwareFunctions.GlobaliseObject("isnetworkowner", isnetworkowner)
 local getcustomasset = getsynasset or getcustomasset or function(location) return "rbxasset://"..location end
 local queueonteleport = syn and syn.queue_on_teleport or queue_on_teleport or function() end
 local synapsev3 = syn and syn.toast_notification and "V3" or ""
@@ -1846,7 +1846,7 @@ end
 
 local function vapeGithubRequest(scripturl)
 	if not isfile("vape/"..scripturl) then
-		local suc, res = pcall(function() return game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/vapevoidware/"..readfile("vape/commithash.txt").."/"..scripturl, true) end)
+		local suc, res = pcall(function() return game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/"..readfile("vape/commithash.txt").."/"..scripturl, true) end)
 		assert(suc, res)
 		assert(res ~= "404: Not Found", res)
 		if scripturl:find(".lua") then res = "--This watermark is used to delete the file if its cached, remove it to make the file persist after commits.\n"..res end
@@ -1894,7 +1894,7 @@ local function isFriend(plr, recolor) return false end
 local function attackValue(vec) return {value = vec} end
 local function getPlayerColor(plr) return tostring(plr.TeamColor) ~= "White" and plr.TeamColor.Color end
 local function isVulnerable(plr) return plr.Humanoid.Health > 0 and not plr.Character.FindFirstChildWhichIsA(plr.Character, "ForceField") end
-VoidwareFunctions.GlobaliseObject("isVulnarable", isVulnarable)
+PealzwareFunctions.GlobaliseObject("isVulnarable", isVulnarable)
 
 local function LaunchAngle(v, g, d, h, higherArc)
 	local v2 = v * v
@@ -1984,7 +1984,7 @@ local function getItemNear(itemName, inv)
     end
     return nil
 end
-VoidwareFunctions.GlobaliseObject("getItemNear", getItemNear)
+PealzwareFunctions.GlobaliseObject("getItemNear", getItemNear)
 
 local function getHotbarSlot(itemName)
 	for slotNumber, slotTable in pairs(store.localInventory.hotbar) do
@@ -1994,7 +1994,7 @@ local function getHotbarSlot(itemName)
 	end
 	return nil
 end
-VoidwareFunctions.GlobaliseObject("getHotbarSlot", getHotbarSlot)
+PealzwareFunctions.GlobaliseObject("getHotbarSlot", getHotbarSlot)
 
 local function getNearbyObjects(origin, distance)
     assert(typeof(origin) == "Vector3", "Origin must be a Vector3")
@@ -2011,7 +2011,7 @@ local function getNearbyObjects(origin, distance)
     end
     return nearbyObjects
 end
-VoidwareFunctions.GlobaliseObject("getNearyObjects", getNearbyObjects)
+PealzwareFunctions.GlobaliseObject("getNearyObjects", getNearbyObjects)
 
 local function getShieldAttribute(char)
 	local returnedShield = 0
@@ -2022,7 +2022,7 @@ local function getShieldAttribute(char)
 	end
 	return returnedShield
 end
-VoidwareFunctions.GlobaliseObject("getShieldAttribute", getShieldAttribute)
+PealzwareFunctions.GlobaliseObject("getShieldAttribute", getShieldAttribute)
 
 getPickaxe = function()
 	return getItemNear("pick")
@@ -2062,7 +2062,7 @@ local function getSword()
 	end
 	return bestSword, bestSwordSlot
 end
-VoidwareFunctions.GlobaliseObject("getSword", getSword)
+PealzwareFunctions.GlobaliseObject("getSword", getSword)
 
 local function getBow()
 	local bestBow, bestBowSlot, bestBowStrength = nil, nil, 0
@@ -2158,7 +2158,7 @@ local function getSpeed(reduce)
 	end
 	return reduce and speed ~= 1 and math.max(speed * (0.8 - (0.3 * math.floor(speed))), 1) or speed
 end
-VoidwareFunctions.GlobaliseObject("getSpeed", getSpeed)
+PealzwareFunctions.GlobaliseObject("getSpeed", getSpeed)
 
 local Reach = {Enabled = false}
 local blacklistedblocks = {bed = true, ceramic = true}
@@ -2177,7 +2177,7 @@ local function getScaffold(vec, diagonaltoggle)
 	end
 	return realvec
 end
-VoidwareFunctions.GlobaliseObject("getScaffold", getScaffold)
+PealzwareFunctions.GlobaliseObject("getScaffold", getScaffold)
 
 local function waitForChildOfType(obj, name, timeout, prop)
 	local check, returned = tick() + timeout
@@ -2207,7 +2207,7 @@ local function getBestTool(block)
 	end
 	return tool
 end
-VoidwareFunctions.GlobaliseObject("getBestTool", getBestTool)
+PealzwareFunctions.GlobaliseObject("getBestTool", getBestTool)
 
 local function GetPlacedBlocksNear(pos, normal)
 	local blocks = {}
@@ -2365,7 +2365,7 @@ local function EntityNearPosition(distance, ignore, overridepos)
 	end
 	return closestEntity
 end
-VoidwareFunctions.GlobaliseObject("EntityNearPosition", EntityNearPosition)
+PealzwareFunctions.GlobaliseObject("EntityNearPosition", EntityNearPosition)
 
 local function EntityNearMouse(distance)
 	local closestEntity, closestMagnitude = nil, distance
@@ -2384,7 +2384,7 @@ local function EntityNearMouse(distance)
 	end
 	return closestEntity
 end
-VoidwareFunctions.GlobaliseObject("EntityNearMouse", EntityNearMouse)
+PealzwareFunctions.GlobaliseObject("EntityNearMouse", EntityNearMouse)
 
 local function AllNearPosition(distance, amount, sortfunction, prediction, npcIncluded)
 	local returnedplayer = {}
@@ -2509,7 +2509,7 @@ local function AllNearPosition(distance, amount, sortfunction, prediction, npcIn
 	end
 	return returnedplayer
 end
-VoidwareFunctions.GlobaliseObject("AllNearPosition", AllNearPosition)
+PealzwareFunctions.GlobaliseObject("AllNearPosition", AllNearPosition)
 
 local function isWhitelistedBed(bed)
     if bed and bed.Name == 'bed' then
@@ -3854,7 +3854,7 @@ local RunLoops = { RenderStepTable = {}, StepTable = {}, HeartTable = {} }
 
 local function BindToLoop(tableName, service, name, func)
 	local oldfunc = func
-	func = function(delta) VoidwareFunctions.handlepcall(pcall(function() oldfunc(delta) end)) end
+	func = function(delta) PealzwareFunctions.handlepcall(pcall(function() oldfunc(delta) end)) end
     if RunLoops[tableName][name] == nil then
         RunLoops[tableName][name] = service:Connect(func)
         table.insert(vapeConnections, RunLoops[tableName][name])
@@ -4874,7 +4874,7 @@ local RunLoops = {
 
 local function BindToLoop(tableName, service, name, func)
 	local oldfunc = func
-	func = function(delta) VoidwareFunctions.handlepcall(pcall(function() oldfunc(delta) end)) end
+	func = function(delta) PealzwareFunctions.handlepcall(pcall(function() oldfunc(delta) end)) end
     if RunLoops[tableName][name] == nil then
         RunLoops[tableName][name] = service:Connect(func)
         table.insert(vapeConnections, RunLoops[tableName][name])
@@ -8226,7 +8226,7 @@ run(function()
 							end
 						end
 						local val, extra = shouldUse()
-						if extra then if shared.VoidDev then print("Using backup method: "..tostring(extra)) end end
+						if extra then if shared.PealzDev then print("Using backup method: "..tostring(extra)) end end
 						if val then
 							bedwars.AbilityController:useAbility("consume_life_foce")
 						end
@@ -8374,7 +8374,7 @@ sendmessage = function(text)
 		end
 		return bypassMessage
 	end
-	--text = text.." | discord.gg/voidware"
+	--text = text.." | discord.gg/pealzware"
 	--text = createBypassMessage(text)
 	local textChatService = game:GetService("TextChatService")
 	local replicatedStorageService = game:GetService("ReplicatedStorage")
@@ -10697,13 +10697,13 @@ run(function()
 	})
 end)
 
---VoidwareFunctions.GlobaliseObject("store", store)
-VoidwareFunctions.GlobaliseObject("GlobalStore", store)
+--PealzwareFunctions.GlobaliseObject("store", store)
+PealzwareFunctions.GlobaliseObject("GlobalStore", store)
 
---VoidwareFunctions.GlobaliseObject("bedwars", bedwars)
-VoidwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
+--PealzwareFunctions.GlobaliseObject("bedwars", bedwars)
+PealzwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
 
-VoidwareFunctions.GlobaliseObject("VapeBWLoaded", true)
+PealzwareFunctions.GlobaliseObject("VapeBWLoaded", true)
 local function createMonitoredTable(originalTable, onChange)
     local proxy = {}
     local mt = {
@@ -10721,13 +10721,13 @@ local function createMonitoredTable(originalTable, onChange)
 end
 local function onChange(key, oldValue, newValue)
    --print("Changed key:", key, "from", oldValue, "to", newValue)
-   	--VoidwareFunctions.GlobaliseObject("store", store)
-	VoidwareFunctions.GlobaliseObject("GlobalStore", store)
+	--PealzwareFunctions.GlobaliseObject("store", store)
+	PealzwareFunctions.GlobaliseObject("GlobalStore", store)
 end
 local function onChange2(key, oldValue, newValue)
 	--print("Changed key:", key, "from", oldValue, "to", newValue)
-	--VoidwareFunctions.GlobaliseObject("bedwars", bedwars)
-	VoidwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
+	--PealzwareFunctions.GlobaliseObject("bedwars", bedwars)
+	PealzwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
  end
 
 store = createMonitoredTable(store, onChange)

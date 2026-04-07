@@ -1,32 +1,32 @@
-local VWFunctions = {}
-VWFunctions.Connections = {}
+local PWFunctions = {}
+PWFunctions.Connections = {}
 
-VWFunctions.GlobalisedObjects = {}
-VWFunctions.GlobaliseObject = function(name, obj)
+PWFunctions.GlobalisedObjects = {}
+PWFunctions.GlobaliseObject = function(name, obj)
     getgenv()[tostring(name)] = obj
     shared[tostring(name)] = obj
-    table.insert(VWFunctions.GlobalisedObjects, {Name = name, Object = obj})
+    table.insert(PWFunctions.GlobalisedObjects, {Name = name, Object = obj})
 end
 
-VWFunctions.Controllers = {}
-function VWFunctions.Controllers:get(name)
-    return VWFunctions.Controllers[tostring(name).."Controller"]
+PWFunctions.Controllers = {}
+function PWFunctions.Controllers:get(name)
+    return PWFunctions.Controllers[tostring(name).."Controller"]
 end
-function VWFunctions.Controllers:register(name, tbl)
-    VWFunctions.Controllers[tostring(name).."Controller"] = tbl
-    VWFunctions.GlobaliseObject(tostring(name).."Controller", tbl)
+function PWFunctions.Controllers:register(name, tbl)
+    PWFunctions.Controllers[tostring(name).."Controller"] = tbl
+    PWFunctions.GlobaliseObject(tostring(name).."Controller", tbl)
 end
 
-VWFunctions.SelfDestructEvent = Instance.new("BindableEvent")
-table.insert(VWFunctions.Connections, VWFunctions.SelfDestructEvent.Event:Connect(function()
-    for i,v in pairs(VWFunctions.GlobalisedObjects) do getgenv()[tostring(v.Name)] = nil; shared[tostring(v.Name)] = nil end
-    for i,v in pairs(VWFunctions.Connections) do if v.Disconnect then pcall(function() v:Disconnect() end) end end
-    table.clear(VWFunctions)
+PWFunctions.SelfDestructEvent = Instance.new("BindableEvent")
+table.insert(PWFunctions.Connections, PWFunctions.SelfDestructEvent.Event:Connect(function()
+    for i,v in pairs(PWFunctions.GlobalisedObjects) do getgenv()[tostring(v.Name)] = nil; shared[tostring(v.Name)] = nil end
+    for i,v in pairs(PWFunctions.Connections) do if v.Disconnect then pcall(function() v:Disconnect() end) end end
+    table.clear(PWFunctions)
 end))
 
-function VWFunctions.Connections:register(con)
-    if (not con) then warn(debug.traceback("[VWFunctions.Connections:register]: con is nil!")) return end
-    table.insert(VWFunctions.Connections, con)
+function PWFunctions.Connections:register(con)
+    if (not con) then warn(debug.traceback("[PWFunctions.Connections:register]: con is nil!")) return end
+    table.insert(PWFunctions.Connections, con)
 end
 
 local Base64 = {}
@@ -69,12 +69,12 @@ function Base64.decode(data)
     end))
 end
 
-VWFunctions.Base64 = Base64
+PWFunctions.Base64 = Base64
 
-VWFunctions.handlepcall = function(suc, err)
+PWFunctions.handlepcall = function(suc, err)
     if suc == nil then return "nil suc" end
     if (not suc) then
-        warn(debug.traceback("[VWFunctions.handlepcall]: Error in pcall! Error: \n"..tostring(err)))
+        warn(debug.traceback("[PWFunctions.handlepcall]: Error in pcall! Error: \n"..tostring(err)))
     end
 end
 
@@ -100,7 +100,7 @@ local GamesFunctions = {
         vapeAssert = function(argument, title, text, duration, hault, moduledisable, module) 
             if not argument then
                 local suc, res = pcall(function()
-                    local notification = GuiLibrary.CreateNotification(title or "Voidware", text or "Failed to call function.", duration or 20, "assets/WarningNotification.png")
+                    local notification = GuiLibrary.CreateNotification(title or "Pealzware", text or "Failed to call function.", duration or 20, "assets/WarningNotification.png")
                     notification.IconLabel.ImageColor3 = Color3.new(220, 0, 0)
                     notification.Frame.Frame.ImageColor3 = Color3.new(220, 0, 0)
                     if moduledisable and (module and GuiLibrary.ObjectsThatCanBeSaved[module.."OptionsButton"].Api.Enabled) then 
@@ -151,7 +151,7 @@ local GamesFunctions = {
     ["Bedwars"] = {
         vapeGithubRequest = function(scripturl)
             if not isfile("vape/"..scripturl) then
-                local suc, res = pcall(function() return game:HttpGet("https://raw.githubusercontent.com/VapeVoidware/vapevoidware/main/"..scripturl, true) end)
+                local suc, res = pcall(function() return game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/"..scripturl, true) end)
                 assert(suc, res)
                 assert(res ~= "404: Not Found", res)
                 if scripturl:find(".lua") then res = "--This watermark is used to delete the file if its cached, remove it to make the file persist after commits.\n"..res end
@@ -271,13 +271,13 @@ local GamesFunctions = {
         end
     }
 }
-VWFunctions.LoadFunctions = function(game)
+PWFunctions.LoadFunctions = function(game)
     if GamesFunctions[game] then
-        for i,v in pairs(GamesFunctions[game]) do VWFunctions.GlobaliseObject(i,v) end
+        for i,v in pairs(GamesFunctions[game]) do PWFunctions.GlobaliseObject(i,v) end
     end
 end
 
-VWFunctions.LoadServices = function()
+PWFunctions.LoadServices = function()
     local services = {
         collectionService = game:GetService("CollectionService"),
         TweenService = game:GetService("TweenService"),
@@ -285,10 +285,10 @@ VWFunctions.LoadServices = function()
         playersService = game:GetService("Players"),
         runService = game:GetService("RunService")
     }
-    for i,v in pairs(services) do VWFunctions.GlobaliseObject(i,v) end
+    for i,v in pairs(services) do PWFunctions.GlobaliseObject(i,v) end
 end
 
-VWFunctions.EditWL = function(argTable)
+PWFunctions.EditWL = function(argTable)
     local NewTag_text
     local NewTag_color
     local Roblox_Username
@@ -328,7 +328,7 @@ VWFunctions.EditWL = function(argTable)
     end
 end
 
-VWFunctions.fetchCheatEngineSupportFile = function(fileName)
+PWFunctions.fetchCheatEngineSupportFile = function(fileName)
     local url = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/CheatEngine/"..tostring(fileName)
     local suc, res = pcall(function()
         return game:HttpGet(url)
@@ -336,6 +336,6 @@ VWFunctions.fetchCheatEngineSupportFile = function(fileName)
     return suc and res or ""
 end
 
-getgenv().VoidwareFunctions = VWFunctions
+getgenv().PealzwareFunctions = PWFunctions
 
-return VWFunctions
+return PWFunctions

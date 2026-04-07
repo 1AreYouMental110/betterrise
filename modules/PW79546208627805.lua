@@ -4,7 +4,7 @@ local entitylib = vape.Libraries.entity
 local entityLibrary = entitylib
 
 local function run(func)
-	if shared.VoidDev then
+	if shared.PealzDev then
 		return func() 
 	end
 	

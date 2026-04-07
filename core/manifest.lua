@@ -20,12 +20,12 @@ local guiFiles = {
 local moduleAliases = {
 	["6872274481.lua"] = "bedwars.lua",
 	["CE6872274481.lua"] = "bedwars-ce.lua",
-	["VW6872274481.lua"] = "bedwars-vw.lua",
+	["PW6872274481.lua"] = "bedwars-pw.lua",
 	["6872265039.lua"] = "bedwars-lobby.lua",
 	["CE6872265039.lua"] = "bedwars-lobby-ce.lua",
-	["VW6872265039.lua"] = "bedwars-lobby-vw.lua",
+	["PW6872265039.lua"] = "bedwars-lobby-pw.lua",
 	["universal.lua"] = "universal.lua",
-	["VWUniversal.lua"] = "vw-universal.lua"
+	["PWUniversal.lua"] = "pw-universal.lua"
 }
 
 function manifest.normalizeGuiValue(guiValue)

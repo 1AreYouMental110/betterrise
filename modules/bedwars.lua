@@ -1,5 +1,5 @@
 local run = function(func)
-	if shared.VoidDev then
+	if shared.PealzDev then
 		func()
 	else
 		local suc, err = pcall(function() func() end)
@@ -29,7 +29,7 @@ internalConstructor = {
 		if key == "new" then
 			return function(id)
 				if internalConfig.initialisationDebug then
-					warn("[VOIDWARE INTERNAL]: New Instance ["..tostring(id).."]")
+					warn("[PEALZWARE INTERNAL]: New Instance ["..tostring(id).."]")
 				end
 				return setmetatable({__id = id}, internalConstructor)
 			end
@@ -37,14 +37,14 @@ internalConstructor = {
 	end,
 	__call = function(self, debug)
 		if not self.__id then
-			warn(debug.traceback("[VOIDWARE INTERNAL]: Called without initialisation!"))
+			warn(debug.traceback("[PEALZWARE INTERNAL]: Called without initialisation!"))
 			return
 		end
 		if table.find(internalConfig.blacklist, tostring(self.__id)) then return end
 		warn("["..tostring(self.__id).."]: "..tostring(debug))
 	end,
 	__tostring = function()
-		return "VOIDWARE INTERNAL"
+		return "PEALZWARE INTERNAL"
 	end
 }
 
@@ -1064,8 +1064,8 @@ local function saveErrorLog(err, S_Name)
 	if not err then return end
 	if not S_Name then S_Name = "Not specified" end
 	local main = {}
-	if isfile('VW_Error_Log.json') then
-		local res = loadJson('VW_Error_Log.json')
+	if isfile('PW_Error_Log.json') then
+		local res = loadJson('PW_Error_Log.json')
 		main = res or main
 	end
 	local errorLog = {
@@ -1084,8 +1084,8 @@ local function saveErrorLog(err, S_Name)
 		Time = getExecutionTime(),
 		Data = errorLog
 	})
-	writefile('VW_Error_Log.json', HttpService:JSONEncode(main))
-	errorNotification("Voidware -  Error Logger", 'If you can please send the\n VW_Error_Log.json file in your workspace to erchodev#0 or discord.gg/voidware', 10)
+	writefile('PW_Error_Log.json', HttpService:JSONEncode(main))
+	errorNotification("Pealzware -  Error Logger", 'If you can please send the\n PW_Error_Log.json file in your workspace to erchodev#0 or discord.gg/pealzware', 10)
 	warn('---------------[ERROR LOG START]--------------')
 	warn(HttpService:JSONEncode(errorLog))
 	warn('---------------[ERROR LOG END]--------------')
@@ -1147,7 +1147,7 @@ local function shouldThrottle(remoteName)
         remoteThrottleTable[remoteName] = now
         return false
     end
-	if shared.VoidDev and shared.ThrottleDebug then
+	if shared.PealzDev and shared.ThrottleDebug then
    	 	warn("[Remote Throttle] Throttled remote call to '" .. tostring(remoteName) .. "' at " .. tostring(now))
 	end
     return true
@@ -1547,35 +1547,35 @@ run(function()
     local remoteDefinitions = setmetatable({
         --[[AttackEntity = function()
             local remote = dumpRemote(debug.getconstants(Knit.Controllers.SwordController.sendServerRequest))
-            if remote == '' and shared.VoidDev then
+            if remote == '' and shared.PealzDev then
                 notif('Vape', 'Failed to grab remote (AttackEntity)', 10, 'alert')
             end
             return remote
         end,--]]
         DragonEndFly = function()
             local remote = dumpRemote(debug.getconstants(debug.getproto(Knit.Controllers.VoidDragonController.flapWings, 1)))
-            if remote == '' and shared.VoidDev then
+            if remote == '' and shared.PealzDev then
                 notif('Vape', 'Failed to grab remote (DragonEndFly)', 10, 'alert')
             end
             return remote
         end,
         DragonFly = function()
             local remote = dumpRemote(debug.getconstants(Knit.Controllers.VoidDragonController.flapWings))
-            if remote == '' and shared.VoidDev then
+            if remote == '' and shared.PealzDev then
                 notif('Vape', 'Failed to grab remote (DragonFly)', 10, 'alert')
             end
             return remote
         end,
         DropItem = function()
             local remote = dumpRemote(debug.getconstants(Knit.Controllers.ItemDropController.dropItemInHand))
-            if remote == '' and shared.VoidDev then
+            if remote == '' and shared.PealzDev then
                 notif('Vape', 'Failed to grab remote (DropItem)', 10, 'alert')
             end
             return remote
         end,
         MageSelect = function()
             local remote = dumpRemote(debug.getconstants(debug.getproto(Knit.Controllers.MageController.registerTomeInteraction, 1)))
-            if remote == '' and shared.VoidDev then
+            if remote == '' and shared.PealzDev then
                 notif('Vape', 'Failed to grab remote (MageSelect)', 10, 'alert')
             end
             return remote
@@ -1619,7 +1619,7 @@ run(function()
 			end
 		end,
 		__tostring = function()
-			return "VOIDWARE_INTERNAL_REMOTE_DEFINITIONS"
+			return "PEALZWARE_INTERNAL_REMOTE_DEFINITIONS"
 		end
 	})
 
@@ -2138,9 +2138,9 @@ function KaidaController:request(target)
 end
 
 if not bedwars.Client then
-	errorNotification('Voidware Bedwars', "There was a critical loading error! \n Please report this issue to erchodev#0 or discord.gg/voidware", 10)
+	errorNotification('Pealzware Bedwars', "There was a critical loading error! \n Please report this issue to erchodev#0 or discord.gg/pealzware", 10)
 end
-assert(bedwars.Client ~= nil and type(bedwars.Client) == "table", "There was a critical loading error! \n Please report this issue to erchodev#0 or discord.gg/voidware")
+assert(bedwars.Client ~= nil and type(bedwars.Client) == "table", "There was a critical loading error! \n Please report this issue to erchodev#0 or discord.gg/pealzware")
 
 for _, v in {'AntiRagdoll', 'TriggerBot', 'SilentAim', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'MouseTP', 'MurderMystery'} do
 	vape:Remove(v)
@@ -4361,7 +4361,7 @@ local RunLoops = {
 
 local function BindToLoop(tableName, service, name, func)
 	local oldfunc = func
-	func = function(delta) VoidwareFunctions.handlepcall(pcall(function() oldfunc(delta) end)) end
+	func = function(delta) PealzwareFunctions.handlepcall(pcall(function() oldfunc(delta) end)) end
     if RunLoops[tableName][name] == nil then
         RunLoops[tableName][name] = service:Connect(func)
         table.insert(vapeConnections, RunLoops[tableName][name])
@@ -8980,7 +8980,7 @@ local function getItemNear(itemName, inv)
 end
 local autobankapple = false
 run(function()
-	bedwars.ShopItemsMeta = decode(VoidwareFunctions.fetchCheatEngineSupportFile("ShopItemsMeta.json"))
+	bedwars.ShopItemsMeta = decode(PealzwareFunctions.fetchCheatEngineSupportFile("ShopItemsMeta.json"))
 	bedwars.ShopItems = bedwars.ShopItemsMeta.ShopItems
 	local AutoBuy = {Enabled = false}
 	local AutoBuyArmor = {Enabled = false}
@@ -12226,13 +12226,13 @@ run(function()
 	})
 end)
 	
---VoidwareFunctions.GlobaliseObject("store", store)
-VoidwareFunctions.GlobaliseObject("GlobalStore", store)
+--PealzwareFunctions.GlobaliseObject("store", store)
+PealzwareFunctions.GlobaliseObject("GlobalStore", store)
 
---VoidwareFunctions.GlobaliseObject("bedwars", bedwars)
-VoidwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
+--PealzwareFunctions.GlobaliseObject("bedwars", bedwars)
+PealzwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
 
-VoidwareFunctions.GlobaliseObject("VapeBWLoaded", true)
+PealzwareFunctions.GlobaliseObject("VapeBWLoaded", true)
 local function createMonitoredTable(originalTable, onChange)
     local proxy = {}
     local mt = {
@@ -12249,12 +12249,12 @@ local function createMonitoredTable(originalTable, onChange)
     return proxy
 end
 local function onChange(key, oldValue, newValue)
-   	--VoidwareFunctions.GlobaliseObject("store", store)
-	VoidwareFunctions.GlobaliseObject("GlobalStore", store)
+	--PealzwareFunctions.GlobaliseObject("store", store)
+	PealzwareFunctions.GlobaliseObject("GlobalStore", store)
 end
 local function onChange2(key, oldValue, newValue)
-	--VoidwareFunctions.GlobaliseObject("bedwars", bedwars)
-	VoidwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
+	--PealzwareFunctions.GlobaliseObject("bedwars", bedwars)
+	PealzwareFunctions.GlobaliseObject("GlobalBedwars", bedwars)
 end
 
 store = createMonitoredTable(store, onChange)

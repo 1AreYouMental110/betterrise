@@ -34,15 +34,15 @@ end
 
 local d="https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/"
 
-local e=(shared.UpdateLogDevMode and loadJson"VW_Update_Log.json")or(retry(function()
+local e=(shared.UpdateLogDevMode and loadJson"PW_Update_Log.json")or(retry(function()
 return b:JSONDecode(game:HttpGet(d.."UpdateMeta.json",true))
-end,10,3)or loadJson"VW_Update_Log.json")
+end,10,3)or loadJson"PW_Update_Log.json")
 
-if not e then warn"[VW Update Log]: Failure loading changelogData!"
+if not e then warn"[PW Update Log]: Failure loading changelogData!"
 return end
-pcall(function()writefile("VW_Update_Log.json",b:JSONEncode(e))end)
+pcall(function()writefile("PW_Update_Log.json",b:JSONEncode(e))end)
 
-local f=loadJson"Local_VW_Update_Log.json"or{lastRead=""}
+local f=loadJson"Local_PW_Update_Log.json"or{lastRead=""}
 
 local function getNewestUpdate()
 for g,h in pairs(e)do
@@ -52,7 +52,7 @@ return nil
 end
 
 local g=getNewestUpdate()
-if not g then warn"[VW Update Log]: Failure getting newest update!"
+if not g then warn"[PW Update Log]: Failure getting newest update!"
 return end
 
 task.spawn(function()
@@ -88,7 +88,7 @@ end
 
 local function save()
 f.lastRead=tostring(g.updateLogId)
-writefile("Local_VW_Update_Log.json",b:JSONEncode(f))
+writefile("Local_PW_Update_Log.json",b:JSONEncode(f))
 end
 
 local i=false
@@ -298,7 +298,7 @@ t.Font=Enum.Font.FredokaOne
 t.Position=UDim2.new(0.5,0,0,5)
 t.AnchorPoint=Vector2.new(0.5,0)
 t.Parent=p
-t.Text="VW Update Log"
+t.Text="PW Update Log"
 t.TextColor3=Color3.fromRGB(255,255,255)
 t.AutomaticSize=Enum.AutomaticSize.X
 t.Size=UDim2.new(0,100,0,30)

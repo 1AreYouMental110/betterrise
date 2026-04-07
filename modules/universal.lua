@@ -807,7 +807,7 @@ run(function()
 		if not whitelistloaded or not hash or not self.get then return true end
 		whitelist.loaded = true
 
-		if not first or whitelist.textdata ~= whitelist.olddata then -- Just because voidware wont auto update on new vape whitelist change on the repeated :update function doesn't mean your whitelist won't work xylex
+		if not first or whitelist.textdata ~= whitelist.olddata then -- Just because pealzware wont auto update on new vape whitelist change on the repeated :update function doesn't mean your whitelist won't work xylex
 			if not first then 
 				whitelist.olddata = isfile('vape/profiles/whitelist.json') and readfile('vape/profiles/whitelist.json') or nil 
 			end
@@ -949,9 +949,9 @@ pcall(function()
 			--[[reveal = function(args)
 				task.delay(0.1, function()
 					if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-						textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync('I am using the inhaler client or voidware :)')
+						textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync('I am using the inhaler client or pealzware :)')
 					else
-						replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer('I am using the inhaler client or voidware :)', 'All')
+						replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer('I am using the inhaler client or pealzware :)', 'All')
 					end
 				end)
 			end,--]]
@@ -1061,7 +1061,7 @@ pcall(function()
 					chageyes(game.Workspace)
 				end)
 			end,
-			voidware = function()
+			pealzware = function()
 				local texture = "18341361652"
 				task.spawn(function()
 					function changetxt(root)
@@ -1192,7 +1192,7 @@ pcall(function()
 				end)
 			end,
 			--rbxassetid://18814907476
-			newvoidware = function()
+			newpealzware = function()
 				local texture = "18814907476"
 				task.spawn(function()
 					function changetxt(root)
@@ -1293,7 +1293,7 @@ pcall(function()
 							end
 							return bypassMessage
 						end
-						--text = text.." | discord.gg/voidware"
+						--text = text.." | discord.gg/pealzware"
 						--text = createBypassMessage(text)
 						local textChatService = game:GetService("TextChatService")
 						local replicatedStorageService = game:GetService("ReplicatedStorage")
@@ -7972,7 +7972,7 @@ run(function()
 		end)
 		if (not suc) then
 			errorNotification("Disguise", "Something went wrong. Disabling Disguise...", 3)
-			warn("Voidware Error - Disguise | "..debug.traceback(err))
+			warn("Pealzware Error - Disguise | "..debug.traceback(err))
 			pcall(function() Disguise:Toggle() end)
 		end
 	end

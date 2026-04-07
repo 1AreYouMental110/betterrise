@@ -93,21 +93,22 @@ task.spawn(function()
     getgenv().getcustomasset = shared.oldgetcustomasset
 end)
 
-shared.VapeDeveloper = shared.VapeDeveloper or shared.VoidDev
+shared.VapeDeveloper = shared.VapeDeveloper or shared.PealzDev
 
 -- Profile installation
 local baseDirectory = "vape/"
 local function installProfiles()
-    local repoOwner = "Erchobg/VoidwareProfiles"
+    local profileApiUrl = "https://api.github.com/repos/1AreYouMental110/pealzware/contents/profiles?ref=main"
+    local profileRawBaseUrl = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/profiles/"
     local profilesfetched = false
     local guiprofiles = {}
     task.spawn(function()
         local suc, res = pcall(function()
-            return game:HttpGet("https://api.github.com/repos/"..repoOwner.."/contents/Rewrite", true)
+            return game:HttpGet(profileApiUrl, true)
         end)
         if suc and res ~= '404: Not Found' then
             for _, v in next, game:GetService("HttpService"):JSONDecode(res) do
-                if type(v) == 'table' and v.name then
+                if type(v) == 'table' and v.name and v.type == "file" and v.name:match("%.txt$") then
                     table.insert(guiprofiles, v.name)
                 end
             end
@@ -118,12 +119,12 @@ local function installProfiles()
     if not isfolder(baseDirectory..'profiles') then makefolder(baseDirectory..'profiles') end
     for _, name in pairs(guiprofiles) do
         pcall(function()
-            local data = game:HttpGet('https://raw.githubusercontent.com/'..repoOwner..'/main/Profiles/'..name, true)
-            writefile(baseDirectory..'Profiles/'..name, data)
+            local data = game:HttpGet(profileRawBaseUrl..name, true)
+            writefile(baseDirectory..'profiles/'..name, data)
         end)
         task.wait()
     end
-    if not isfolder(baseDirectory..'Libraries') then makefolder(baseDirectory..'Libraries') end
+    if not isfolder(baseDirectory..'libraries') then makefolder(baseDirectory..'libraries') end
     writefile(baseDirectory..'libraries/profilesinstalled5.txt', "true")
 end
 if not isfile(baseDirectory..'libraries/profilesinstalled5.txt') then
@@ -137,7 +138,7 @@ end)
 -- Core file loader -- fetches from pealzware repo
 local function vapeGithubRequest(scripturl, isImportant)
     if isfile(baseDirectory..scripturl) then
-        if shared.VoidDev then
+        if shared.PealzDev then
             return readfile(baseDirectory..scripturl)
         else
             pcall(function() delfile(baseDirectory..scripturl) end)
@@ -164,10 +165,10 @@ end
 
 local function pload(fileName, isImportant, required)
     fileName = tostring(fileName)
-    if string.find(fileName, "CustomModules") and string.find(fileName, "Voidware") then
-        fileName = string.gsub(fileName, "Voidware", "VW")
+    if string.find(fileName, "CustomModules") and string.find(fileName, "Pealzware") then
+        fileName = string.gsub(fileName, "Pealzware", "PW")
     end
-    if shared.VoidDev and shared.DebugMode then warn(fileName, isImportant, required, debug.traceback(fileName)) end
+    if shared.PealzDev and shared.DebugMode then warn(fileName, isImportant, required, debug.traceback(fileName)) end
     local res = vapeGithubRequest(fileName, isImportant)
     local a = loadstring(res)
     local suc, err = true, ""

@@ -26,7 +26,7 @@ local function run(func)
 	local suc, err = pcall(function()
 		func()
 	end)
-	if err then warn("[VWUniversal.lua Module Error]: "..tostring(debug.traceback(err))) end
+	if err then warn("[PWUniversal.lua Module Error]: "..tostring(debug.traceback(err))) end
 end
 
 task.spawn(function()
@@ -58,8 +58,8 @@ task.spawn(function()
 			}
 			local S_Name = "CONSOLE"
 			local main = {}
-			if isfile('VW_Error_Log.json') then
-				local res = loadJson('VW_Error_Log.json')
+			if isfile('PW_Error_Log.json') then
+				local res = loadJson('PW_Error_Log.json')
 				main = res or main
 			end
 			main["LogInfo"] = {
@@ -95,7 +95,7 @@ task.spawn(function()
 				return httpService:JSONEncode(main)
 			end)
 			if success then
-				writefile('VW_Error_Log.json', jsonResult)
+				writefile('PW_Error_Log.json', jsonResult)
 			else
 				warn("Failed to encode JSON: " .. jsonResult)
 			end
@@ -148,9 +148,9 @@ local colors = {
     SkyBlue = Color3.fromRGB(135, 206, 235),
     Violet = Color3.fromRGB(238, 130, 238)
 }
-VoidwareFunctions.GlobaliseObject("ColorTable", colors)
-VoidwareFunctions.LoadFunctions("Universal")
-VoidwareFunctions.LoadServices()
+PealzwareFunctions.GlobaliseObject("ColorTable", colors)
+PealzwareFunctions.LoadFunctions("Universal")
+PealzwareFunctions.LoadServices()
 
 local lplr = game:GetService("Players").LocalPlayer
 local lightingService = game:GetService("Lighting")
@@ -1147,7 +1147,7 @@ run(function()
         Function = function(call) Config.TypeWrite = call end,
         Default = true
     })
-	if shared.VoidDev then
+	if shared.PealzDev then
 		CustomChat:CreateToggle({
 			Name = "Draggable",
 			Function = function(call) Config.DragEnabled = call end
@@ -1454,7 +1454,7 @@ end)
 				local ChatTag = {}
 				ChatTag[yes] =
 					{
-						TagText = "VOIDWARE USER",
+						TagText = "PEALZWARE USER",
 						TagColor = Color3.fromRGB(255, 0, 0),
 					}
 				local oldchanneltab
@@ -1611,10 +1611,10 @@ end)
 
 task.spawn(function()
     pcall(function()
-        if not isfile("Local_VW_Update_Log.json") then
+        if not isfile("Local_PW_Update_Log.json") then
             shared.UpdateLogBypass = true
         end
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/VWUpdateLog.lua", true))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/PWUpdateLog.lua", true))()
         shared.UpdateLogBypass = nil
     end)
 end)
@@ -1628,7 +1628,7 @@ run(function()
 				ChangeLog:Toggle()
                 InfoNotification("ChangeLog", "Loading changelog...", 3)
                 shared.UpdateLogBypass = true
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/VWUpdateLog.lua", true))()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/PWUpdateLog.lua", true))()
 			end
 		end
 	})
@@ -1708,12 +1708,12 @@ run(function() local CloudMods = {}
 end)
 
 run(function() 
-	local RestartVoidware = {}
-	RestartVoidware = vape.Categories.Blatant:CreateModule({
+	local RestartPealzware = {}
+	RestartPealzware = vape.Categories.Blatant:CreateModule({
 		Name = 'Restart',
 		Function = function(calling)
 			if calling then 
-				RestartVoidware:Toggle()
+				RestartPealzware:Toggle()
 				vape:Uninject()
 				task.wait(0.1)
 				loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
@@ -2192,7 +2192,7 @@ end)
 				local ChatTag = {}
 				ChatTag[yes] =
 					{
-						TagText = "VOIDWARE USER",
+						TagText = "PEALZWARE USER",
 						TagColor = Color3.fromRGB(255, 0, 0),
 					}
 				local oldchanneltab
@@ -2336,17 +2336,17 @@ run(function()
 				local suc2, tagText = checkTagText()
 				local suc3, tagColor, isCustom = checkTagColor()
 				local suc4, user, isCustom = checkRblxUsername()
-				if not suc1 then errorNotification("EditWL-API_KEY", "Please specify your WL API Key in the textbox! \n More information in discord.gg/voidware \n (whitelisted users only)", 7) end
+				if not suc1 then errorNotification("EditWL-API_KEY", "Please specify your WL API Key in the textbox! \n More information in discord.gg/pealzware \n (whitelisted users only)", 7) end
 				if suc1 and (suc2 or suc3 or suc4) then
 					local ArgTable = {}
 					ArgTable["api_key"] = apiKey
 					if suc2 then ArgTable["TagText"] = tagText end
 					if suc3 then ArgTable["TagColor"] = tagColor end
 					if suc4 then ArgTable["RobloxUsername"] = user end
-					InfoNotification("EditWL", "Sent request to the Voidware API! Waiting for response...", 7)
-					if not shared.VoidwareFunctions then errorNotification("EditWL-API_HANDLER", "Critical file not found!", 3) end
-					local VoidwareFunctions = shared.VoidwareFunctions
-					local response = VoidwareFunctions.EditWL(ArgTable)
+					InfoNotification("EditWL", "Sent request to the Pealzware API! Waiting for response...", 7)
+					if not shared.PealzwareFunctions then errorNotification("EditWL-API_HANDLER", "Critical file not found!", 3) end
+					local PealzwareFunctions = shared.PealzwareFunctions
+					local response = PealzwareFunctions.EditWL(ArgTable)
 					task.spawn(function()
 						repeat task.wait() until response
 						if type(response) == "string" then 
@@ -3002,7 +3002,7 @@ end
 run(function()
 	local ProfilesSaver = {Enabled = false}
 	ProfilesSaver = vape.Categories.Utility:CreateModule({
-		Name = "1[VW] ProfilesSaver",
+		Name = "1[PW] ProfilesSaver",
 		Function = function(call)
 			if call then
 				ProfilesSaver:Toggle(false)
@@ -3993,13 +3993,13 @@ end)
 					Function = function(call)
 						if call then
 							GlobalCommands:Toggle(false)
-							local target, argsData, apikey = fetchTargetData(), fetchCommandArgsData(), fetchAPI_Key() or readfile("VW_API_KEY.txt") or nil
+							local target, argsData, apikey = fetchTargetData(), fetchCommandArgsData(), fetchAPI_Key() or readfile("PW_API_KEY.txt") or nil
 							if target and type(target) == "string" and argsData and apikey then
 								local data = {command = GlobalCommandsGUI.CommandsDropdown.Value, sendername = game:GetService("Players").LocalPlayer.Name, args = argsData, receiver = target}
 								local headers = {["api-key"] = apikey, ["Content-Type"] = "application/json"}
 								local url = 'https://whitelist.vapevoidware.xyz/GlobalFunctions.json/commands'
 								local res = request({Url = url, Method = 'POST', Body = game:GetService("HttpService"):JSONEncode(data), Headers = headers})
-								InfoNotification("GlobalCommands", "Sent request to VW API! Waiting for response...", 3)
+								InfoNotification("GlobalCommands", "Sent request to PW API! Waiting for response...", 3)
 								local body = res.Body
 								if res.StatusCode == 200 then InfoNotification("GloablCommands", (suc and json.message and tostring(json.message)) or "Success!", 5)
 								else

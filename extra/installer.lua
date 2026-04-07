@@ -248,7 +248,7 @@ function API:CreateUI()
 		Position = UDim2.new(0, 15, 0, 15),
 		Size = UDim2.new(1, -60, 0, 35),
 		BackgroundTransparency = 1,
-		Text = "Voidware Installer",
+		Text = "Pealzware Installer",
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		TextSize = 28,
 		Font = Enum.Font.FredokaOne,
@@ -446,14 +446,18 @@ function Installer:FetchFiles(config)
 	if config.source == "bundled" then
 		error("Missing bundled files for config")
 	end
-	local url = "https://api.github.com/repos/Erchobg/VoidwareProfiles/contents/Installer/" .. config.directory .. "?ref=main"
+	local url = "https://api.github.com/repos/1AreYouMental110/pealzware/contents/profiles?ref=main"
 	print("[INSTALLER] Fetching files from " .. tostring(url))
 	local res = request({Url = url, Method = "GET"})
 	if res.StatusCode == 200 then
 		local data = API.Services.HttpService:JSONDecode(res.Body)
 		local files = {}
 		for _, v in pairs(data) do
-			if v.name and v.name ~= ".DS_Store" then table.insert(files, v.name) end
+			if v.name and v.type == "file" and v.name:match("%.txt$") then
+				if (not config.directory) or string.find(string.lower(v.name), string.lower(config.directory), 1, true) then
+					table.insert(files, v.name)
+				end
+			end
 		end
 		return files
 	end
@@ -465,7 +469,7 @@ function Installer:ReadProfileContent(config, file)
 	if config.source == "bundled" then
 		return game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/profiles/" .. file, true)
 	end
-	return game:HttpGet("https://raw.githubusercontent.com/Erchobg/VoidwareProfiles/main/Installer/" .. config.directory .. "/" .. file)
+	return game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/profiles/" .. file, true)
 end
 
 function Installer:InstallFiles(files, config, download)

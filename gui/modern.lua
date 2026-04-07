@@ -548,27 +548,27 @@ local function hookCF(func, settings)
 				old(unpack(args))
 			end)
 			if (not suc) then 
-				if shared.VoidDev then
+				if shared.PealzDev then
 					task.spawn(function()
 						repeat task.wait() until errorNotification ~= nil and type(errorNotification) == "function"
-						errorNotification("Voidware | "..tostring(S_Name), debug.traceback(tostring(err)), 10)
+						errorNotification("Pealzware | "..tostring(S_Name), debug.traceback(tostring(err)), 10)
 					end)
 				end
 				task.spawn(function()
 					repeat task.wait() until errorNotification ~= nil and type(errorNotification) == "function"
 					if S_Name ~= "Not Specified" then
 						if attemptedRestarts[S_Name] then 
-							errorNotification('Voidware | '..tostring(S_Name), "Restart failed!", 3)
-							errorNotification("Voidware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n VW_Error_Log.json in your workspace to erchodev#0 or discord.gg/voidware", 10)
+							errorNotification('Pealzware | '..tostring(S_Name), "Restart failed!", 3)
+							errorNotification("Pealzware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n PW_Error_Log.json in your workspace to erchodev#0 or discord.gg/pealzware", 10)
 						else
-							errorNotification('Voidware | '..tostring(S_Name), "There was an error with this module. Attempting restart...", 3)
+							errorNotification('Pealzware | '..tostring(S_Name), "There was an error with this module. Attempting restart...", 3)
 							attemptedRestarts[S_Name] = true
 							local suc2, err2 = pcall(function() func(false) end)
-							if suc2 then InfoNotification("Voidware | "..tostring(S_Name), "Restart successfull!", 3)
+							if suc2 then InfoNotification("Pealzware | "..tostring(S_Name), "Restart successfull!", 3)
 end
 						end
 					else
-						errorNotification("Voidware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n VW_Error_Log.json in your workspace to erchodev#0 or discord.gg/voidware", 10)
+						errorNotification("Pealzware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n PW_Error_Log.json in your workspace to erchodev#0 or discord.gg/pealzware", 10)
 					end
 				end)
 				local errorLog = {
@@ -581,8 +581,8 @@ end
 					JobId = game.JobId
 				}
 				local main = {}
-				if isfile('VW_Error_Log.json') then
-					local res = loadJson('VW_Error_Log.json')
+				if isfile('PW_Error_Log.json') then
+					local res = loadJson('PW_Error_Log.json')
 					main = res or main
 				end
 				main["LogInfo"] = {
@@ -612,7 +612,7 @@ end
 					Time = getExecutionTime(),
 					Data = errorLog
 				})
-				writefile('VW_Error_Log.json', game:GetService("HttpService"):JSONEncode(main))
+				writefile('PW_Error_Log.json', game:GetService("HttpService"):JSONEncode(main))
 				warn('---------------[ERROR LOG START]--------------')
 				warn(game:GetService("HttpService"):JSONEncode(errorLog))
 				warn('---------------[ERROR LOG END]--------------')
@@ -5647,7 +5647,7 @@ function mainapi:Load(skipgui, profile)
 						task.spawn(function()
 							repeat task.wait() until errorNotification ~= nil and type(errorNotification) == "function" 
 							pcall(function()
-								errorNotification("Voidware", "Failure loading "..tostring(v).." Error: "..tostring(err), 5)
+								errorNotification("Pealzware", "Failure loading "..tostring(v).." Error: "..tostring(err), 5)
 							end)
 						end)
 					end
@@ -5719,7 +5719,7 @@ end
 local function notifyError(err)
 	if errorNotification ~= nil and type(errorNotification) == "function" then
 		pcall(function()
-			errorNotification("Voidware", tostring(err), 5)
+			errorNotification("Pealzware", tostring(err), 5)
 		end)
 	end
 end
@@ -5728,8 +5728,8 @@ local function saveSavingError(data)
 	local errorLog = data
 	local S_Name = "SAVING"
 	local main = {}
-	if isfile('VW_Error_Log.json') then
-		local res = loadJson('VW_Error_Log.json')
+	if isfile('PW_Error_Log.json') then
+		local res = loadJson('PW_Error_Log.json')
 		main = res or main
 	end
 	local function toTime(timestamp)
@@ -5760,7 +5760,7 @@ local function saveSavingError(data)
 		return httpService:JSONEncode(main)
 	end)
 	if success then
-		writefile('VW_Error_Log.json', jsonResult)
+		writefile('PW_Error_Log.json', jsonResult)
 	else
 		warn("Failed to encode JSON: " .. jsonResult)
 	end
@@ -6763,7 +6763,7 @@ targetinfoobj = mainapi:CreateOverlay({
 							end
 						end
 					end)
-					if not suc and shared.VoidDev then warn("[TargetInfo Error]: "..tostring(err)) end
+					if not suc and shared.PealzDev then warn("[TargetInfo Error]: "..tostring(err)) end
 					task.wait()
 				until not targetinfoobj.Button or not targetinfoobj.Button.Enabled
 			end)

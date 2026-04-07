@@ -11,7 +11,7 @@ getgenv().setthreadidentity = function(...)
 	local suc, err = pcall(function()
 		return shared.OLD_SETTHREADIDENTITY(unpack(args))
 	end)
-	if not suc and shared.VoidDev then
+	if not suc and shared.PealzDev then
 		warn(`SETTHREADIDENTITY ERROR: {tostring(err)}`)
 	end
 	return suc and err
@@ -50,7 +50,7 @@ local isInkGame = false
 
 local savingTable = {
 	"TeleportExploitAutowinEnabled",
-	"NoVoidwareModules",
+	"NoPealzwareModules",
 	"VapeCustomProfile",
 	"ProfilesDisabled",
 	"CheatEngineMode",
@@ -62,7 +62,7 @@ local savingTable = {
 	"TestingMode",
 	"VapePrivate",
 	"RiseMode",
-	"VoidDev"
+	"PealzDev"
 }
 
 local oldtbl = {}
@@ -88,7 +88,7 @@ local function finishLoading()
 					if getgenv and not getgenv().shared then shared.CheatEngineMode = true; getgenv().shared = {}; end
 					shared.VapeSwitchServers = true
 					shared.vapereload = true
-					if shared.VapeDeveloper or shared.VoidDev then
+					if shared.VapeDeveloper or shared.PealzDev then
 						if isfile('vape/loader.lua') then
 							loadstring(readfile("vape/loader.lua"))()
 						else
@@ -103,8 +103,8 @@ local function finishLoading()
 						teleportScript = 'shared.'..tostring(v).." = "..tostring(shared[v]).."\n"..teleportScript
 					end
 				end
-				if shared.VoidDev then
-					teleportScript = 'shared.VoidDev = true\n'..teleportScript
+				if shared.PealzDev then
+					teleportScript = 'shared.PealzDev = true\n'..teleportScript
 				end
 				vape:Save()
 				queue_on_teleport(teleportScript)
@@ -136,10 +136,10 @@ if not isfolder('vape/assets/'..gui) then
 	makefolder('vape/assets/'..gui)
 end
 
-local VWFunctions = pload('core/functions.lua', true, true)
+local PWFunctions = pload('core/functions.lua', true, true)
 --pload('core/functions.lua', true, true)
-VWFunctions.GlobaliseObject("VoidwareFunctions", VWFunctions)
-VWFunctions.GlobaliseObject("VWFunctions", VWFunctions)
+PWFunctions.GlobaliseObject("PealzwareFunctions", PWFunctions)
+PWFunctions.GlobaliseObject("PWFunctions", PWFunctions)
 
 if shared.RiseVapeMode then gui = "rise" end
 local guiFile = manifest.resolveGuiFile(gui)
@@ -163,14 +163,14 @@ getgenv().errorNotification = function(title, msg, dur)
 	vape:CreateNotification(title, msg, dur, 'alert')
 end
 if shared.CheatEngineMode then
-	InfoNotification("Voidware | CheatEngineMode", "Due to your executor not supporting some functions \n some modules might be missing!", 5) 
+	InfoNotification("Pealzware | CheatEngineMode", "Due to your executor not supporting some functions \n some modules might be missing!", 5)
 end
 --[[pcall(function()
 	if (not isfile('vape/discord2.txt')) then
 		task.spawn(function() InfoNotification("Whitelist", "Was whitelisted and your whitelist dissapeared? Join back the discord server :D       ", 30) end)
-		task.spawn(function() InfoNotification("Discord", "New server! discord.gg/voidware!              ", 30) end)
-		task.spawn(function() warningNotification("Discord", "New server! discord.gg/voidware!             ", 30) end)
-		task.spawn(function() errorNotification("Discord", "New server! discord.gg/voidware!              ", 30) end)
+		task.spawn(function() InfoNotification("Discord", "New server! discord.gg/pealzware!              ", 30) end)
+		task.spawn(function() warningNotification("Discord", "New server! discord.gg/pealzware!             ", 30) end)
+		task.spawn(function() errorNotification("Discord", "New server! discord.gg/pealzware!              ", 30) end)
 		writefile('vape/discord2.txt', '')
 	end
 end)--]]
@@ -186,8 +186,8 @@ if not shared.VapeIndependent then
 	isInkGame = table.find(InkGameID.main, game.PlaceId)
 	if not isInkGame then
 		pload('modules/universal.lua', true)
-		if not shared.NoVoidwareModules then
-			pload('modules/vw-universal.lua', true)
+		if not shared.NoPealzwareModules then
+			pload('modules/pw-universal.lua', true)
 		end
 	end
 	local fileName1 = game.PlaceId..".lua"
@@ -199,13 +199,13 @@ if not shared.VapeIndependent then
 	if isGame then
 		if game.PlaceId ~= 6872274481 then vape.Place = 6872274481 end
 		fileName1 = CE.."6872274481.lua"
-		fileName2 = "VW6872274481.lua"
+		fileName2 = "PW6872274481.lua"
 	end
 	if isLobby then
 		fileName1 = CE.."6872265039.lua"
-		fileName2 = "VW6872265039.lua"
+		fileName2 = "PW6872265039.lua"
 	end
-	if not (isGame or isLobby) then fileName2 = "VW"..fileName2 end
+	if not (isGame or isLobby) then fileName2 = "PW"..fileName2 end
 	if isInkGame then
 		vape.Place = 99567941238278
 		pload('modules/99567941238278.lua')
@@ -219,7 +219,7 @@ if not shared.VapeIndependent then
 		warn("[FileName2]: ", tostring(fileName2), " -> ", tostring(resolvedFileName2))
 
 		pload('modules/'..resolvedFileName1)
-		if not shared.NoVoidwareModules then
+		if not shared.NoPealzwareModules then
 			pload('modules/'..resolvedFileName2)
 		end
 	end
