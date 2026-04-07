@@ -344,7 +344,7 @@ run(function()
         Function = function(call)
             if call then
                 Restart:Toggle()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/loader.lua", true))()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
             end
         end
     })

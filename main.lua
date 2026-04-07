@@ -24,8 +24,9 @@ getgenv().run = function(func)
 end
 
 local vape
+local baseLoadstring = loadstring
 local loadstring = function(...)
-	local res, err = loadstring(...)
+	local res, err = baseLoadstring(...)
 	if err and vape then
 		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
 	end
@@ -91,10 +92,10 @@ local function finishLoading()
 						if isfile('vape/loader.lua') then
 							loadstring(readfile("vape/loader.lua"))()
 						else
-							loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/loader.lua", true))()
+							loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 						end
 					else
-						loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/loader.lua", true))()
+						loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 					end
 				]]
 				for _, v in pairs(savingTable) do
@@ -122,19 +123,27 @@ end
 if not isfile('vape/profiles/gui.txt') then
 	writefile('vape/profiles/gui.txt', 'new')
 end
-local gui = readfile('vape/profiles/gui.txt')
+local manifest = pload('core/manifest.lua', true, true)
+local gui = manifest.normalizeGuiValue(readfile('vape/profiles/gui.txt'))
+
+pcall(function()
+	if readfile('vape/profiles/gui.txt') ~= gui then
+		writefile('vape/profiles/gui.txt', gui)
+	end
+end)
 
 if not isfolder('vape/assets/'..gui) then
 	makefolder('vape/assets/'..gui)
 end
 
-local VWFunctions = pload('libraries/VoidwareFunctions.lua', true, true)
---pload('libraries/VoidwareFunctions.lua', true, true)
+local VWFunctions = pload('core/functions.lua', true, true)
+--pload('core/functions.lua', true, true)
 VWFunctions.GlobaliseObject("VoidwareFunctions", VWFunctions)
 VWFunctions.GlobaliseObject("VWFunctions", VWFunctions)
 
 if shared.RiseVapeMode then gui = "rise" end
-vape = pload('guis/'..gui..'.lua', true, true)
+local guiFile = manifest.resolveGuiFile(gui)
+vape = pload('gui/'..guiFile, true, true)
 shared.vape = vape
 getgenv().vape = vape
 getgenv().GuiLibrary = vape
@@ -176,9 +185,9 @@ local InkGameID = {
 if not shared.VapeIndependent then
 	isInkGame = table.find(InkGameID.main, game.PlaceId)
 	if not isInkGame then
-		pload('games/universal.lua', true)
+		pload('modules/universal.lua', true)
 		if not shared.NoVoidwareModules then
-			pload('games/VWUniversal.lua', true)
+			pload('modules/vw-universal.lua', true)
 		end
 	end
 	local fileName1 = game.PlaceId..".lua"
@@ -199,15 +208,19 @@ if not shared.VapeIndependent then
 	if not (isGame or isLobby) then fileName2 = "VW"..fileName2 end
 	if isInkGame then
 		vape.Place = 99567941238278
-		pload('games/99567941238278.lua')
+		pload('modules/99567941238278.lua')
 	else
+		local resolvedFileName1 = manifest.resolveModuleFile(fileName1)
+		local resolvedFileName2 = manifest.resolveModuleFile(fileName2)
+
 		warn("[CheatEngineMode]: ", tostring(shared.CheatEngineMode))
 		warn("[TestingMode]: ", tostring(shared.TestingMode))
-		warn("[FileName1]: ", tostring(fileName1), " [FileName2]: ", tostring(fileName2), " [FileName3]: ", tostring(fileName3))
+		warn("[FileName1]: ", tostring(fileName1), " -> ", tostring(resolvedFileName1))
+		warn("[FileName2]: ", tostring(fileName2), " -> ", tostring(resolvedFileName2))
 
-		pload('games/'..tostring(fileName1))
+		pload('modules/'..resolvedFileName1)
 		if not shared.NoVoidwareModules then
-			pload('games/'..tostring(fileName2))
+			pload('modules/'..resolvedFileName2)
 		end
 	end
 	finishLoading()

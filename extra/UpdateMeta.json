@@ -1,0 +1,10 @@
+[
+  {
+    "updateLogId": "20260406-restructure",
+    "title": "Pealzware Repo Restructure",
+    "date": "2026-04-06",
+    "body": "Reorganized the repo into `core/`, `gui/`, and `modules/`.\nFixed renamed file resolution, bootstrap load bugs, and missing metadata files.\nBundled the changelog/config installer metadata so those utilities stop failing on missing remote paths.",
+    "visible": true,
+    "new": true
+  }
+]

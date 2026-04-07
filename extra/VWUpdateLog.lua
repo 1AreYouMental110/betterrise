@@ -32,7 +32,7 @@ until e<=0
 return g
 end
 
-local d="https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/"
+local d="https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/"
 
 local e=(shared.UpdateLogDevMode and loadJson"VW_Update_Log.json")or(retry(function()
 return b:JSONDecode(game:HttpGet(d.."UpdateMeta.json",true))

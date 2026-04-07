@@ -1,12 +1,12 @@
 --[[
-    BetterRise Loader
+    pealzware Loader
     Simplified single-entry loader -- replaces the original 8-step chain.
-    All files are loaded from: github.com/1AreYouMental110/betterrise
+    All files are loaded from: github.com/1AreYouMental110/pealzware
 ]]
 
 repeat task.wait() until game:IsLoaded()
 
-local REPO_BASE = "https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/"
+local REPO_BASE = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/"
 
 -- Polyfills for executor compatibility
 local isfile = isfile or function(file)
@@ -134,7 +134,7 @@ pcall(function()
     if not isfile("vape/assetversion.txt") then writefile("vape/assetversion.txt", "") end
 end)
 
--- Core file loader -- fetches from betterrise repo
+-- Core file loader -- fetches from pealzware repo
 local function vapeGithubRequest(scripturl, isImportant)
     if isfile(baseDirectory..scripturl) then
         if shared.VoidDev then
@@ -149,12 +149,12 @@ local function vapeGithubRequest(scripturl, isImportant)
     if not suc or res == "404: Not Found" then
         if isImportant then
             game:GetService('StarterGui'):SetCore('SendNotification', {
-                Title = 'BetterRise | Loading Failed',
+                Title = 'pealzware | Loading Failed',
                 Text = "Failed to load: "..tostring(scripturl).."\n"..tostring(res),
                 Duration = 15,
             })
         end
-        warn("[BetterRise] Failed to load: "..baseDirectory..scripturl, res)
+        warn("[pealzware] Failed to load: "..baseDirectory..scripturl, res)
     end
     if scripturl:find(".lua") then
         res = "--This watermark is used to delete the file if its cached, remove it to make the file persist after commits.\n"..res
@@ -180,7 +180,7 @@ local function pload(fileName, isImportant, required)
     if not suc then
         if isImportant then
             if not string.find(string.lower(err), "already injected") then
-                warn("[BetterRise] Critical load failure: "..baseDirectory..tostring(fileName)..": "..tostring(debug.traceback(err)))
+                warn("[pealzware] Critical load failure: "..baseDirectory..tostring(fileName)..": "..tostring(debug.traceback(err)))
             end
         else
             task.spawn(function()
@@ -199,4 +199,3 @@ writefile(baseDirectory.."commithash2.txt", "main")
 
 -- Load the main script
 return pload('main.lua', true)
-

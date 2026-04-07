@@ -1,6 +1,7 @@
 local vape = shared.vape
+local baseLoadstring = loadstring
 local loadstring = function(...)
-	local res, err = loadstring(...)
+	local res, err = baseLoadstring(...)
 	if err and vape then 
 		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert') 
 	end
@@ -28,16 +29,16 @@ local function downloadFile(path, func)
 	return (func or readfile)(path)
 end
 
-vape.Place = 11630038968
+vape.Place = 8768229691
 if isfile('vape/games/'..vape.Place..'.lua') then
-	loadstring(readfile('vape/games/'..vape.Place..'.lua'), 'bridge duel')()
+	loadstring(readfile('vape/games/'..vape.Place..'.lua'), 'skywars')()
 else
 	if not shared.VapeDeveloper then
-		local suc, res = pcall(function() return 
-			game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/'..readfile('vape/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true) 
+		local suc, res = pcall(function() 
+			return game:HttpGet('https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/'..readfile('vape/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true) 
 		end)
 		if suc and res ~= '404: Not Found' then
-			loadstring(downloadFile('vape/games/'..vape.Place..'.lua'), 'bridge duel')()
+			loadstring(downloadFile('vape/games/'..vape.Place..'.lua'), 'skywars')()
 		end
 	end
 end

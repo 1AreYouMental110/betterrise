@@ -329,7 +329,7 @@ VWFunctions.EditWL = function(argTable)
 end
 
 VWFunctions.fetchCheatEngineSupportFile = function(fileName)
-    local url = "https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/CheatEngine/"..tostring(fileName)
+    local url = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/CheatEngine/"..tostring(fileName)
     local suc, res = pcall(function()
         return game:HttpGet(url)
     end)

@@ -435,8 +435,18 @@ function API:GetSimilarColor(color)
 end
 
 local Installer = {}
-function Installer:FetchFiles(dir)
-	local url = "https://api.github.com/repos/Erchobg/VoidwareProfiles/contents/Installer/" .. dir .. "?ref=main"
+function Installer:FetchFiles(config)
+	if type(config.files) == "table" and #config.files > 0 then
+		local files = {}
+		for _, file in ipairs(config.files) do
+			table.insert(files, file)
+		end
+		return files
+	end
+	if config.source == "bundled" then
+		error("Missing bundled files for config")
+	end
+	local url = "https://api.github.com/repos/Erchobg/VoidwareProfiles/contents/Installer/" .. config.directory .. "?ref=main"
 	print("[INSTALLER] Fetching files from " .. tostring(url))
 	local res = request({Url = url, Method = "GET"})
 	if res.StatusCode == 200 then
@@ -451,12 +461,19 @@ function Installer:FetchFiles(dir)
 	error("Failed to fetch files")
 end
 
-function Installer:InstallFiles(files, dir, download)
-	print("[INSTALLER] Installing files from " .. tostring(dir))
+function Installer:ReadProfileContent(config, file)
+	if config.source == "bundled" then
+		return game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/profiles/" .. file, true)
+	end
+	return game:HttpGet("https://raw.githubusercontent.com/Erchobg/VoidwareProfiles/main/Installer/" .. config.directory .. "/" .. file)
+end
+
+function Installer:InstallFiles(files, config, download)
+	print("[INSTALLER] Installing files from " .. tostring(config.directory))
 	for _, file in pairs(files) do
-		print("[INSTALLER] Installing files | URL: " .. tostring("https://raw.githubusercontent.com/Erchobg/VoidwareProfiles/main/Installer/" .. dir .. "/" .. file))
+		print("[INSTALLER] Installing file " .. tostring(file))
 		download.UpdateText("Downloading " .. file .. "...")
-		local content = game:HttpGet("https://raw.githubusercontent.com/Erchobg/VoidwareProfiles/main/Installer/" .. dir .. "/" .. file)
+		local content = self:ReadProfileContent(config, file)
 		for _, folder in pairs({"vape/profiles", "rise/profiles", "vape/libraries", "rise/libraries"}) do
 			if not isfolder(folder) then makefolder(folder) end
 		end
@@ -471,7 +488,7 @@ function Installer:InstallFiles(files, dir, download)
 end
 
 local ui = API:CreateUI()
-local metaUrl = "https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/InstallerMeta.json" 
+local metaUrl = "https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/InstallerMeta.json" 
 local metaData = API.Services.HttpService:JSONDecode(game:HttpGet(metaUrl))
 if not metaData or not metaData.configs then error("Failed to load metafile") end
 
@@ -482,18 +499,18 @@ for _, config in pairs(metaData.configs) do
 		local download = API:CreateDownloadAPI(ui)
 		download.AddTask(function() 
 			download.UpdateText("Fetching files...")
-			local files = Installer:FetchFiles(config.directory)
+			local files = Installer:FetchFiles(config)
 			download.Files = files
 		end, 20)
 		download.AddTask(function() 
-			Installer:InstallFiles(download.Files, config.directory, download)
+			Installer:InstallFiles(download.Files, config, download)
 		end, 70)
 		download.AddTask(function() 
 			download.UpdateText("Finalizing...")
 			task.wait(1)
 		end, 10)
 		download.Run(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/loader.lua", true))()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 		end)
 	end)
 end

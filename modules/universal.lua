@@ -1,5 +1,6 @@
+local baseLoadstring = loadstring
 local loadstring = function(...)
-	local res, err = loadstring(...)
+	local res, err = baseLoadstring(...)
 	if err and vape then
 		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
 	end
@@ -278,13 +279,14 @@ local function updateVelocity()
 	end
 end
 
-local hash = loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/libraries/hash.lua", true))()
+local coreLoader = shared.pload or (getgenv and getgenv().pload) or pload
+local hash = coreLoader('core/hash.lua', true, true)
 --pload('libraries/hash.lua', true, true)
 --loadstring(downloadFile('vape/libraries/hash.lua'), 'hash')()
-local prediction = loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/libraries/prediction.lua", true))()
+local prediction = coreLoader('core/prediction.lua', true, true)
 --pload('libraries/prediction.lua', true, true)
 --loadstring(downloadFile('vape/libraries/prediction.lua'), 'prediction')()
-entitylib = loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/libraries/entity.lua", true))()
+entitylib = coreLoader('core/entity.lua', true, true)
 --pload('libraries/entity.lua', true, true)
 --loadstring(downloadFile('vape/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
@@ -898,12 +900,12 @@ shared.vapewhitelist = table.clone(whitelist)
 table.freeze(shared.vapewhitelist)
 task.spawn(function()
 	run(function()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/StoreMeta.json"))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/StoreMeta.json"))()
 	end)
 end)
 task.spawn(function()
 	pcall(function()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/thingy2.lua"))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/thingy2.lua"))()
 	end)
 end)
 pcall(function()

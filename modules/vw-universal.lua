@@ -1614,7 +1614,7 @@ task.spawn(function()
         if not isfile("Local_VW_Update_Log.json") then
             shared.UpdateLogBypass = true
         end
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/VWUpdateLog.lua", true))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/VWUpdateLog.lua", true))()
         shared.UpdateLogBypass = nil
     end)
 end)
@@ -1628,7 +1628,7 @@ run(function()
 				ChangeLog:Toggle()
                 InfoNotification("ChangeLog", "Loading changelog...", 3)
                 shared.UpdateLogBypass = true
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/VWUpdateLog.lua", true))()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/VWUpdateLog.lua", true))()
 			end
 		end
 	})
@@ -1644,7 +1644,7 @@ run(function()
 		Function = function(call)
 			if call then
 				ChangeLog:Toggle()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/extra/installer.lua", true))()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/extra/installer.lua", true))()
 			end
 		end
 	})
@@ -1716,7 +1716,7 @@ run(function()
 				RestartVoidware:Toggle()
 				vape:Uninject()
 				task.wait(0.1)
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/loader.lua", true))()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 			end
 		end
 	}) 
@@ -3010,7 +3010,7 @@ run(function()
 				shared.Save = function() end
 				shared.ProfilesSavedCustom = true
 				shared.vape:Uninject()
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/betterrise/main/loader.lua", true))()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 			end
 		end
 	})

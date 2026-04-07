@@ -1,0 +1,26 @@
+{
+  "configs": [
+    {
+      "name": "Default Profiles",
+      "description": "Install the bundled default BedWars and lobby profiles.",
+      "color": [87, 179, 255],
+      "directory": "default",
+      "source": "bundled",
+      "files": [
+        "default6872265039.txt",
+        "default6872274481.txt"
+      ]
+    },
+    {
+      "name": "Closet Cheat",
+      "description": "Install the bundled closet-cheat BedWars and lobby profiles.",
+      "color": [255, 171, 87],
+      "directory": "closetcheat",
+      "source": "bundled",
+      "files": [
+        "ClosetCheat6872265039.txt",
+        "ClosetCheat6872274481.txt"
+      ]
+    }
+  ]
+}
