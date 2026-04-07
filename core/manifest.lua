@@ -38,50 +38,6 @@ local moduleDefinitions = {
 	{
 		file = "bedwars-lobby-pealzware.lua",
 		aliases = {"PW6872265039.lua"}
-	},
-	{
-		file = "bridge-duel.lua",
-		aliases = {"11630038968.lua", "12011959048.lua", "14191889582.lua", "14662411059.lua"}
-	},
-	{
-		file = "frontlines.lua",
-		aliases = {"5938036553.lua"}
-	},
-	{
-		file = "ink-game-entry.lua",
-		aliases = {"99567941238278.lua", "125009265613167.lua"}
-	},
-	{
-		file = "jailbreak.lua",
-		aliases = {"606849621.lua"}
-	},
-	{
-		file = "skywars.lua",
-		aliases = {"8768229691.lua", "13246639586.lua", "8542275097.lua", "8592115909.lua", "8951451142.lua"}
-	},
-	{
-		file = "skywars-lobby.lua",
-		aliases = {"8542259458.lua"}
-	},
-	{
-		file = "survival-game.lua",
-		aliases = {"11156779721.lua"}
-	},
-	{
-		file = "99-nights-lobby.lua",
-		aliases = {"126509999114328.lua", "PW126509999114328.lua"}
-	},
-	{
-		file = "99-nights-game.lua",
-		aliases = {"79546208627805.lua", "PW79546208627805.lua"}
-	},
-	{
-		file = "universal-core.lua",
-		aliases = {}
-	},
-	{
-		file = "universal-pealzware.lua",
-		aliases = {}
 	}
 }
 

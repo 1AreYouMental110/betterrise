@@ -46,8 +46,6 @@ local cloneref = cloneref or function(obj)
 end
 local playersService = cloneref(game:GetService('Players'))
 
-local isInkGame = false
-
 local savingTable = {
 	"TeleportExploitAutowinEnabled",
 	"NoPealzwareModules",
@@ -75,42 +73,39 @@ local function finishLoading()
 		until not vape.Loaded
 	end)
 
-	if not isInkGame then
-
-		local teleportedServers
-		vape:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()
-			if (not teleportedServers) and (not shared.VapeIndependent) then
-				teleportedServers = true
-				local teleportScript = [[
-					repeat task.wait() until game:IsLoaded()
-					if getgenv and not getgenv().shared then shared.CheatEngineMode = true; getgenv().shared = {}; end
-					shared.VapeSwitchServers = true
-					shared.vapereload = true
-					if shared.VapeDeveloper or shared.PealzDev then
-						if isfile('vape/loader.lua') then
-							loadstring(readfile("vape/loader.lua"))()
-						else
-							loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
-						end
+	local teleportedServers
+	vape:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()
+		if (not teleportedServers) and (not shared.VapeIndependent) then
+			teleportedServers = true
+			local teleportScript = [[
+				repeat task.wait() until game:IsLoaded()
+				if getgenv and not getgenv().shared then shared.CheatEngineMode = true; getgenv().shared = {}; end
+				shared.VapeSwitchServers = true
+				shared.vapereload = true
+				if shared.VapeDeveloper or shared.PealzDev then
+					if isfile('vape/loader.lua') then
+						loadstring(readfile("vape/loader.lua"))()
 					else
 						loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 					end
-				]]
-				for _, v in pairs(savingTable) do
-					if shared[v] ~= nil then
-						teleportScript = 'shared.'..tostring(v).." = "..tostring(shared[v]).."\n"..teleportScript
-					end
+				else
+					loadstring(game:HttpGet("https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/loader.lua", true))()
 				end
-				if shared.PealzDev then
-					teleportScript = 'shared.PealzDev = true\n'..teleportScript
+			]]
+			for _, v in pairs(savingTable) do
+				if shared[v] ~= nil then
+					teleportScript = 'shared.'..tostring(v).." = "..tostring(shared[v]).."\n"..teleportScript
 				end
-				vape:Save()
-				queue_on_teleport(teleportScript)
 			end
-		end))
-	end
+			if shared.PealzDev then
+				teleportScript = 'shared.PealzDev = true\n'..teleportScript
+			end
+			vape:Save()
+			queue_on_teleport(teleportScript)
+		end
+	end))
 
-	if isInkGame or not shared.vapereload then
+	if not shared.vapereload then
 		if not vape.Categories then return end
 		if vape.Categories.Main.Options['GUI bind indicator'].Enabled then
 			vape:CreateNotification('Finished Loading', vape.VapeButton and 'Press the button in the top right to open GUI' or 'Press '..table.concat(vape.Keybind, ' + '):upper()..' to open GUI', 5)
@@ -176,21 +171,20 @@ local bedwarsID = {
 	game = {6872274481, 8444591321, 8560631822},
 	lobby = {6872265039}
 }
-local InkGameID = {
-	main = {99567941238278, 125009265613167}
-}
 if not shared.VapeIndependent then
-	isInkGame = table.find(InkGameID.main, game.PlaceId)
-	if not isInkGame then
-		pload('modules/universal-core.lua', true)
-		if not shared.NoPealzwareModules then
-			pload('modules/universal-pealzware.lua', true)
-		end
-	end
-	local fileName1 = manifest.resolveModuleFile(game.PlaceId..".lua")
-	local fileName2 = manifest.resolveOptionalModuleFile("PW"..game.PlaceId..".lua")
 	local isGame = table.find(bedwarsID.game, game.PlaceId)
 	local isLobby = table.find(bedwarsID.lobby, game.PlaceId)
+	if not isGame and not isLobby then
+		vape:CreateNotification('Pealzware', 'This build only includes BedWars.', 10, 'alert')
+		finishLoading()
+		return
+	end
+	pload('modules/bedwars-shared-core.lua', true)
+	if not shared.NoPealzwareModules then
+		pload('modules/bedwars-shared-pealzware.lua', true)
+	end
+	local fileName1
+	local fileName2
 	if isGame then
 		if game.PlaceId ~= 6872274481 then vape.Place = 6872274481 end
 		fileName1 = shared.CheatEngineMode and "bedwars-game-cheat-engine.lua" or "bedwars-game-core.lua"
@@ -199,19 +193,14 @@ if not shared.VapeIndependent then
 		fileName1 = shared.CheatEngineMode and "bedwars-lobby-cheat-engine-stub.lua" or "bedwars-lobby-core.lua"
 		fileName2 = "bedwars-lobby-pealzware.lua"
 	end
-	if isInkGame then
-		vape.Place = 99567941238278
-		pload('modules/ink-game-entry.lua')
-	else
-		warn("[CheatEngineMode]: ", tostring(shared.CheatEngineMode))
-		warn("[TestingMode]: ", tostring(shared.TestingMode))
-		warn("[FileName1]: ", tostring(fileName1))
-		warn("[FileName2]: ", tostring(fileName2))
+	warn("[CheatEngineMode]: ", tostring(shared.CheatEngineMode))
+	warn("[TestingMode]: ", tostring(shared.TestingMode))
+	warn("[FileName1]: ", tostring(fileName1))
+	warn("[FileName2]: ", tostring(fileName2))
 
-		pload('modules/'..fileName1)
-		if not shared.NoPealzwareModules and fileName2 and fileName2 ~= fileName1 then
-			pload('modules/'..fileName2)
-		end
+	pload('modules/'..fileName1)
+	if not shared.NoPealzwareModules and fileName2 and fileName2 ~= fileName1 then
+		pload('modules/'..fileName2)
 	end
 	finishLoading()
 else

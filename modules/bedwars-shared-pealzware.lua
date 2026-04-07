@@ -26,7 +26,7 @@ local function run(func)
 	local suc, err = pcall(function()
 		func()
 	end)
-	if err then warn("[universal-pealzware.lua Module Error]: "..tostring(debug.traceback(err))) end
+	if err then warn("[bedwars-shared-pealzware.lua Module Error]: "..tostring(debug.traceback(err))) end
 end
 
 task.spawn(function()

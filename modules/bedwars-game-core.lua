@@ -8492,7 +8492,6 @@ run(function()
 	local ChestSteal
 	local Range
 	local Open
-	local Skywars
 	local Delays = {}
 
 	local function lootChest(chest)
@@ -8522,25 +8521,23 @@ run(function()
 			if callback then
 				local chests = collection('chest', ChestSteal)
 				repeat task.wait() until store.queueType ~= 'bedwars_test'
-				if (not Skywars.Enabled) or store.queueType:find('skywars') then
-					repeat
-						if entitylib.isAlive and store.matchState ~= 2 then
-							if Open.Enabled then
-								if bedwars.AppController:isAppOpen('ChestApp') then
-									lootChest(lplr.Character:FindFirstChild('ObservedChestFolder'))
-								end
-							else
-								local localPosition = entitylib.character.RootPart.Position
-								for _, v in chests do
-									if (localPosition - v.Position).Magnitude <= Range.Value then
-										lootChest(v:FindFirstChild('ChestFolderValue'))
-									end
+				repeat
+					if entitylib.isAlive and store.matchState ~= 2 then
+						if Open.Enabled then
+							if bedwars.AppController:isAppOpen('ChestApp') then
+								lootChest(lplr.Character:FindFirstChild('ObservedChestFolder'))
+							end
+						else
+							local localPosition = entitylib.character.RootPart.Position
+							for _, v in chests do
+								if (localPosition - v.Position).Magnitude <= Range.Value then
+									lootChest(v:FindFirstChild('ChestFolderValue'))
 								end
 							end
 						end
-						task.wait(0.9)
-					until not ChestSteal.Enabled
-				end
+					end
+					task.wait(0.9)
+				until not ChestSteal.Enabled
 			end
 		end,
 		Tooltip = 'Grabs items from near chests.'
@@ -8555,16 +8552,6 @@ run(function()
 		end
 	})
 	Open = ChestSteal:CreateToggle({Name = 'GUI Check'})
-	Skywars = ChestSteal:CreateToggle({
-		Name = 'Only Skywars',
-		Function = function()
-			if ChestSteal.Enabled then
-				ChestSteal:Toggle()
-				ChestSteal:Toggle()
-			end
-		end,
-		Default = true
-	})
 end)
 
 run(function()

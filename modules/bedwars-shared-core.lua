@@ -37,7 +37,7 @@ local function run(func)
 		local suc, err = pcall(function()
 			return func()
 		end)
-		if (not suc) then errorNotification("universal-core.lua error", debug.traceback(tostring(err)), 10) end
+		if (not suc) then errorNotification("bedwars-shared-core.lua error", debug.traceback(tostring(err)), 10) end
 	end)
 end
 

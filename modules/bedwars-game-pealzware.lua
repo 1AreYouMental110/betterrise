@@ -40,7 +40,6 @@ if (not shared.GlobalBedwars) or (shared.GlobalBedwars and type(shared.GlobalBed
 		end
 	end)
 	local delfile = delfile or function(file) writefile(file, "") end
-	if isfile('vape/games/bedwars-game.lua') then delfile('vape/games/bedwars-game.lua') end
 end
 local entityLibrary = entitylib
 local PealzwareStore = {
@@ -4561,7 +4560,6 @@ run(function()
 					if store.matchState == 0 then repeat task.wait() until store.matchState ~= 0 or not Autowin.Enabled end
 					if not shared.VapeFullyLoaded then repeat task.wait() until shared.VapeFullyLoaded or not Autowin.Enabled end
 					if not Autowin.Enabled then return end
-					vapeAssert(not store.queueType:find("skywars"), "Autowin", "Skywars not supported.", 7, true, true, "Autowin")
 					if isAlive(lplr, true) then
 						lplr.Character:WaitForChild("Humanoid"):ChangeState(Enum.HumanoidStateType.Dead)
 						lplr.Character:WaitForChild("Humanoid"):TakeDamage(lplr.Character:WaitForChild("Humanoid").Health)

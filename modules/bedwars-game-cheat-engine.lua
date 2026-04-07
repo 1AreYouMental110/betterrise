@@ -8495,7 +8495,6 @@ run(function()
 	local ChestStealerDistance = {Value = 1}
 	local ChestStealerDelay = {Value = 1}
 	local ChestStealerOpen = {Enabled = false}
-	local ChestStealerSkywars = {Enabled = true}
 	local doneChests = {}
 	local cheststealerdelays = {}
 	local chests = {}
@@ -8592,11 +8591,6 @@ run(function()
 		Name = "GUI Check",
 		Function = function() end
 	})
-	--[[ChestStealerSkywars = ChestStealer:CreateToggle({
-		Name = "Only Skywars",
-		Function = function() end,
-		Default = true
-	})--]]
 end)
 
 run(function()
@@ -9794,7 +9788,7 @@ run(function()
 						shared.scytheSpeed = Settings.ScytheSpeed.Value
 						if Settings.ScytheEnabled then
 							local weapon = getItemNear("scythe")
-							if weapon and (not killauraNearPlayer and store.queueType:find("skywars") or not store.queueType:find("skywars")) then
+							if weapon then
 								switchItem(weapon.tool)
 							end
 							if weapon then
