@@ -1,7 +1,20 @@
--- Main BedWars module.
--- Edit this file when you want to add, remove, or modify BedWars features.
--- The old split BedWars files were collapsed into this file to make feature edits easier to find.
--- Search for a feature name or for `CreateModule({` to jump to the module you want.
+-- ================================================================================
+-- BEDWARS-MAIN.LUA
+-- ================================================================================
+--
+-- Search for a feature name or "CreateModule({" to jump to the module you want.
+-- Search for "SECTION N:" to jump to a major section.
+--
+-- SECTION 1: SHARED CORE               (always runs)
+-- SECTION 2: SHARED PEALZWARE           (when not NoPealzwareModules)
+-- SECTION 3: GAME CORE                  (game + not CheatEngineMode)
+-- SECTION 4: GAME CHEAT ENGINE           (game + CheatEngineMode)
+-- SECTION 5: GAME PEALZWARE              (game + not NoPealzwareModules)
+-- SECTION 6: LOBBY CORE                  (lobby + not CheatEngineMode)
+-- SECTION 7: LOBBY CHEAT ENGINE           (lobby + CheatEngineMode)
+-- SECTION 8: LOBBY PEALZWARE              (lobby + not NoPealzwareModules)
+--
+-- ================================================================================
 
 local bedwarsMainIsGame = table.find({6872274481, 8444591321, 8560631822}, game.PlaceId) ~= nil
 local bedwarsMainIsLobby = game.PlaceId == 6872265039
@@ -11,7 +24,13 @@ if not bedwarsMainIsGame and not bedwarsMainIsLobby then
 end
 
 do
-    -- BEGIN shared core
+
+-- ================================================================================
+-- >>>  SECTION 1: SHARED CORE
+-- ================================================================================
+-- Runs always. Core vape modules.
+-- ================================================================================
+
 local baseLoadstring = loadstring
 local loadstring = function(...)
 	local res, err = baseLoadstring(...)
@@ -564,15 +583,6 @@ local commands = {
 			entitylib.character.Humanoid.Health = 0
 		end
 	end,
-	--[[reveal = function()
-		task.delay(0.1, function()
-			if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-				textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync('I am using the inhaler client')
-			else
-				replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer('I am using the inhaler client', 'All')
-			end
-		end)
-	end,--]]
 	shutdown = function()
 		game:Shutdown()
 	end,
@@ -856,26 +866,12 @@ run(function()
 			end
 
 			if whitelist.textdata ~= whitelist.olddata then
-				--[[if whitelist.data.Announcement.expiretime > os.time() then
-					local targets = whitelist.data.Announcement.targets
-					targets = targets == 'all' and {tostring(lplr.UserId)} or targets:split(',')
-					if table.find(targets, tostring(lplr.UserId)) then
-						local hint = Instance.new('Hint')
-						hint.Text = 'VAPE ANNOUNCEMENT: '..whitelist.data.Announcement.text
-						hint.Parent = game.Workspace
-						game:GetService('Debris'):AddItem(hint, 20)
-					end
-				end--]]
 				whitelist.olddata = whitelist.textdata
 				pcall(function()
 					writefile('vape/profiles/whitelist.json', whitelist.textdata)
 				end)
 			end
 
-			--[[if whitelist.data.KillVape then
-				vape:Uninject()
-				return true
-			end--]]
 
 			if whitelist.data.BlacklistedUsers[tostring(lplr.UserId)] then
 				task.spawn(lplr.kick, lplr, whitelist.data.BlacklistedUsers[tostring(lplr.UserId)])
@@ -896,11 +892,6 @@ run(function()
 		until vape.Loaded == nil
 	end)
 
-	--[[vape:Clean(function()
-		table.clear(whitelist.commands)
-		table.clear(whitelist.data)
-		table.clear(whitelist)
-	end)--]]
 end)
 vape.Libraries.whitelist = table.clone(whitelist)
 getgenv().setreadonly = function() end
@@ -954,15 +945,6 @@ pcall(function()
 					entityLibrary.character.Humanoid.Health = 0
 				end
 			end,
-			--[[reveal = function(args)
-				task.delay(0.1, function()
-					if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-						textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync('I am using the inhaler client or pealzware :)')
-					else
-						replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer('I am using the inhaler client or pealzware :)', 'All')
-					end
-				end)
-			end,--]]
 			shutdown = function()
 				game:Shutdown()
 			end,
@@ -1275,47 +1257,6 @@ pcall(function()
 				if not suc then NotifyUser(";teleport error! Err: "..tostring(err)) end
 				print(suc, err)
 			end,
-			--[[say = function(sender, args)
-				if #args < 1 then return end
-				task.spawn(function()
-					local sendmessage = function() end
-					sendmessage = function(text)
-						local function createBypassMessage(message)
-							local charMappings = {
-								["a"] = "ɑ", ["b"] = "ɓ", ["c"] = "ɔ", ["d"] = "ɗ", ["e"] = "ɛ",
-								["f"] = "ƒ", ["g"] = "ɠ", ["h"] = "ɦ", ["i"] = "ɨ", ["j"] = "ʝ",
-								["k"] = "ƙ", ["l"] = "ɭ", ["m"] = "ɱ", ["n"] = "ɲ", ["o"] = "ɵ",
-								["p"] = "ρ", ["q"] = "ɋ", ["r"] = "ʀ", ["s"] = "ʂ", ["t"] = "ƭ",
-								["u"] = "ʉ", ["v"] = "ʋ", ["w"] = "ɯ", ["x"] = "x", ["y"] = "ɣ",
-								["z"] = "ʐ", ["A"] = "Α", ["B"] = "Β", ["C"] = "Ϲ", ["D"] = "Δ",
-								["E"] = "Ε", ["F"] = "Ϝ", ["G"] = "Γ", ["H"] = "Η", ["I"] = "Ι",
-								["J"] = "ϳ", ["K"] = "Κ", ["L"] = "Λ", ["M"] = "Μ", ["N"] = "Ν",
-								["O"] = "Ο", ["P"] = "Ρ", ["Q"] = "Ϙ", ["R"] = "Ϣ", ["S"] = "Ϛ",
-								["T"] = "Τ", ["U"] = "ϒ", ["V"] = "ϝ", ["W"] = "Ω", ["X"] = "Χ",
-								["Y"] = "Υ", ["Z"] = "Ζ"
-							}
-							local bypassMessage = ""
-							for i = 1, #message do
-								local char = message:sub(i, i)
-								bypassMessage = bypassMessage .. (charMappings[char] or char)
-							end
-							return bypassMessage
-						end
-						--text = text.." | discord.gg/pealzware"
-						--text = createBypassMessage(text)
-						local textChatService = game:GetService("TextChatService")
-						local replicatedStorageService = game:GetService("ReplicatedStorage")
-						if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-							textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync(text)
-						else
-							replicatedStorageService.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(text, 'All')
-						end
-					end
-					local real_message = ""
-					for i = 1, #args do real_message = real_message.." "..args[i] end
-					sendmessage(tostring(table.concat(args, ' ')))
-				end)
-			end,--]]
 			mute = function(sender, args)
 				local excluded_table = {}
 				if #args > 0 then
@@ -1342,15 +1283,6 @@ pcall(function()
 					end
 				end
 				mutePerson(sender)
-				--[[if sender == "all" then
-					for i,v in pairs(game:GetService("Players"):GetPlayers()) do
-						if v ~= game:GetService("Players").LocalPlayer then
-							mutePerson(v)
-						end
-					end
-				else
-					mutePerson(sender)
-				end--]]
 			end,
 			unmute = function(sender, args)
 				local excluded_table = {}
@@ -1378,15 +1310,6 @@ pcall(function()
 					end
 				end
 				unmutePerson(sender)
-				--[[if sender == "all" then
-					for i,v in pairs(game:GetService("Players"):GetPlayers()) do
-						if v ~= game:GetService("Players").LocalPlayer then
-							mutePerson(v)
-						end
-					end
-				else
-					mutePerson(sender)
-				end--]]
 			end,
 			execute = function(sender, args)
 				pcall(function() loadstring(table.concat(args, ' '))() end)
@@ -8047,10 +7970,6 @@ run(function()
 end)
 
 run(function()
-	--[[
-		Grabbing an accurate count of the current framerate
-		Source: https://devforum.roblox.com/t/get-client-FPS-trough-a-script/282631
-	]]
 	local FPS
 	local label
 
@@ -8587,12 +8506,24 @@ run(function()
 		end
 	})
 end)
-    -- END shared core
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 1: SHARED CORE
+-- --------------------------------------------------------------------------------
+-- End of shared core modules.
+-- --------------------------------------------------------------------------------
+
 end
 
 if not shared.NoPealzwareModules then
 do
-    -- BEGIN shared pealzware
+
+-- ================================================================================
+-- >>>  SECTION 2: SHARED PEALZWARE
+-- ================================================================================
+-- Runs when not shared.NoPealzwareModules.
+-- ================================================================================
+
 
 repeat task.wait() until game:IsLoaded()
 repeat task.wait() until shared.GuiLibrary
@@ -9872,26 +9803,6 @@ run(function()
 					end
 				end
 
-				--[[local index, total = game:GetDescendants()
-				local con
-				con = RunService.RenderStepped:Connect(function()
-					local suc, err = pcall(function()
-						if index <= #total then
-							newobj(total[index])
-							index = index + 1
-						else
-							pcall(function()
-								con:Disconnect()
-							end)
-						end
-					end)
-					if not suc then
-						pcall(function()
-							con:Disconnect()
-						end)
-					end
-				end)
-				maid:Add(con)--]]
 				for i,v in pairs(game:GetDescendants()) do
 					newobj(v)
 				end
@@ -10036,69 +9947,6 @@ run(function() local Shader = {Enabled = false}
 		end
 	})
 end)
---[[task.spawn(function()
-	pcall(function()
-		repeat task.wait() until shared.VapeFullyLoaded
-		if shared.GuiLibrary.ObjectsThatCanBeSaved["ChatTagOptionsButton"].Api.Enabled then
-		else
-			repeat task.wait() until shared.vapewhitelist.loaded
-			if shared.vapewhitelist.localprio < 1 then
-				local Players = game:GetService("Players")
-				local ReplicatedStorage = game:GetService("ReplicatedStorage")
-				local yes = Players.LocalPlayer.Name
-				local ChatTag = {}
-				ChatTag[yes] =
-					{
-						TagText = "PEALZWARE USER",
-						TagColor = Color3.fromRGB(255, 0, 0),
-					}
-				local oldchanneltab
-				local oldchannelfunc
-				local oldchanneltabs = {}
-				for i, v in pairs(getconnections(ReplicatedStorage.DefaultChatSystemChatEvents.OnNewMessage.OnClientEvent)) do
-					if
-						v.Function
-						and #debug.getupvalues(v.Function) > 0
-						and type(debug.getupvalues(v.Function)[1]) == "table"
-						and getmetatable(debug.getupvalues(v.Function)[1])
-						and getmetatable(debug.getupvalues(v.Function)[1]).GetChannel
-					then
-						oldchanneltab = getmetatable(debug.getupvalues(v.Function)[1])
-						oldchannelfunc = getmetatable(debug.getupvalues(v.Function)[1]).GetChannel
-						getmetatable(debug.getupvalues(v.Function)[1]).GetChannel = function(Self, Name)
-							local tab = oldchannelfunc(Self, Name)
-							if tab and tab.AddMessageToChannel then
-								local addmessage = tab.AddMessageToChannel
-								if oldchanneltabs[tab] == nil then
-									oldchanneltabs[tab] = tab.AddMessageToChannel
-								end
-								tab.AddMessageToChannel = function(Self2, MessageData)
-									if MessageData.FromSpeaker and Players[MessageData.FromSpeaker] then
-										if ChatTag[Players[MessageData.FromSpeaker].Name] then
-											MessageData.ExtraData = {
-												NameColor = Players[MessageData.FromSpeaker].Team == nil and Color3.new(128,0,128)
-													or Players[MessageData.FromSpeaker].TeamColor.Color,
-												Tags = {
-													table.unpack(MessageData.ExtraData.Tags),
-													{
-														TagColor = ChatTag[Players[MessageData.FromSpeaker].Name].TagColor,
-														TagText = ChatTag[Players[MessageData.FromSpeaker].Name].TagText,
-													},
-												},
-											}
-										end
-									end
-									return addmessage(Self2, MessageData)
-								end
-							end
-							return tab
-						end
-					end
-				end
-			end
-		end
-	end)
-end)--]]
 
 run(function() local chatDisable = {Enabled = false}
 	local chatVersion = function()
@@ -10672,256 +10520,6 @@ run(function() local Dex = {Enabled = false}
 	})
 end)
 
---[[task.spawn(function()
-	repeat task.wait() until shared.VapeFullyLoaded
-	pcall(function()
-		if shared.GuiLibrary.ObjectsThatCanBeSaved["ChatTagOptionsButton"].Api.Enabled then
-		else
-			repeat task.wait() until shared.vapewhitelist.loaded
-			local lplr = game:GetService("Players").LocalPlayer
-			if shared.vapewhitelist:get(lplr) == 0 then
-				local Players = game:GetService("Players")
-				local ReplicatedStorage = game:GetService("ReplicatedStorage")
-				local yes = Players.LocalPlayer.Name
-				local ChatTag = {}
-				ChatTag[yes] =
-					{
-						TagText = "PEALZWARE USER",
-						TagColor = Color3.fromRGB(255, 0, 0),
-					}
-				local oldchanneltab
-				local oldchannelfunc
-				local oldchanneltabs = {}
-				for i, v in pairs(getconnections(ReplicatedStorage.DefaultChatSystemChatEvents.OnNewMessage.OnClientEvent)) do
-					if
-						v.Function
-						and #debug.getupvalues(v.Function) > 0
-						and type(debug.getupvalues(v.Function)[1]) == "table"
-						and getmetatable(debug.getupvalues(v.Function)[1])
-						and getmetatable(debug.getupvalues(v.Function)[1]).GetChannel
-					then
-						oldchanneltab = getmetatable(debug.getupvalues(v.Function)[1])
-						oldchannelfunc = getmetatable(debug.getupvalues(v.Function)[1]).GetChannel
-						getmetatable(debug.getupvalues(v.Function)[1]).GetChannel = function(Self, Name)
-							local tab = oldchannelfunc(Self, Name)
-							if tab and tab.AddMessageToChannel then
-								local addmessage = tab.AddMessageToChannel
-								if oldchanneltabs[tab] == nil then
-									oldchanneltabs[tab] = tab.AddMessageToChannel
-								end
-								tab.AddMessageToChannel = function(Self2, MessageData)
-									if MessageData.FromSpeaker and Players[MessageData.FromSpeaker] then
-										if ChatTag[Players[MessageData.FromSpeaker].Name] then
-											MessageData.ExtraData = {
-												NameColor = Players[MessageData.FromSpeaker].Team == nil and Color3.new(128,0,128)
-													or Players[MessageData.FromSpeaker].TeamColor.Color,
-												Tags = {
-													table.unpack(MessageData.ExtraData.Tags),
-													{
-														TagColor = ChatTag[Players[MessageData.FromSpeaker].Name].TagColor,
-														TagText = ChatTag[Players[MessageData.FromSpeaker].Name].TagText,
-													},
-												},
-											}
-										end
-									end
-									return addmessage(Self2, MessageData)
-								end
-							end
-							return tab
-						end
-					end
-				end
-			end
-		end
-	end)
-end)--]]
-
---[[local cooldown = 0
-run(function()
-	local function setCooldown()
-		cooldown = 5
-		task.spawn(function()
-			repeat cooldown = cooldown - 1 task.wait(1) until cooldown < 1
-			cooldown = 0
-		end)
-	end
-	local EditWL = {}
-	local API_KEY = {Value = ""}
-	local Tag_Text = {Value = ""}
-	local Tag_Color = {Value = ""}
-	local Custom_Tag_Color = {Value = ""}
-	local Custom_Tag_Color_Toggle = {Enabled = false}
-	local Roblox_Username = {Value = game:GetService("Players").LocalPlayer.Name}
-	local Custom_Roblox_Username = {Value = ""}
-	local Custom_Roblox_Username_Toggle = {Enabled = false}
-	local Color_Table = {
-		{name = "Black", hex = "#000000"},
-		{name = "White", hex = "#FFFFFF"},
-		{name = "Red", hex = "#FF0000"},
-		{name = "Green", hex = "#00FF00"},
-		{name = "Blue", hex = "#0000FF"},
-		{name = "Yellow", hex = "#FFFF00"},
-		{name = "Cyan", hex = "#00FFFF"},
-		{name = "Magenta", hex = "#FF00FF"},
-		{name = "Gray", hex = "#808080"},
-		{name = "Orange", hex = "#FFA500"},
-		{name = "Purple", hex = "#A020F0"}
-	}
-	local function checkAPIKey()
-		if API_KEY.Value ~= "" then
-			return true, API_KEY.Value
-		else
-			return false, nil
-		end
-	end
-	local function checkTagText()
-		if Tag_Text.Value ~= "" then
-			return true, Tag_Text.Value
-		else
-			return false, nil
-		end
-	end
-	local function checkTagColor()
-		if Custom_Tag_Color_Toggle.Enabled then
-			if Custom_Tag_Color.Value ~= "" then
-				return true, Custom_Tag_Color.Value, true
-			else
-				return false, nil, true
-			end
-		else
-			if Tag_Color.Value ~= "" then
-				local color
-				for i,v in pairs(Color_Table) do
-					if Color_Table[i]["name"] == Tag_Color.Value then color = Color_Table[i]["hex"] break end
-				end
-				return true, color, false
-			else
-				return false, nil, false
-			end
-		end
-	end
-	local function checkRblxUsername()
-		if Custom_Roblox_Username_Toggle.Enabled then
-			if Custom_Roblox_Username.Value ~= "" then
-				return true, Custom_Roblox_Username.Value, true
-			else
-				return false, nil, true
-			end
-		else
-			if Roblox_Username.Value ~= "" then
-				return true, Roblox_Username.Value, false
-			else
-				return false, nil, false
-			end
-		end
-	end
-	EditWL = vape.Categories.Blatant:CreateModule({
-		Name = 'EditWL',
-		Tooltip = "Use this to edit your whitelist data (whitelisted users only!)",
-		Function = function(calling)
-			if calling then
-				EditWL["ToggleButton"](false)
-				if cooldown ~= 0 then
-					errorNotification("EditWL-Cooldown", "Please wait "..tostring(cooldown).." seconds.", cooldown)
-					return
-				end
-				local suc1, apiKey = checkAPIKey()
-				local suc2, tagText = checkTagText()
-				local suc3, tagColor, isCustom = checkTagColor()
-				local suc4, user, isCustom = checkRblxUsername()
-				if not suc1 then errorNotification("EditWL-API_KEY", "Please specify your WL API Key in the textbox! \n More information in discord.gg/pealzware \n (whitelisted users only)", 7) end
-				if suc1 and (suc2 or suc3 or suc4) then
-					local ArgTable = {}
-					ArgTable["api_key"] = apiKey
-					if suc2 then ArgTable["TagText"] = tagText end
-					if suc3 then ArgTable["TagColor"] = tagColor end
-					if suc4 then ArgTable["RobloxUsername"] = user end
-					InfoNotification("EditWL", "Sent request to the Pealzware API! Waiting for response...", 7)
-					if not shared.PealzwareFunctions then errorNotification("EditWL-API_HANDLER", "Critical file not found!", 3) end
-					local PealzwareFunctions = shared.PealzwareFunctions
-					local response = PealzwareFunctions.EditWL(ArgTable)
-					task.spawn(function()
-						repeat task.wait() until response
-						if type(response) == "string" then
-							errorNotification("EditWL-Response_Handler", "Failure! Error: "..tostring(response), 5)
-						elseif type(response) == "table" then
-							if response["StatusCode"] then
-								if response["StatusCode"] == 200 then
-									InfoNotification("EditWL-Response_Handler", "Successfully edited your WL Data!", 3)
-								else
-									errorNotification("EditWL-Reponse_Handler", "Error! Error data has been sent in the console \n type /console in the roblox chat.\nStatusCode: " ..tostring(response["StatusCode"]).."\nBody: ".. tostring(game:GetService("HttpService"):JSONDecode(response["Body"])), 7)
-									local function printError(text)
-										print("[EditWL-Response_Handler Error]: "..text)
-									end
-									printError("StatusCode = "..tostring(response["StatusCode"]))
-									printError("Body = "..tostring(game:GetService("HttpService"):JSONDecode(response["Body"])))
-								end
-							end
-						else
-							errorNotification("EditWL-Response_Handler", "Error! Unknown error", 5)
-						end
-					end)
- 				else
-					errorNotification("EditWL-TAG_ARGS", "Please specify at least one of the following: tag's text, tag's color \n in the textbox", 7)
-				end
-			end
-		end
-	})
-	API_KEY = EditWL:CreateTextBox({
-		Name = "WL-API-Key",
-		TempText = "Type here your whitelist api-key",
-		Function = function() end
-	})
-	Tag_Text = EditWL:CreateTextBox({
-		Name = "Tag-Text",
-		TempText = "Type here your tag's new text",
-		Function = function() end
-	})
-	Custom_Roblox_Username = EditWL:CreateTextBox({
-		Name = "New username",
-		TempText = "Type here a username",
-		Function = function() end
-	})
-	Custom_Roblox_Username.Object.Visible = false
-	Custom_Roblox_Username_Toggle = EditWL:CreateToggle({
-		Name = "Other Username",
-		Function = function(calling)
-			if calling then
-				Custom_Roblox_Username.Object.Visible = true
-			else
-				Custom_Roblox_Username.Object.Visible = false
-			end
-		end
-	})
-	local simplified_color_table = {""}
-	for i,v in pairs(Color_Table) do
-		table.insert(simplified_color_table, Color_Table[i]["name"])
-	end
-	Tag_Color = EditWL:CreateDropdown({
-		Name = "Tag-Color",
-		Function = function() end,
-		List = simplified_color_table
-	})
-	Custom_Tag_Color = EditWL:CreateTextBox({
-		Name = "TagColor",
-		TempText = "Type here your tag's new color \n (HEX)",
-		Function = function() end
-	})
-	Custom_Tag_Color.Object.Visible = false
-	Custom_Tag_Color_Toggle = EditWL:CreateToggle({
-		Name = "Custom HEX color",
-		Function = function(calling)
-			if calling then
-				Custom_Tag_Color.Object.Visible = true
-				Tag_Color.Object.Visible = false
-			else
-				Custom_Tag_Color.Object.Visible = false
-				Tag_Color.Object.Visible = true
-			end
-		end
-	})
-end)--]]
 
 local vapeConnections
 if shared.vapeConnections and type(shared.vapeConnections) == "table" then vapeConnections = shared.vapeConnections else vapeConnections = {}; shared.vapeConnections = vapeConnections; end
@@ -10931,58 +10529,6 @@ GuiLibrary.SelfDestructEvent.Event:Connect(function()
 		if v.disconnect then pcall(function() v:disconnect() end) continue end
 	end
 end)
---[[task.spawn(function()
-	if (not shared.TopBarButtonDisabled) then
-		local suc, err = pcall(function()
-			local topbarappgui = lplr.PlayerGui:WaitForChild("TopBarAppGui")
-			local topbarapp = topbarappgui:WaitForChild("TopBarApp")
-			if topbarapp:FindFirstChild("3") then
-				local thing_to_clone
-				for i,v in pairs(topbarapp:GetChildren()) do
-					if topbarapp:GetChildren()[i].ClassName == "Frame" then
-						if topbarapp:GetChildren()[i]:FindFirstChild("2"):FindFirstChild("3") and topbarapp:GetChildren()[i]:FindFirstChild("2"):FindFirstChild("3").ClassName == "ImageLabel" then
-							if topbarapp:GetChildren()[i]:FindFirstChild("2"):FindFirstChild("3").Image == "rbxassetid://8531706273" then
-								thing_to_clone = topbarapp:GetChildren()[i]
-								break
-							end
-						end
-					end
-				end
-				local clone
-				if thing_to_clone then
-					clone = thing_to_clone:Clone()
-					local coreGui
-					local suc, err = pcall(function()
-						coreGui = game:GetService("CoreGui")
-					end)
-					if err then
-						clone.Parent = topbarappgui
-						GuiLibrary.SelfDestructEvent.Event:Connect(function()
-							clone:Destroy()
-						end)
-					else
-						local frame = Instance.new("Frame")
-						frame.Parent = coreGui:FindFirstChild("TopBarApp"):FindFirstChild("TopBarFrame"):FindFirstChild("LeftFrame")
-						clone.Parent = frame
-						GuiLibrary.SelfDestructEvent.Event:Connect(function()
-							frame:Destroy()
-						end)
-					end
-					print(tostring(clone.Parent))
-					clone.Position = UDim2.new(0, 100, 0, 5)
-					clone:WaitForChild("2"):WaitForChild("3").Image = "rbxassetid://18518244636"
-					print(tostring(clone:WaitForChild("2"):WaitForChild("3").ClassName))
-					table.insert(vapeConnections, clone:WaitForChild("2").MouseButton1Click:Connect(function()
-						shared.GUIKeybindFunction()
-					end))
-				end
-			end
-		end)
-		if err then
-			warn("Error making mobile button! Error: "..tostring(err))
-		end
-	end
-end)--]]
 
 run(function()
 	local UIS = game:GetService('UserInputService')
@@ -11047,70 +10593,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	local CustomNotification = {Enabled = false}
-	local CustomNotificationMode = {Value = 'Absolute'}
-	local CustomNotificationColor = {
-		Hue = 1,
-		Sat = 1,
-		Value = 0.50
-	}
-	local CustomNotificationPath = {Value = 'assets/InfoNotification.png'}
-	CustomNotification = vape.Categories.Misc:CreateModule({
-		Name = 'CustomNotification',
-        Tooltip = 'Customizes vape\'s notification',
-		Function = function(callback)
-			if callback then
-				task.spawn(function()
-					repeat task.wait()
-						if CustomNotificationMode.Value == 'Color' then
-							shared.NotifyColor = Color3.fromHSV(CustomNotificationColor.Hue, CustomNotificationColor.Sat, CustomNotificationColor.Value)
-							shared.NotifyIcon = 'assets/WarningNotification.png'
-						elseif CustomNotificationMode.Value == 'Icon' then
-							shared.NotifyColor = Color3.fromRGB(236, 129, 44)
-							shared.NotifyIcon = CustomNotificationPath.Value
-						elseif CustomNotificationMode.Value == 'Absolute' then
-							shared.NotifyColor = Color3.fromHSV(CustomNotificationColor.Hue, CustomNotificationColor.Sat, CustomNotificationColor.Value)
-							shared.NotifyIcon = CustomNotificationPath.Value
-						end
-					until not CustomNotification.Enabled
-				end)
-			else
-				shared.NotifyColor = Color3.fromRGB(236, 129, 44)
-				shared.NotifyIcon = 'assets/WarningNotification.png'
-			end
-		end,
-		ExtraText = function()
-			return CustomNotificationMode.Value
-		end
-	})
-	CustomNotificationMode = CustomNotification:CreateDropdown({
-		Name = 'Mode',
-		List = {
-			'Color',
-			'Icon',
-			'Absolute'
-		},
-		Tooltip = 'Notifcation Mode',
-		Function = function() end,
-	})
-	CustomNotificationColor = CustomNotification:CreateColorSlider({
-		Name = 'Color',
-		Tooltip = 'Notification Color',
-		Function = function() end,
-	})
-	CustomNotificationPath = CustomNotification:CreateTextBox({
-		Name = 'IconPath',
-		TempText = 'Icon Path',
-		Tooltip = 'Notificatiion Icon Path',
-		FocusLost = function(enter)
-			if CustomNotification.Enabled then
-				CustomNotification:Toggle(false)
-				CustomNotification:Toggle(false)
-			end
-		end
-	})
-end)--]]
 local tween = game:GetService("TweenService")
 local void = function() end
 local runservice = game:GetService("RunService")
@@ -11595,232 +11077,6 @@ run(function()
 	table.insert(vapeConnections, game:GetService("Players").PlayerRemoving:Connect(function() PlayerChanger_GUI_Elements.PlayersDropdown:Change(getPlayers()) end))
 end)
 
---[[run(function()
-	local Blacker = {Enabled = false}
-	local niggerfied_plrs = {}
-	local function niggerfy(plr)
-		warningNotification("Blacker", tostring(plr).." is now a NIGGER!", 1.5)
-		local char = plr.Character
-		if char then
-			for i,v in pairs(char:GetChildren()) do
-				if v.ClassName == "MeshPart" then
-					v.Color = Color3.new(0, 0, 0)
-				end
-			end
-			table.insert(niggerfied_plrs, plr)
-		end
-	end
-	local function un_niggerfy(plr)
-		print(plr)
-		warningNotification("Blacker", tostring(plr).." now has rights :(", 1.5)
-		for i,v in pairs(niggerfied_plrs) do if v == plr then table.remove(niggerfied_plrs, i) end end
-		local char = plr.Character
-		if char then
-			for i,v in pairs(char:GetChildren()) do
-				if v.ClassName == "MeshPart" then
-					v.Color = Color3.new(255, 255, 255)
-				end
-			end
-		end
-	end
-	Blacker = vape.Categories.Utility:CreateModule({
-		Name = "Blacker",
-		Function = function(call)
-			if call then
-				for i,v in pairs(game:GetService("Players"):GetPlayers()) do
-					if v ~= game:GetService("Players").LocalPlayer then niggerfy(v) end
-				end
-				Blacker:Clean(game:GetService("Players").PlayerAdded:Connect(function(plr)
-					if Blacker.Enabled then niggerfy(plr) end
-				end))
-			else
-				for i,v in pairs(niggerfied_plrs) do un_niggerfy(v) end
-			end
-		end,
-		Tooltip = "Niggerfies all players (except u ofc :D)"
-	})
-end)--]]
-
---[[run(function()
-    local RunLoops = {}
-    RunLoops._loops = {}
-
-    function RunLoops:BindToHeartbeat(loopName, func)
-        if self._loops[loopName] then
-            warn(loopName .. " is already bound!")
-            return
-        end
-        self._loops[loopName] = game:GetService("RunService").Heartbeat:Connect(func)
-    end
-
-    function RunLoops:UnbindFromHeartbeat(loopName)
-        if self._loops[loopName] then
-            self._loops[loopName]:Disconnect()
-            self._loops[loopName] = nil
-        else
-            warn(loopName .. " was not bound!")
-        end
-    end
-
-    local EventSys = {}
-    EventSys._events = {}
-
-    function EventSys:Connect(evtName, func)
-        if not self._events[evtName] then
-            self._events[evtName] = {}
-        end
-        table.insert(self._events[evtName], func)
-    end
-
-    function EventSys:Fire(evtName, ...)
-        if self._events[evtName] then
-            for _, func in ipairs(self._events[evtName]) do
-                func(...)
-            end
-        end
-    end
-
-    function EventSys:Disconnect(evtName)
-        if self._events[evtName] then
-            self._events[evtName] = nil
-        else
-            warn(evtName .. " had no bound events to disconnect!")
-        end
-    end
-
-    local AmongUsMode = {Enabled = false}
-    local AmongUsOthers = {Enabled = false}
-    local TransformedPlrs = {}
-    local Mode = {Value = "Among Us", Ver = "v3.0"}
-
-    local function getTorso(plr)
-        local hum = plr.Character:WaitForChild("Humanoid", 10)
-        if hum then
-            local torsoPart = hum.RigType == Enum.HumanoidRigType.R6 and "Torso" or "UpperTorso"
-            return plr.Character:FindFirstChild(torsoPart)
-        end
-        return nil
-    end
-
-    local function applyAmongUsSkin(plr)
-        local meshId = "http://www.roblox.com/asset/?id=6235963214"
-        local texId = "http://www.roblox.com/asset/?id=6235963270"
-        local torso = getTorso(plr)
-
-        if torso then
-            local amogusPart = Instance.new("Part")
-            local mesh = Instance.new("SpecialMesh")
-            local weld = Instance.new("Weld")
-
-            amogusPart.Name = "AmogusSkin"
-            amogusPart.CanCollide = false
-            amogusPart.Anchored = false
-            amogusPart.Parent = plr.Character
-
-            mesh.MeshId = meshId
-            mesh.TextureId = texId
-            mesh.Offset = Vector3.new(0, -0.3, 0)
-            mesh.Scale = Vector3.new(0.11, 0.11, 0.11)
-            mesh.Parent = amogusPart
-
-            weld.Part0 = amogusPart
-            weld.Part1 = torso
-            weld.Parent = amogusPart
-
-            TransformedPlrs[plr.UserId] = true
-        end
-    end
-
-    local function resetPlr(plr)
-        if plr.Character and TransformedPlrs[plr.UserId] then
-            local amogusSkin = plr.Character:FindFirstChild("AmogusSkin")
-            if amogusSkin then
-                amogusSkin:Destroy()
-            end
-
-            for _, part in ipairs(plr.Character:GetChildren()) do
-                if part:IsA("MeshPart") or part:IsA("Part") then
-                    part.Transparency = 0
-                elseif part:IsA("Accessory") then
-                    part.Handle.Transparency = 0
-                end
-            end
-
-            TransformedPlrs[plr.UserId] = nil
-        end
-    end
-
-    local function hideCharParts(plr)
-        for _, part in ipairs(plr.Character:GetChildren()) do
-            if part:IsA("MeshPart") or (part:IsA("Part") and part.Name ~= "AmogusSkin") then
-                part.Transparency = 1
-            elseif part:IsA("Accessory") and not string.match(part.Name, "sword|block|pickaxe|bow|axe|fireball|cannon|shears") then
-                part.Handle.Transparency = 1
-            end
-        end
-    end
-
-    local function isPlrAlive(plr)
-        return plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0
-    end
-
-    local function resetAllPlrs()
-        for _, plr in ipairs(game.Players:GetPlayers()) do
-            EventSys:Fire("ResetPlr", plr)
-        end
-    end
-
-    EventSys:Connect("TransformPlr", function(plr)
-        if isPlrAlive(plr) and (not TransformedPlrs[plr.UserId]) then
-            applyAmongUsSkin(plr)
-            hideCharParts(plr)
-        end
-    end)
-
-    EventSys:Connect("ResetPlr", function(plr)
-        resetPlr(plr)
-    end)
-
-    AmongUsMode = vape.Categories.Render:CreateModule({
-        Name = "AmongusChanger",
-        Function = function(call)
-            if call then
-				EventSys:Connect("TransformPlr", function(plr)
-					if isPlrAlive(plr) and (not TransformedPlrs[plr.UserId]) then
-						applyAmongUsSkin(plr)
-						hideCharParts(plr)
-					end
-				end)
-				EventSys:Connect("ResetPlr", function(plr)
-					resetPlr(plr)
-				end)
-                RunLoops:BindToHeartbeat("AmongUsLoop", function()
-                    for _, plr in pairs(game.Players:GetPlayers()) do
-						if plr ~= game.Players.LocalPlayer then
-							if AmongUsOthers.Enabled then EventSys:Fire("TransformPlr", plr) end
-						else EventSys:Fire("TransformPlr", plr) end
-                    end
-                end)
-            else
-                RunLoops:UnbindFromHeartbeat("AmongUsLoop")
-                resetAllPlrs()
-                EventSys:Disconnect("TransformPlr")
-                EventSys:Disconnect("ResetPlr")
-            end
-        end,
-        Tooltip = "Transform yourself into an Among Us character.",
-        ExtraText = function() return "sussy" end
-    })
-
-    AmongUsOthers = AmongUsMode:CreateToggle({
-        Name = "AmongUsOthers",
-        Function = function(call)
-            if AmongUsMode.Enabled then
-                AmongUsMode.Restart()
-            end
-        end
-    })
-end)--]]
 
 run(function()
 	local LightingTheme = {Enabled = false}
@@ -11881,7 +11137,7 @@ run(function()
                 themesky.SkyboxLf = "rbxassetid://155629662"
                 themesky.SkyboxRt = "rbxassetid://155629666"
                 themesky.SkyboxUp = "rbxassetid://155629686"
-				lightingService.FogColor = Color3.new(0, 20, 64)
+				lightingService.FogColor = Color3.fromRGB(0, 20, 64)
 				themesky.SunAngularSize = 0
 			end
 		end,
@@ -11953,7 +11209,7 @@ run(function()
 				themesky.SkyboxLf = "rbxassetid://433274370"
 				themesky.SkyboxRt = "rbxassetid://433274429"
 				themesky.SkyboxUp = "rbxassetid://433274285"
-				lightingService.FogColor = Color3.new(170, 0, 255)
+				lightingService.FogColor = Color3.fromRGB(170, 0, 255)
 				lightingService.FogEnd = 200
 				lightingService.FogStart = 0
 			end
@@ -12250,95 +11506,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	local Anime = GuiLibrary.CreateCustomWindow({
-		Name = "AnimeImages",
-		Icon = "vape/assets/TargetInfoIcon1.png",
-		IconSize = 16
-	})
-	local AnimeSelection = {Value = "AnimeWaifu1"}
-	local Anime_table = {
-		["SHREKDADDY"] = {
-			["ID"] = 131192839895812,
-			["Size"] = UDim2.new(0, 150, 0, 200)
-		},
-		["SHREKMOMMY"] = {
-			["ID"] = 96690292388820,
-			["Size"] = UDim2.new(0, 150, 0, 200)
-		},
-		["AnimeWaifu1"] = 18498989965,
-		["Anime2"] = {
-			["ID"] = 18499238992,
-			["Size"] = UDim2.new(0, 150, 0, 200)
-		},
-		["Anime3"] = {
-			["ID"] = 18499361548,
-			["Size"] = UDim2.new(0, 150, 0, 200)
-		},
-		["Anime4"] = 18499384179,
-		["Anime5"] = 18499402527
-	}
-	local default_table = {
-		["Size"] = UDim2.new(0, 100, 0, 200),
-		["Position"] = UDim2.new(0.17, 0, 0, 0)
-	}
-	local anime_image_label
-
-	local chosenid = Anime_table[AnimeSelection.Value]
-
-	local b = Instance.new("ImageLabel")
-	b.Parent = Anime.GetCustomChildren()
-	b.BackgroundTransparency = 1
-
-	--- CUSTOM ---
-	if type(Anime_table[AnimeSelection.Value]) == "table" then
-		b.Image = "rbxassetid://"..tostring(chosenid["ID"])
-		--b.Position = UDim2.new(0.9, 0, 0, 0)
-		b.Size = UDim2.new(0, 100, 0, 200)
-		for i,v in pairs(chosenid) do
-			if i ~= "ID" then
-				b[i] = chosenid[i]
-			end
-		end
-	else
-		b.Image = "rbxassetid://"..tostring(chosenid)
-		b.Position = UDim2.new(0.17, 0, 0, 0)
-		b.Size = UDim2.new(0, 100, 0, 200)
-	end
-
-	anime_image_label = b
-	local options = {}
-	for i,v in pairs(Anime_table) do table.insert(options, i) end
-	AnimeSelection = Anime:CreateDropdown({
-		Name = "Selection",
-		Function = function()
-			if anime_image_label then
-				local chosenid = Anime_table[AnimeSelection.Value]
-				if type(Anime_table[AnimeSelection.Value]) == "table" then
-					anime_image_label.Image = "rbxassetid://"..tostring(chosenid["ID"])
-					anime_image_label.Position = UDim2.new(0.17, 0, 0, 0)
-					anime_image_label.Size = UDim2.new(0, 100, 0, 200)
-					for i,v in pairs(chosenid) do
-						if i ~= "ID" then
-							anime_image_label[i] = chosenid[i]
-						end
-					end
-				else
-					anime_image_label.Image = "rbxassetid://"..tostring(chosenid)
-					anime_image_label.Position = UDim2.new(0.17, 0, 0, 0)
-					anime_image_label.Size = UDim2.new(0, 100, 0, 200)
-				end
-			end
-		end,
-		List = options
-	})
-	GUI.CreateCustomToggle({
-		Name = "AnimeImages",
-		Icon = "vape/assets/TargetInfoIcon2.png",
-		Function = function(callback) Anime.SetVisible(callback) end,
-		Priority = 1
-	})
-end)--]]
 
 run(function()
     local CharacterEditor = {Enabled = true}
@@ -12384,138 +11551,6 @@ run(function()
     })
 end)
 
---[[task.spawn(function()
-	pcall(function()
-		repeat task.wait() until shared.vapewhitelist.loaded
-		if shared.vapewhitelist:get(game:GetService("Players").LocalPlayer) ~= 0 then
-			run(function()
-				local GlobalCommands = {Enabled = false}
-				local GlobalCommandsGUI = {CommandsDropdown = {Value = "none"}, CommandArgs = {["1"] = {Value = ""}, ["2"] = {Value = ""}}, TargetUsername = {Value = ""}, ApiKey = {Value = ""}}
-				local ValidCommandArgs = 2
-				local commandList = {"none"}
-				local function isCommandAllowed(cmd) return not table.find({"mute", "unmute", "say", "troll"}, cmd) end
-				for command, _ in pairs(shared.vapewhitelist.commands) do if isCommandAllowed(tostring(command)) then table.insert(commandList, tostring(command)) end end
-				local commandArgsConfig = {
-					["kick"] = {RequiredArgs = 1, Args = {{Placeholder = "KickMessage"}}},
-					["toggle"] = {RequiredArgs = 1, Args = {{Placeholder = "ModuleName (all = all modules)"}}},
-					["gravity"] = {RequiredArgs = 1, Args = {{Placeholder = "GravityPowerLevel"}}},
-					["framerate"] = {RequiredArgs = 1, Args = {{Placeholder = "FramerateNumber"}}},
-					["teleport"] = {RequiredArgs = 2, Args = {{Placeholder = "Server JobID"}, {Placeholder = "Game PlaceID"}}},
-					["cteleport"] = {RequiredArgs = 1, Args = {{Placeholder = "CustomMatch Code"}}, CustomMessages = {{Type = "warning", Title = "GlobalCommands - cteleport", Text = "WARNING! This only works in Bedwars!", Duration = 5}}}
-				}
-				local function fetchCommandArg(arg) return GuiLibrary.ObjectsThatCanBeSaved["GlobalCommandsCommandArg"..tostring(arg).."TextBox"] end
-				local function checkCommandArgsObjects()
-					for i = 1, ValidCommandArgs do if fetchCommandArg(i).Object.AddBoxBKG.AddBox.PlaceholderText == "Unspecified" and fetchCommandArg(i).Object.Visible == true then fetchCommandArg(i).Object.Visible = false end end
-					for i = 1, ValidCommandArgs do
-						if fetchCommandArg(i).Object.Visible == true then
-							if (not commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value]) then fetchCommandArg(i).Object.Visible = false else
-								local declined = true
-								for i,v in pairs(commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value].Args) do if v.Placeholder == fetchCommandArg(i).Object.AddBoxBKG.AddBox.PlaceholderText then declined = false end end
-								if declined then fetchCommandArg(i).Object.Visible = false end
-							end
-						end
-					end
-				end
-				local function handleCommandSelection(command)
-					for i = 1, #GlobalCommandsGUI.CommandArgs do fetchCommandArg(i).Object.Visible = false end
-					local commandConfig = commandArgsConfig[command]
-					if commandConfig then
-						for i, argConfig in ipairs(commandConfig.Args) do fetchCommandArg(i).Object.Visible = true; fetchCommandArg(i).Object.AddBoxBKG.AddBox.PlaceholderText = argConfig.Placeholder end
-						if commandConfig.CustomMessages then
-							local notificationFunctions = {["error"] = errorNotification, ["warning"] = warningNotification, ["info"] = InfoNotification}
-							for _, message in ipairs(commandConfig.CustomMessages) do notificationFunctions[message.Type](message.Title, message.Text, message.Duration) end
-						end
-						checkCommandArgsObjects()
-					end
-					checkCommandArgsObjects()
-				end
-				local function fetchCommandArgsData()
-					local errors = {}
-					local cmd = GlobalCommandsGUI.CommandsDropdown.Value
-					if cmd == "none" then errorNotification("GlobalCommands", "Please specify a command!", 5) return nil end
-					local requiredArgs = commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value] and commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value].RequiredArgs or 0
-					if requiredArgs ~= 0 then
-						local function resolveCommandArgData(argPlaceholder)
-							for i = 1, ValidCommandArgs do if fetchCommandArg(i).Object.AddBoxBKG.AddBox.PlaceholderText == argPlaceholder then return fetchCommandArg(i).Api.Value end end
-							warn("[resolveCommandArgData - "..tostring(argPlaceholder).."]: Error finding the command arg corresponder!")
-							table.insert(errors, {Error = "[resolveCommandArgData - "..tostring(argPlaceholder).."]: Error finding the command arg corresponder!"})
-							return "unknown"
-						end
-						local resTable = {}
-						for i,v in pairs(commandArgsConfig[GlobalCommandsGUI.CommandsDropdown.Value].Args) do table.insert(resTable, resolveCommandArgData(v.Placeholder)) end
-						if #errors == 0 then return resTable else
-							warn("[fetchCommandArgsData - Error/s Handler]:"..tostring(#errors).." errors found!")
-							writefile("ErrorsLog.json", game:GetService("HttpService"):JSONEncode(errors))
-							return nil
-						end
-					else return "" end
-				end
-				local function isValidPlayer()
-					local suc, err = pcall(function() return game:GetService("Players"):GetUserIdFromNameAsync(GlobalCommandsGUI.TargetUsername.Value) end)
-					if suc then return true else return false end
-				end
-				local function isAboveTarget()
-					local function getPlayerRank(fetchType, arg)
-						if fetchType == "local" then return shared.vapewhitelist:get(game:GetService("Players").LocalPlayer)
-						elseif fetchType == "global" then
-							for i,v in pairs(shared.vapewhitelist.data.WhitelistedUsers) do if v.hash == arg then return v.level end end
-							return 0
-						end
-					end
-					local lplrRank, targetRank = getPlayerRank("local"), getPlayerRank("global", shared.vapewhitelist:hash(GlobalCommandsGUI.TargetUsername.Value..game:GetService("Players"):GetUserIdFromNameAsync(GlobalCommandsGUI.TargetUsername.Value)))
-					if lplrRank > targetRank then return true else return false, {Self = lplrRank, Target = targetRank} end
-				end
-				local RankCorresponder = {["0"] = "NORMAL", ["1"] = "PRIVATE", ["2"] = "OWNER"}
-				local function fetchTargetData()
-					if GlobalCommandsGUI.TargetUsername.Value ~= "" then
-						if isValidPlayer() then
-							local isAbove, rankTable = isAboveTarget()
-							if isAbove then return GlobalCommandsGUI.TargetUsername.Value
-							else errorNotification("GloablCommands", "Error! Target's rank is above yours! Your rank: "..(RankCorresponder[tostring(rankTable.Self)] or tostring(rankTable.Self)).." Target's rank: "..(RankCorresponder[tostring(rankTable.Target)] or tostring(rankTable.Target)).."               ", 5) end
-						else errorNotification("GlobalCommands", "Player username is INVALID!", 3) end
-					else errorNotification("GlobalCommands", "Please specify a target!", 3) end
-				end
-				local function fetchAPI_Key()
-					local val = GlobalCommandsGUI.ApiKey.Value
-					if val ~= "" then return val else
-						errorNotification("GlobalCommands", "Please specify your API KEY!", 3)
-						return nil
-					end
-				end
-				GlobalCommands = vape.Categories.Utility:CreateModule({
-					Name = "GlobalCommands",
-					Function = function(call)
-						if call then
-							GlobalCommands:Toggle(false)
-							local target, argsData, apikey = fetchTargetData(), fetchCommandArgsData(), fetchAPI_Key() or readfile("PW_API_KEY.txt") or nil
-							if target and type(target) == "string" and argsData and apikey then
-								local data = {command = GlobalCommandsGUI.CommandsDropdown.Value, sendername = game:GetService("Players").LocalPlayer.Name, args = argsData, receiver = target}
-								local headers = {["api-key"] = apikey, ["Content-Type"] = "application/json"}
-								local url = PealzwareFunctions.ResolveApiUrl("GlobalFunctions.json/commands")
-								local res = request({Url = url, Method = 'POST', Body = game:GetService("HttpService"):JSONEncode(data), Headers = headers})
-								InfoNotification("GlobalCommands", "Sent request to PW API! Waiting for response...", 3)
-								local body = res.Body
-								if res.StatusCode == 200 then
-									local json = PealzwareFunctions.SafeJSONDecode(body, {})
-									InfoNotification("GlobalCommands", tostring(json.message or "Success!"), 5)
-								else
-									local json = PealzwareFunctions.SafeJSONDecode(body, {})
-									print(json.error)
-									errorNotification("GlobalCommands - "..tostring(res.StatusCode), "Error! "..(json.error and tostring(json.error) or "Unknown error"), 7)
-								end
-							end
-						end
-					end
-				})
-				GlobalCommandsGUI.ApiKey = GlobalCommands:CreateTextBox({Name = "ApiKey", Function = function() end, TempText = "API-KEY"})
-				GlobalCommandsGUI.TargetUsername = GlobalCommands:CreateTextBox({Name = "Target", Function = function() end, TempText = "TargetUsername"})
-				GlobalCommandsGUI.CommandsDropdown = GlobalCommands:CreateDropdown({Name = "CommandChoice", Function = function() handleCommandSelection(GlobalCommandsGUI.CommandsDropdown.Value) end, List = commandList})
-				for i = 1, ValidCommandArgs do GlobalCommandsGUI.CommandArgs[tostring(i)] = GlobalCommands:CreateTextBox({Name = "CommandArg" .. i, Function = function() end, TempText = "Unspecified"}); GlobalCommandsGUI.CommandArgs[tostring(i)].Visible = false end
-				for i = 1, 5 do checkCommandArgsObjects() task.wait(0.5) end
-			end)
-		end
-	end)
-end)--]]
 
 run(function()
     local RunLoops = {}
@@ -12921,11 +11956,6 @@ run(function()
                             part.Color = Color3.fromHSV(color1.Hue, color1.Sat, color1.Value)
                             part.Transparency = 0 --0.25
                             part.Parent = workspace
-							--[[local a = Instance.new("Highlight")
-							a.Parent = part
-							a.FillTransparency = 1
-							a.OutlineTransparency = 0
-							a.Adornee = part--]]
 							--a.DepthMode = Enum.DepthMode.Occluded
                             table.insert(circleParts, part)
                         end
@@ -13046,13 +12076,25 @@ run(function()
 		end
 	})
 end)
-    -- END shared pealzware
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 2: SHARED PEALZWARE
+-- --------------------------------------------------------------------------------
+-- End of shared pealzware modules.
+-- --------------------------------------------------------------------------------
+
 end
 end
 
 if bedwarsMainIsGame and not shared.CheatEngineMode then
 do
-    -- BEGIN game core
+
+-- ================================================================================
+-- >>>  SECTION 3: GAME CORE
+-- ================================================================================
+-- Runs when bedwarsMainIsGame and not CheatEngineMode.
+-- ================================================================================
+
 local run = function(func)
 	if shared.PealzDev then
 		func()
@@ -13121,12 +12163,6 @@ local networkownerswitch = tick()
 -- xylex ._.
 local isnetworkowner = function(part)
 	return true
-	--[[local suc, res = pcall(function() return gethiddenproperty(part, "NetworkOwnershipRule") end)
-	if suc and res == Enum.NetworkOwnership.Manual then
-		sethiddenproperty(part, "NetworkOwnershipRule", Enum.NetworkOwnership.Automatic)
-		networkownerswitch = tick() + 8
-	end
-	return networkownerswitch <= tick()--]]
 end
 local gameCamera = game.Workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
@@ -14600,13 +13636,6 @@ run(function()
     }
 
     local remoteDefinitions = setmetatable({
-        --[[AttackEntity = function()
-            local remote = dumpRemote(debug.getconstants(Knit.Controllers.SwordController.sendServerRequest))
-            if remote == '' and shared.PealzDev then
-                notif('Pealzware', 'Failed to grab remote (AttackEntity)', 10, 'alert')
-            end
-            return remote
-        end,--]]
         DragonEndFly = function()
             local remote = dumpRemote(debug.getconstants(debug.getproto(Knit.Controllers.VoidDragonController.flapWings, 1)))
             if remote == '' and shared.PealzDev then
@@ -14775,212 +13804,6 @@ run(function()
         table.insert(sides, Vector3.FromNormalId(v) * 3)
     end
 
-	--[[local function extractTime(timeText)
-		local minutes, seconds = string.match(timeText, "(%d+):(%d%d)")
-		local tbl = {
-			minutes = tonumber(minutes),
-			seconds = tonumber(seconds)
-		}
-		function tbl:toSeconds()
-			return tonumber(minutes) and tonumber(seconds) and tonumber(minutes)*60 + tonumber(seconds)
-		end
-		return tbl
-	end
-
-	bedwars.MatchController = {
-		fetchPlayerTeam = function(self, plr)
-			return tostring(plr.Team)
-		end,
-		fetchGameTime = function(self)
-			local time, timeTable, suc = 0, {seconds = 0, minutes = 0}, false
-			local window = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("TopBarAppGui")
-			if window then
-				local frame = window:FindFirstChild("TopBarApp")
-				if frame then
-					for _, v in pairs(frame:GetChildren()) do
-						if v.ClassName == "Frame" then
-							local timeLabel = v:FindFirstChildOfClass("TextLabel")
-							local imageLabel = v:FindFirstChildOfClass("ImageLabel")
-							if timeLabel and imageLabel then
-								time, timeTable, suc = extractTime(timeLabel.Text):toSeconds(), {
-									seconds = extractTime(timeLabel.Text).seconds,
-									minutes = extractTime(timeLabel.Text).minutes
-								}, true
-								break
-							end
-						end
-					end
-				end
-			end
-			return time, timeTable, suc
-		end
-	}
-
-	local lastTime, timeMoving = 0, true
-	task.spawn(function()
-		while shared.VapeExecuted do
-			local time, timeTable, suc = bedwars.MatchController:fetchGameTime()
-			timeMoving = time ~= lastTime
-			lastTime = time
-			store.matchState = (timeMoving and 1) or ((not timeMoving) and lastTime > 0 and 2) or 0
-			task.wait(2)
-		end
-	end)
-
-	function bedwars.MatchController:fetchMatchState()
-		local matchState = 0
-		local time, timeTable, suc = bedwars.MatchController:fetchGameTime()
-		local plrTeam = bedwars.MatchController:fetchPlayerTeam(game:GetService("Players").LocalPlayer)
-
-		if suc and time > 0 then
-			matchState = plrTeam == "Spectators" and 2 or 1
-			if not timeMoving then
-				matchState = 2
-			end
-		else
-			matchState = suc and 0 or 1
-		end
-
-		if not suc then
-			warn("[bedwars.MatchController:fetchMatchState]: Failed to get valid time!")
-		end
-
-		return matchState
-	end
-
-	bedwars.getKit = function(plr)
-		return plr:GetAttribute("PlayingAsKit") or "none"
-	end
-
-	bedwars.getInventory = function(plr)
-		local inv = {
-			items = {},
-			armor = {}
-		}
-		local repInv = plr.Character and plr.Character:FindFirstChild("InventoryFolder") and plr.Character:FindFirstChild("InventoryFolder").Value
-		if repInv then
-			if repInv.ClassName and repInv.ClassName == "Folder" then
-				for i,v in pairs(repInv:GetChildren()) do
-					if not v:GetAttribute("CustomSpawned") then
-						table.insert(inv.items, {
-							tool = v,
-							itemType = tostring(v),
-							amount = v:GetAttribute("Amount")
-						})
-					end
-				end
-			end
-		end
-		local plrInvTbl = {
-			"ArmorInvItem_0",
-			"ArmorInvItem_1",
-			"ArmorInvItem_2"
-		}
-		local function allowed(char)
-			local state = true
-			for i,v in pairs(plrInvTbl) do if (not char:FindFirstChild(v)) then state = false end end
-			return state
-		end
-		local plrInv = plr.Character and allowed(plr.Character)
-		if plrInv then
-			for i,v in pairs(plrInvTbl) do
-				table.insert(inv.armor, tostring(plr.Character:FindFirstChild(v).Value) == "" and "empty" or tostring(plr.Character:FindFirstChild(v).Value) ~= "" and {
-					tool = v,
-					itemType = tostring(plr.Character:FindFirstChild(v).Value)
-				})
-			end
-		end
-		return inv
-	end
-
-	bedwars.StoreController = {}
-	function bedwars.StoreController:fetchLocalHand()
-		repeat task.wait() until game:GetService("Players").LocalPlayer.Character
-		return game:GetService("Players").LocalPlayer.Character:FindFirstChild("HandInvItem")
-	end
-	function bedwars.StoreController:updateLocalInventory()
-		store.localInventory.inventory = bedwars.getInventory(game:GetService("Players").LocalPlayer)
-		store.inventory = store.localInventory
-		local old, old2 = store.localInventory, store.localInventory.inventory.items
-		if old ~= store.localInventory then
-			return vapeEvents.InventoryChanged:Fire()
-		end
-		if old2 ~= store.localInventory.inventory and store.localInventory.inventory.items or {} then
-			vapeEvents.InventoryAmountChanged:Fire()
-		end
-		store.tools.sword = getSword()
-		for _, v in {'stone', 'wood', 'wool'} do
-			store.tools[v] = getTool(v)
-		end
-	end
-	function bedwars.StoreController:updateEquippedKit()
-		store.equippedKit = bedwars.getKit(game:GetService("Players").LocalPlayer)
-	end
-	function bedwars.StoreController:updateMatchState()
-		--store.matchState = bedwars.MatchController:fetchMatchState()
-	end
-	function bedwars.StoreController:updateBowConstantsTable(targetPos)
-		--bedwars.BowConstantsTable = getBowConstants(targetPos)
-	end
-	function bedwars.StoreController:updateStoreBlocks()
-		store.blocks = collectionService:GetTagged("block")
-	end
-	function bedwars.StoreController:updateZephyrOrb()
-		if game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen") and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud") and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect") and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack") and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack").ClassName and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack").ClassName == "TextLabel" then store.zephyrOrb = tonumber(game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack").Text) end
-	end
-	function bedwars.StoreController:updateLocalHand()
-		local currentHand = bedwars.StoreController:fetchLocalHand()
-		if (not currentHand) then store.localHand = {} return end
-		local handType = ""
-		if currentHand and currentHand.Value and currentHand.Value ~= "" then
-			bedwars.ItemTable = bedwars.ItemTable or bedwars.ItemMeta
-			local handData = bedwars.ItemTable[tostring(currentHand.Value)]
-			handType = handData.sword and "sword" or handData.block and "block" or tostring(currentHand.Value):find("bow") and "bow"
-		end
-		store.localHand = {tool = currentHand and currentHand.Value, itemType = currentHand and currentHand.Value and tostring(currentHand.Value) or "", Type = handType, amount = currentHand and currentHand:GetAttribute("Amount") and type(currentHand:GetAttribute("Amount")) == "number" or 0}
-		store.localHand.toolType = store.localHand.Type
-		store.hand = store.localHand
-	end
-
-	function bedwars.StoreController:updateQueueType()
-		local att = game:GetService("Workspace"):GetAttribute("QueueType")
-		if att then
-			store.queueType = att
-		end
-	end
-
-	function bedwars.StoreController:updateStore()
-		task.spawn(function() pcall(function() self:updateLocalHand() end) end)
-		task.wait(0.1)
-		task.spawn(function() pcall(function() self:updateLocalInventory() end) end)
-		task.wait(0.1)
-		task.spawn(function() pcall(function() self:updateEquippedKit() end) end)
-		task.wait(0.1)
-		task.spawn(function() pcall(function() self:updateMatchState() end) end)
-		task.wait(0.1)
-		task.spawn(function() pcall(function() self:updateStoreBlocks() end) end)
-		task.wait(0.1)
-		if store.equippedKit == "wind_walker" then
-			task.wait(0.1)
-			task.spawn(function() pcall(function() self:updateZephyrOrb() end) end)
-		end
-		if store.queueType == "bedwars_test" then
-			task.spawn(function() pcall(function() self:updateQueueType() end) end)
-		end
-	end
-
-	if shared.CORE_TASK_UPDATING then
-		pcall(function()
-			task.cancel(shared.CORE_TASK_UPDATING)
-		end)
-	end
-	shared.CORE_TASK_UPDATING = task.spawn(function()
-		local RunService = game:GetService("RunService")
-		repeat
-			RunService.Heartbeat:Wait()
-			pcall(function() bedwars.StoreController:updateStore() end)
-		until (not shared.vape)
-	end)--]]
 
     local function updateStore(new, old)
         if new.Bedwars ~= old.Bedwars then
@@ -16871,13 +15694,6 @@ run(function()
 			return val == 1 and 'stud' or 'studs'
 		end
 	})
-	--[[OneTapCooldown = Killaura:CreateSlider({
-		Name = "OneTap Cooldown",
-		Function = function() end,
-		Min = 0,
-		Max = 5,
-		Default = 4.2
-	})--]]
 	RangeCircle = Killaura:CreateToggle({
 		Name = "Range Visualiser",
 		Function = function(call)
@@ -17105,62 +15921,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	local old
-	local oldSwing
-	local AutoChargeTime
-
-	AutoCharge = vape.Categories.Combat:CreateModule({
-		Name = 'AutoCharge',
-		Function = function(callback)
-			debug.setconstant(bedwars.SwordController.attackEntity, 58, callback and 'damage' or 'multiHitCheckDurationSec')
-			if callback then
-				local chargeSwingTime = 0
-				local canSwing
-
-				old = bedwars.SwordController.sendServerRequest
-				bedwars.SwordController.sendServerRequest = function(self, ...)
-					if (os.clock() - chargeSwingTime) < AutoChargeTime.Value then return end
-					--self.lastSwingServerTimeDelta = 0.5
-					chargeSwingTime = os.clock()
-					canSwing = true
-
-					local item = self:getHandItem()
-					if item and item.tool then
-						self:playSwordEffect(bedwars.ItemMeta[item.tool.Name], false)
-					end
-
-					return old(self, ...)
-				end
-
-				oldSwing = bedwars.SwordController.playSwordEffect
-				bedwars.SwordController.playSwordEffect = function(...)
-					if not canSwing then return end
-					canSwing = false
-					return oldSwing(...)
-				end
-			else
-				if old then
-					bedwars.SwordController.sendServerRequest = old
-					old = nil
-				end
-
-				if oldSwing then
-					bedwars.SwordController.playSwordEffect = oldSwing
-					oldSwing = nil
-				end
-			end
-		end,
-		Tooltip = 'Allows you to get charged hits while spam clicking.'
-	})
-	AutoChargeTime = AutoCharge:CreateSlider({
-		Name = 'Charge Time',
-		Min = 0,
-		Max = 0.5,
-		Default = 0.4,
-		Decimal = 100
-	})
-end)--]]
 
 run(function()
 	local Value
@@ -20904,12 +19664,6 @@ run(function()
 		Placeholder = 'player (userid)'
 	})
 
-	--[[task.spawn(function()
-		repeat task.wait(1) until vape.Loaded or vape.Loaded == nil
-		if vape.Loaded and not StaffDetector.Enabled then
-			StaffDetector:Toggle()
-		end
-	end)--]]
 end)
 
 run(function()
@@ -23775,272 +22529,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	local Nuker
-	local Range
-	local UpdateRate
-	local Custom
-	local Bed
-	local LuckyBlock
-	local IronOre
-	local Effect
-	local CustomHealth = {}
-	local Animation
-	local SelfBreak
-	local InstantBreak
-	local LimitItem
-	local customlist, parts = {}, {}
-
-	local function customHealthbar(self, blockRef, health, maxHealth, changeHealth, block)
-		if block:GetAttribute('NoHealthbar') then return end
-		if not self.healthbarPart or not self.healthbarBlockRef or self.healthbarBlockRef.blockPosition ~= blockRef.blockPosition then
-			self.healthbarMaid:DoCleaning()
-			self.healthbarBlockRef = blockRef
-			local create = bedwars.Roact.createElement
-			local percent = math.clamp(health / maxHealth, 0, 1)
-			local cleanCheck = true
-			local part = Instance.new('Part')
-			part.Size = Vector3.one
-			part.CFrame = CFrame.new(bedwars.BlockController:getWorldPosition(blockRef.blockPosition))
-			part.Transparency = 1
-			part.Anchored = true
-			part.CanCollide = false
-			part.Parent = workspace
-			self.healthbarPart = part
-			bedwars.QueryUtil:setQueryIgnored(self.healthbarPart, true)
-
-			local mounted = bedwars.Roact.mount(create('BillboardGui', {
-				Size = UDim2.fromOffset(249, 102),
-				StudsOffset = Vector3.new(0, 2.5, 0),
-				Adornee = part,
-				MaxDistance = 40,
-				AlwaysOnTop = true
-			}, {
-				create('Frame', {
-					Size = UDim2.fromOffset(160, 50),
-					Position = UDim2.fromOffset(44, 32),
-					BackgroundColor3 = Color3.new(),
-					BackgroundTransparency = 0.5
-				}, {
-					create('UICorner', {CornerRadius = UDim.new(0, 5)}),
-					create('ImageLabel', {
-						Size = UDim2.new(1, 89, 1, 52),
-						Position = UDim2.fromOffset(-48, -31),
-						BackgroundTransparency = 1,
-						Image = getcustomasset('vape/assets/new/blur.png'),
-						ScaleType = Enum.ScaleType.Slice,
-						SliceCenter = Rect.new(52, 31, 261, 502)
-					}),
-					create('TextLabel', {
-						Size = UDim2.fromOffset(145, 14),
-						Position = UDim2.fromOffset(13, 12),
-						BackgroundTransparency = 1,
-						Text = bedwars.ItemMeta[block.Name].displayName or block.Name,
-						TextXAlignment = Enum.TextXAlignment.Left,
-						TextYAlignment = Enum.TextYAlignment.Top,
-						TextColor3 = Color3.new(),
-						TextScaled = true,
-						Font = Enum.Font.Arial
-					}),
-					create('TextLabel', {
-						Size = UDim2.fromOffset(145, 14),
-						Position = UDim2.fromOffset(12, 11),
-						BackgroundTransparency = 1,
-						Text = bedwars.ItemMeta[block.Name].displayName or block.Name,
-						TextXAlignment = Enum.TextXAlignment.Left,
-						TextYAlignment = Enum.TextYAlignment.Top,
-						TextColor3 = color.Dark(uipallet.Text, 0.16),
-						TextScaled = true,
-						Font = Enum.Font.Arial
-					}),
-					create('Frame', {
-						Size = UDim2.fromOffset(138, 4),
-						Position = UDim2.fromOffset(12, 32),
-						BackgroundColor3 = uipallet.Main
-					}, {
-						create('UICorner', {CornerRadius = UDim.new(1, 0)}),
-						create('Frame', {
-							[bedwars.Roact.Ref] = self.healthbarProgressRef,
-							Size = UDim2.fromScale(percent, 1),
-							BackgroundColor3 = Color3.fromHSV(math.clamp(percent / 2.5, 0, 1), 0.89, 0.75)
-						}, {create('UICorner', {CornerRadius = UDim.new(1, 0)})})
-					})
-				})
-			}), part)
-
-			self.healthbarMaid:GiveTask(function()
-				cleanCheck = false
-				self.healthbarBlockRef = nil
-				bedwars.Roact.unmount(mounted)
-				if self.healthbarPart then
-					self.healthbarPart:Destroy()
-				end
-				self.healthbarPart = nil
-			end)
-
-			bedwars.RuntimeLib.Promise.delay(5):andThen(function()
-				if cleanCheck then
-					self.healthbarMaid:DoCleaning()
-				end
-			end)
-		end
-
-		local newpercent = math.clamp((health - changeHealth) / maxHealth, 0, 1)
-		tweenService:Create(self.healthbarProgressRef:getValue(), TweenInfo.new(0.3), {
-			Size = UDim2.fromScale(newpercent, 1), BackgroundColor3 = Color3.fromHSV(math.clamp(newpercent / 2.5, 0, 1), 0.89, 0.75)
-		}):Play()
-	end
-
-	local hit = 0
-
-	local function attemptBreak(tab, localPosition)
-		if not tab then return end
-		for _, v in tab do
-			if (v.Position - localPosition).Magnitude < Range.Value and bedwars.BlockController:isBlockBreakable({blockPosition = v.Position / 3}, lplr) then
-				if not SelfBreak.Enabled and v:GetAttribute('PlacedByUserId') == lplr.UserId then continue end
-				if (v:GetAttribute('BedShieldEndTime') or 0) > workspace:GetServerTimeNow() then continue end
-				if LimitItem.Enabled and not (store.hand.tool and bedwars.ItemMeta[store.hand.tool.Name].breakBlock) then continue end
-
-				hit += 1
-				local target, path, endpos = bedwars.breakBlock(v, Effect.Enabled, Animation.Enabled, CustomHealth.Enabled and customHealthbar or nil, InstantBreak.Enabled)
-				if path then
-					local currentnode = target
-					for _, part in parts do
-						part.Position = currentnode or Vector3.zero
-						if currentnode then
-							part.BoxHandleAdornment.Color3 = currentnode == endpos and Color3.new(1, 0.2, 0.2) or currentnode == target and Color3.new(0.2, 0.2, 1) or Color3.new(0.2, 1, 0.2)
-						end
-						currentnode = path[currentnode]
-					end
-				end
-
-				task.wait(InstantBreak.Enabled and (store.damageBlockFail > tick() and 4.5 or 0) or 0.25)
-
-				return true
-			end
-		end
-
-		return false
-	end
-
-	Nuker = vape.Categories.Minigames:CreateModule({
-		Name = 'Nuker',
-		Function = function(callback)
-			if callback then
-				for _ = 1, 30 do
-					local part = Instance.new('Part')
-					part.Anchored = true
-					part.CanQuery = false
-					part.CanCollide = false
-					part.Transparency = 1
-					part.Parent = gameCamera
-					local highlight = Instance.new('BoxHandleAdornment')
-					highlight.Size = Vector3.one
-					highlight.AlwaysOnTop = true
-					highlight.ZIndex = 1
-					highlight.Transparency = 0.5
-					highlight.Adornee = part
-					highlight.Parent = part
-					table.insert(parts, part)
-				end
-
-				local beds = collection('bed', Nuker)
-				local luckyblock = collection('LuckyBlock', Nuker)
-				local ironores = collection('iron-ore', Nuker)
-				customlist = collection('block', Nuker, function(tab, obj)
-					if table.find(Custom.ListEnabled, obj.Name) then
-						table.insert(tab, obj)
-					end
-				end)
-
-				repeat
-					task.wait(1 / UpdateRate.Value)
-					if not Nuker.Enabled then return end
-					if entitylib.isAlive then
-						local localPosition = entitylib.character.RootPart.Position
-
-						if attemptBreak(Bed.Enabled and beds, localPosition) then continue end
-						if attemptBreak(customlist, localPosition) then continue end
-						if attemptBreak(LuckyBlock.Enabled and luckyblock, localPosition) then continue end
-						if attemptBreak(IronOre.Enabled and ironores, localPosition) then continue end
-
-						for _, v in parts do
-							v.Position = Vector3.zero
-						end
-					end
-				until not Nuker.Enabled
-			else
-				for _, v in parts do
-					v:ClearAllChildren()
-					v:Destroy()
-				end
-				table.clear(parts)
-			end
-		end,
-		Tooltip = 'Break blocks around you automatically'
-	})
-	Range = Nuker:CreateSlider({
-		Name = 'Break range',
-		Min = 1,
-		Max = 30,
-		Default = 30,
-		Suffix = function(val)
-			return val == 1 and 'stud' or 'studs'
-		end
-	})
-	UpdateRate = Nuker:CreateSlider({
-		Name = 'Update rate',
-		Min = 1,
-		Max = 120,
-		Default = 60,
-		Suffix = 'hz'
-	})
-	Custom = Nuker:CreateTextList({
-		Name = 'Custom',
-		Function = function()
-			if not customlist then return end
-			table.clear(customlist)
-			for _, obj in store.blocks do
-				if table.find(Custom.ListEnabled, obj.Name) then
-					table.insert(customlist, obj)
-				end
-			end
-		end
-	})
-	Bed = Nuker:CreateToggle({
-		Name = 'Break Bed',
-		Default = true
-	})
-	LuckyBlock = Nuker:CreateToggle({
-		Name = 'Break Lucky Block',
-		Default = true
-	})
-	IronOre = Nuker:CreateToggle({
-		Name = 'Break Iron Ore',
-		Default = true
-	})
-	Effect = Nuker:CreateToggle({
-		Name = 'Show Healthbar & Effects',
-		Function = function(callback)
-			if CustomHealth.Object then
-				CustomHealth.Object.Visible = callback
-			end
-		end,
-		Default = true
-	})
-	CustomHealth = Nuker:CreateToggle({
-		Name = 'Custom Healthbar',
-		Default = true,
-		Darker = true
-	})
-	Animation = Nuker:CreateToggle({Name = 'Animation'})
-	SelfBreak = Nuker:CreateToggle({Name = 'Self Break'})
-	InstantBreak = Nuker:CreateToggle({Name = 'Instant Break'})
-	LimitItem = Nuker:CreateToggle({
-		Name = 'Limit to items',
-		Tooltip = 'Only breaks when tools are held'
-	})
-end)--]]
 
 run(function()
 	vape.Legit:CreateModule({
@@ -24338,107 +22826,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	vape.Categories.Combat:CreateModule({
-		Name = 'HitFix',
-		Function = function(callback)
-			debug.setconstant(bedwars.SwordController.swingSwordAtMouse, 23, callback and 'raycast' or 'Raycast')
-			debug.setupvalue(bedwars.SwordController.swingSwordAtMouse, 4, callback and bedwars.QueryUtil or workspace)
-		end,
-		Tooltip = 'Changes the raycast function to the correct one'
-	})
-end)--]]
-
---[[run(function()
-	local Interface
-	local HotbarOpenInventory = require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-open-inventory']).HotbarOpenInventory
-	local HotbarHealthbar = require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui.healthbar['hotbar-healthbar']).HotbarHealthbar
-	local HotbarApp = require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp
-	local old, new = {}, {}
-
-	vape:Clean(function()
-		for _, v in new do
-			table.clear(v)
-		end
-		for _, v in old do
-			table.clear(v)
-		end
-		table.clear(new)
-		table.clear(old)
-	end)
-
-	local function modifyconstant(func, ind, val)
-		if not func then return end
-		if not old[func] then old[func] = {} end
-		if not new[func] then new[func] = {} end
-		if not old[func][ind] then
-			old[func][ind] = debug.getconstant(func, ind)
-		end
-		if typeof(old[func][ind]) ~= typeof(val) then return end
-		new[func][ind] = val
-
-		if Interface.Enabled then
-			if val then
-				debug.setconstant(func, ind, val)
-			else
-				debug.setconstant(func, ind, old[func][ind])
-				old[func][ind] = nil
-			end
-		end
-	end
-
-	Interface = vape.Legit:CreateModule({
-		Name = 'Interface',
-		Function = function(callback)
-			for i, v in (callback and new or old) do
-				for i2, v2 in v do
-					debug.setconstant(i, i2, v2)
-				end
-			end
-		end,
-		Tooltip = 'Customize bedwars UI'
-	})
-	local fontitems = {'LuckiestGuy'}
-	for _, v in Enum.Font:GetEnumItems() do
-		if v.Name ~= 'LuckiestGuy' then
-			table.insert(fontitems, v.Name)
-		end
-	end
-	Interface:CreateDropdown({
-		Name = 'Health Font',
-		List = fontitems,
-		Function = function(val)
-			modifyconstant(HotbarHealthbar.render, 77, val)
-		end
-	})
-	Interface:CreateColorSlider({
-		Name = 'Health Color',
-		Function = function(hue, sat, val)
-			modifyconstant(HotbarHealthbar.render, 16, tonumber(Color3.fromHSV(hue, sat, val):ToHex(), 16))
-			if Interface.Enabled then
-				local hotbar = lplr.PlayerGui:FindFirstChild('hotbar')
-				hotbar = hotbar and hotbar:FindFirstChild('HealthbarProgressWrapper', true)
-				if hotbar then
-					hotbar['1'].BackgroundColor3 = Color3.fromHSV(hue, sat, val)
-				end
-			end
-		end
-	})
-	Interface:CreateColorSlider({
-		Name = 'Hotbar Color',
-		DefaultOpacity = 0.8,
-		Function = function(hue, sat, val, opacity)
-			local func = oldinvrender or HotbarOpenInventory.render
-			modifyconstant(debug.getupvalue(HotbarApp.render, 17).render, 51, tonumber(Color3.fromHSV(hue, sat, val):ToHex(), 16))
-			modifyconstant(debug.getupvalue(HotbarApp.render, 17).render, 58, tonumber(Color3.fromHSV(hue, sat, math.clamp(val > 0.5 and val - 0.2 or val + 0.2, 0, 1)):ToHex(), 16))
-			modifyconstant(debug.getupvalue(HotbarApp.render, 17).render, 54, 1 - opacity)
-			modifyconstant(debug.getupvalue(HotbarApp.render, 17).render, 55, math.clamp(1.2 - opacity, 0, 1))
-			modifyconstant(func, 31, tonumber(Color3.fromHSV(hue, sat, val):ToHex(), 16))
-			modifyconstant(func, 32, math.clamp(1.2 - opacity, 0, 1))
-			modifyconstant(func, 34, tonumber(Color3.fromHSV(hue, sat, math.clamp(val > 0.5 and val - 0.2 or val + 0.2, 0, 1)):ToHex(), 16))
-		end
-	})
-end)--]]
 
 run(function()
 	local KillEffect
@@ -24811,158 +23198,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	local UICleanup
-	local OpenInv
-	local KillFeed
-	local OldTabList
-	local HotbarApp = require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp
-	local HotbarOpenInventory = require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-open-inventory']).HotbarOpenInventory
-	local old, new = {}, {}
-	local oldkillfeed
-
-	vape:Clean(function()
-		for _, v in new do
-			table.clear(v)
-		end
-		for _, v in old do
-			table.clear(v)
-		end
-		table.clear(new)
-		table.clear(old)
-	end)
-
-	local function modifyconstant(func, ind, val)
-		if not old[func] then old[func] = {} end
-		if not new[func] then new[func] = {} end
-		if not old[func][ind] then
-			local typing = type(old[func][ind])
-			if typing == 'function' or typing == 'userdata' then return end
-			old[func][ind] = debug.getconstant(func, ind)
-		end
-		if typeof(old[func][ind]) ~= typeof(val) and val ~= nil then return end
-
-		new[func][ind] = val
-		if UICleanup.Enabled then
-			if val then
-				debug.setconstant(func, ind, val)
-			else
-				debug.setconstant(func, ind, old[func][ind])
-				old[func][ind] = nil
-			end
-		end
-	end
-
-	UICleanup = vape.Legit:CreateModule({
-		Name = 'UI Cleanup',
-		Function = function(callback)
-			for i, v in (callback and new or old) do
-				for i2, v2 in v do
-					debug.setconstant(i, i2, v2)
-				end
-			end
-			if callback then
-				if OpenInv.Enabled then
-					oldinvrender = HotbarOpenInventory.render
-					HotbarOpenInventory.render = function()
-						return bedwars.Roact.createElement('TextButton', {Visible = false}, {})
-					end
-				end
-
-				if KillFeed.Enabled then
-					oldkillfeed = bedwars.KillFeedController.addToKillFeed
-					bedwars.KillFeedController.addToKillFeed = function() end
-				end
-
-				if OldTabList.Enabled then
-					starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
-				end
-			else
-				if oldinvrender then
-					HotbarOpenInventory.render = oldinvrender
-					oldinvrender = nil
-				end
-
-				if KillFeed.Enabled then
-					bedwars.KillFeedController.addToKillFeed = oldkillfeed
-					oldkillfeed = nil
-				end
-
-				if OldTabList.Enabled then
-					starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
-				end
-			end
-		end,
-		Tooltip = 'Cleans up the UI for kits & main'
-	})
-	UICleanup:CreateToggle({
-		Name = 'Resize Health',
-		Function = function(callback)
-			modifyconstant(HotbarApp.render, 60, callback and 1 or nil)
-			modifyconstant(debug.getupvalue(HotbarApp.render, 10).render, 30, callback and 1 or nil)
-			modifyconstant(debug.getupvalue(HotbarApp.render, 17).tweenPosition, 16, callback and 0 or nil)
-		end,
-		Default = true
-	})
-	UICleanup:CreateToggle({
-		Name = 'No Hotbar Numbers',
-		Function = function(callback)
-			local func = oldinvrender or HotbarOpenInventory.render
-			modifyconstant(debug.getupvalue(HotbarApp.render, 17).render, 90, callback and 0 or nil)
-			modifyconstant(func, 71, callback and 0 or nil)
-		end,
-		Default = true
-	})
-	OpenInv = UICleanup:CreateToggle({
-		Name = 'No Inventory Button',
-		Function = function(callback)
-			modifyconstant(HotbarApp.render, 78, callback and 0 or nil)
-			if UICleanup.Enabled then
-				if callback then
-					oldinvrender = HotbarOpenInventory.render
-					HotbarOpenInventory.render = function()
-						return bedwars.Roact.createElement('TextButton', {Visible = false}, {})
-					end
-				else
-					HotbarOpenInventory.render = oldinvrender
-					oldinvrender = nil
-				end
-			end
-		end,
-		Default = true
-	})
-	KillFeed = UICleanup:CreateToggle({
-		Name = 'No Kill Feed',
-		Function = function(callback)
-			if UICleanup.Enabled then
-				if callback then
-					oldkillfeed = bedwars.KillFeedController.addToKillFeed
-					bedwars.KillFeedController.addToKillFeed = function() end
-				else
-					bedwars.KillFeedController.addToKillFeed = oldkillfeed
-					oldkillfeed = nil
-				end
-			end
-		end,
-		Default = true
-	})
-	OldTabList = UICleanup:CreateToggle({
-		Name = 'Old Player List',
-		Function = function(callback)
-			if UICleanup.Enabled then
-				starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, callback)
-			end
-		end,
-		Default = true
-	})
-	UICleanup:CreateToggle({
-		Name = 'Fix Queue Card',
-		Function = function(callback)
-			modifyconstant(bedwars.QueueCard.render, 15, callback and 0.1 or nil)
-		end,
-		Default = true
-	})
-end)--]]
 
 run(function()
 	local Viewmodel
@@ -25294,13 +23529,25 @@ end
 
 store = createMonitoredTable(store, onChange)
 bedwars = createMonitoredTable(bedwars, onChange2)
-    -- END game core
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 3: GAME CORE
+-- --------------------------------------------------------------------------------
+-- End of game core modules.
+-- --------------------------------------------------------------------------------
+
 end
 end
 
 if bedwarsMainIsGame and shared.CheatEngineMode then
 do
-    -- BEGIN game cheat engine
+
+-- ================================================================================
+-- >>>  SECTION 4: GAME CHEAT ENGINE
+-- ================================================================================
+-- Runs when bedwarsMainIsGame and CheatEngineMode.
+-- ================================================================================
+
 repeat task.wait() until game:IsLoaded()
 
 local vape = shared.vape
@@ -26719,9 +24966,6 @@ bedwars.DragonSlayerController = {
 	playPunchAnimation = function(self, animPos) return bedwars.GameAnimationUtil.playAnimation(lplr, bedwars.AnimationType.DRAGON_SLAYER_PUNCH) end,
 	fetchDragonEmblems = function() return game.Workspace:FindFirstChild("DragonEmblems") and game.Workspace:FindFirstChild("DragonEmblems").ClassName and game.Workspace:FindFirstChild("DragonEmblems").ClassName == "Folder" and game.Workspace:FindFirstChild("DragonEmblems"):GetChildren() or {} end,
 	fetchDragonEmblemData = function(self, emblem)
-		--[[if self.emblemCache[emblem] then
-			return self.emblemCache[emblem]
-		end--]]
 		local c = emblem and emblem.Parent and emblem.ClassName and emblem.ClassName == "Model" and emblem:GetChildren() or {}
 		local cn = #c
 		local tbl = {
@@ -26964,9 +25208,6 @@ bedwars.StoreController = {
 		bedwars.BowConstantsTable = getBowConstants(targetPos)
 	end,
 	updateStoreBlocks = function()
-		--[[if store.blocksConnected then return end
-		store.blocksConnected = true
-		store.blocks = collection("blocks")--]]
 	end,
 	updateZephyrOrb = function()
 		if lplr:FindFirstChild("PlayerGui") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack").ClassName and lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack").ClassName == "TextLabel" then store.zephyrOrb = tonumber(lplr:FindFirstChild("PlayerGui"):FindFirstChild("StatusEffectHudScreen"):FindFirstChild("StatusEffectHud"):FindFirstChild("WindWalkerEffect"):FindFirstChild("EffectStack").Text) end
@@ -29878,31 +28119,6 @@ run(function()
 	end
 
 	local damagemethods = {
-		--[[fireball = function(fireball, pos)
-			if not LongJump.Enabled then return end
-			pos = pos - (entityLibrary.character.HumanoidRootPart.CFrame.lookVector * 0.2)
-			if not (getPlacedBlock(pos - Vector3.new(0, 3, 0)) or getPlacedBlock(pos - Vector3.new(0, 6, 0))) then
-				local sound = Instance.new("Sound")
-				sound.SoundId = "rbxassetid://4809574295"
-				sound.Parent = game.Workspace
-				sound.Ended:Connect(function()
-					sound:Destroy()
-				end)
-				sound:Play()
-			end
-			local origpos = pos
-			local offsetshootpos = (CFrame.new(pos, pos + Vector3.new(0, -60, 0)) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).p
-			local ray = game.Workspace:Raycast(pos, Vector3.new(0, -30, 0), store.blockRaycast)
-			if ray then
-				pos = ray.Position
-				offsetshootpos = pos
-			end
-			task.spawn(function()
-				switchItem(fireball.tool)
-				bedwars.ProjectileController:createLocalProjectile(bedwars.ProjectileMeta.fireball, "fireball", "fireball", offsetshootpos, "", Vector3.new(0, -60, 0), {drawDurationSeconds = 1})
-				projectileRemote:InvokeServer(fireball.tool, "fireball", "fireball", offsetshootpos, pos, Vector3.new(0, -60, 0), game:GetService("HttpService"):GenerateGUID(true), {drawDurationSeconds = 1}, game.Workspace:GetServerTimeNow() - 0.045)
-			end)
-		end,--]]
 		tnt = function(tnt, pos2)
 			if not LongJump.Enabled then return end
 			local pos = Vector3.new(pos2.X, getScaffold(Vector3.new(0, pos2.Y - (((entityLibrary.character.HumanoidRootPart.Size.Y / 2) + entityLibrary.character.Humanoid.HipHeight) - 1.5), 0)).Y, pos2.Z)
@@ -30695,11 +28911,6 @@ run(function()
 	Speed.Restart = function()
 		if Speed.Enabled then Speed:Toggle(false); Speed:Toggle(false) end
 	end
-	--[[SpeedDamageBoost = Speed:CreateToggle({
-		Name = "Damage Boost",
-		Function = Speed.Restart,
-		Default = false
-	})--]]
 	SpeedValue = Speed:CreateSlider({
 		Name = "Speed",
 		Min = 1,
@@ -33256,7 +31467,7 @@ run(function()
 							local text = v.Result..": "..v.Recipe.." ("..tostring(v.BrewingTime).."seconds)"
 							game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
 								Text = text,
-								Color = Color3.new(255, 255, 255),
+								Color = Color3.fromRGB(255, 255, 255),
 								Font = Enum.Font.SourceSans,
 								FontSize = Enum.FontSize.Size36
 							})
@@ -33341,21 +31552,6 @@ run(function()
 				until (not AutoKit.Enabled)
 			end)
 		end,
-		--[[["battery"] = function()
-			task.spawn(function()
-				repeat
-					task.wait()
-					local itemdrops = bedwars.BatteryEffectsController.liveBatteries
-					for i,v in pairs(itemdrops) do
-						if entityLibrary.isAlive and (entityLibrary.character.HumanoidRootPart.Position - v.position).magnitude <= 10 then
-							bedwars.Client:Get(bedwars.BatteryRemote):SendToServer({
-								batteryId = i
-							})
-						end
-					end
-				until (not AutoKit.Enabled)
-			end)
-		end,--]]
 		["grim_reaper"] = function()
 			task.spawn(function()
 				repeat
@@ -36015,13 +34211,25 @@ store = createMonitoredTable(store, onChange)
 bedwars = createMonitoredTable(bedwars, onChange2)
 
 --if (not shared.CheatEngineMode) then pload("CustomModules/S6872274481.lua") end
-    -- END game cheat engine
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 4: GAME CHEAT ENGINE
+-- --------------------------------------------------------------------------------
+-- End of game cheat engine modules.
+-- --------------------------------------------------------------------------------
+
 end
 end
 
 if bedwarsMainIsGame and not shared.NoPealzwareModules then
 do
-    -- BEGIN game pealzware
+
+-- ================================================================================
+-- >>>  SECTION 5: GAME PEALZWARE
+-- ================================================================================
+-- Runs when bedwarsMainIsGame and not NoPealzwareModules.
+-- ================================================================================
+
 repeat task.wait() until game:IsLoaded()
 repeat task.wait() until shared.GuiLibrary
 
@@ -36197,468 +34405,6 @@ GetEnumItems = function(enum)
 	return fonts
 end
 
---[[run(function()
-    local ClientCrasher
-	local collectionService = game:GetService("CollectionService")
-	local entitylib = entitylib or entityLibrary
-	local signal
-    ClientCrasher = vape.Categories.Blatant:CreateModule({
-        Name = "Client Crasher",
-        Function = function(call)
-            if call then
-                signal = collectionService:GetInstanceAddedSignal('inventory-entity'):Connect(function(player)
-                    local item = player:WaitForChild('HandInvItem')
-                    for i,v in getconnections(item.Changed) do
-						pcall(function()
-                        	v:Disable()
-						end)
-                    end
-                end)
-
-                repeat
-                    if entitylib.isAlive then
-                        for _, tool in store.inventory.inventory.items do
-							task.spawn(switchItem, tool.tool)
-						end
-                    end
-                    task.wait()
-                until not ClientCrasher.Enabled
-            else
-				if signal then
-					pcall(function() signal:Disconnect() end)
-					signal = nil
-				end
-			end
-        end
-    })
-end)--]]
-
---[[run(function()
-	local ChosenPack = {Value = "Realistic Pack"}
-	local TexturePacks = {Enabled = false}
-	TexturePacks = vape.Categories.Utility:CreateModule({
-		Name = "Texture Packs",
-		Tooltip = "Replaces the boring sword with a better texture pack.",
-		Function = function(callback)
-			if callback then
-				task.spawn(function()
-					repeat task.wait() until store.matchState ~= 0
-					local function killPlayer(player)
-						local character = player.Character
-						if character then
-							local humanoid = character:FindFirstChildOfClass("Humanoid")
-							if humanoid then
-								humanoid.Health = 0
-							end
-						end
-					end
-					local canRespawn = function() end
-					canRespawn = function()
-						local success, response = pcall(function()
-							return lplr.leaderstats.Bed.Value == '✅'
-						end)
-						return success and response
-					end
-					warningNotification("Texture packs", "Reset for the pack to work", 3)
-					--if canRespawn() then warningNotification("Texture packs", "Resetting for the texture to get applied", 5) killPlayer(lplr) else warningNotification("Texture packs", "Unable to reset your chatacter! Please do it manually", 3) end
-					TexturePacks.Enabled = false
-					TexturePacks.Enabled = true
-					if ChosenPack.Value == "Realistic Pack" then
-						local Services = {
-							Storage = game:GetService("ReplicatedStorage"),
-							Workspace = game:GetService("Workspace"),
-							Players = game:GetService("Players")
-						}
-
-						local ASSET_ID = "rbxassetid://14431940695"
-						local PRIMARY_ROTATION = CFrame.Angles(0, -math.pi/4, 0)
-
-						local ToolMaterials = {
-							sword = {"wood", "stone", "iron", "diamond", "emerald"},
-							pickaxe = {"wood", "stone", "iron", "diamond"},
-							axe = {"wood", "stone", "iron", "diamond"}
-						}
-
-						local Offsets = {
-							sword = CFrame.Angles(0, -math.pi/2, -math.pi/2),
-							pickaxe = CFrame.Angles(0, -math.pi, -math.pi/2),
-							axe = CFrame.Angles(0, -math.pi/18, -math.pi/2)
-						}
-
-						local ToolIndex = {}
-
-						local function initializeToolIndex(asset)
-							for toolType, materials in pairs(ToolMaterials) do
-								for _, material in ipairs(materials) do
-									local identifier = material .. "_" .. toolType
-									local toolModel = asset:FindFirstChild(identifier)
-
-									if toolModel then
-										--print("Found tool in initializeToolIndex:", identifier)
-										table.insert(ToolIndex, {
-											Name = identifier,
-											Offset = Offsets[toolType],
-											Model = toolModel
-										})
-									else
-										--warn("Model for " .. identifier .. " not found in initializeToolIndex!")
-									end
-								end
-							end
-						end
-
-						local function adjustAppearance(part)
-							if part:IsA("BasePart") then
-								part.Transparency = 1
-							end
-						end
-
-						local function attachModel(target, data, modifier)
-							local clonedModel = data.Model:Clone()
-							clonedModel.CFrame = target:FindFirstChild("Handle").CFrame * data.Offset * PRIMARY_ROTATION * (modifier or CFrame.new())
-							clonedModel.Parent = target
-
-							local weld = Instance.new("WeldConstraint", clonedModel)
-							weld.Part0 = clonedModel
-							weld.Part1 = target:FindFirstChild("Handle")
-						end
-
-						local function processTool(tool)
-							if not tool:IsA("Accessory") then return end
-
-							for _, toolData in ipairs(ToolIndex) do
-								if toolData.Name == tool.Name then
-									for _, child in pairs(tool:GetDescendants()) do
-										adjustAppearance(child)
-									end
-									attachModel(tool, toolData)
-
-									local playerTool = Services.Players.LocalPlayer.Character:FindFirstChild(tool.Name)
-									if playerTool then
-										for _, child in pairs(playerTool:GetDescendants()) do
-											adjustAppearance(child)
-										end
-										attachModel(playerTool, toolData, CFrame.new(0.4, 0, -0.9))
-									end
-								end
-		end
-	end
-
-
-						local loadedTools = game:GetObjects(ASSET_ID)
-						local mainAsset = loadedTools[1]
-						mainAsset.Parent = Services.Storage
-
-						wait(1)
-
-
-						for _, child in pairs(mainAsset:GetChildren()) do
-							--print("Found tool in asset:", child.Name)
-						end
-
-						initializeToolIndex(mainAsset)
-						Services.Workspace:WaitForChild("Camera").Viewmodel.ChildAdded:Connect(processTool)
-					elseif ChosenPack.Value == "32x Pack" then
-						local Services = {
-							Storage = game:GetService("ReplicatedStorage"),
-							Workspace = game:GetService("Workspace"),
-							Players = game:GetService("Players")
-						}
-
-						local ASSET_ID = "rbxassetid://14421314747"
-						local PRIMARY_ROTATION = CFrame.Angles(0, -math.pi/4, 0)
-
-						local ToolMaterials = {
-							sword = {"wood", "stone", "iron", "diamond", "emerald"},
-							pickaxe = {"wood", "stone", "iron", "diamond"},
-							axe = {"wood", "stone", "iron", "diamond"}
-						}
-
-						local Offsets = {
-							sword = CFrame.Angles(0, -math.pi/2, -math.pi/2),
-							pickaxe = CFrame.Angles(0, -math.pi, -math.pi/2),
-							axe = CFrame.Angles(0, -math.pi/18, -math.pi/2)
-						}
-
-						local ToolIndex = {}
-
-						local function initializeToolIndex(asset)
-							for toolType, materials in pairs(ToolMaterials) do
-								for _, material in ipairs(materials) do
-									local identifier = material .. "_" .. toolType
-									local toolModel = asset:FindFirstChild(identifier)
-
-									if toolModel then
-										--print("Found tool in initializeToolIndex:", identifier)
-										table.insert(ToolIndex, {
-											Name = identifier,
-											Offset = Offsets[toolType],
-											Model = toolModel
-										})
-									else
-										--warn("Model for " .. identifier .. " not found in initializeToolIndex!")
-		end
-	end
-		end
-	end
-
-						local function adjustAppearance(part)
-							if part:IsA("BasePart") then
-								part.Transparency = 1
-							end
-						end
-
-						local function attachModel(target, data, modifier)
-							local clonedModel = data.Model:Clone()
-							clonedModel.CFrame = target:FindFirstChild("Handle").CFrame * data.Offset * PRIMARY_ROTATION * (modifier or CFrame.new())
-							clonedModel.Parent = target
-
-							local weld = Instance.new("WeldConstraint", clonedModel)
-							weld.Part0 = clonedModel
-							weld.Part1 = target:FindFirstChild("Handle")
-						end
-
-						local function processTool(tool)
-							if not tool:IsA("Accessory") then return end
-
-							for _, toolData in ipairs(ToolIndex) do
-								if toolData.Name == tool.Name then
-									for _, child in pairs(tool:GetDescendants()) do
-										adjustAppearance(child)
-									end
-									attachModel(tool, toolData)
-
-									local playerTool = Services.Players.LocalPlayer.Character:FindFirstChild(tool.Name)
-									if playerTool then
-										for _, child in pairs(playerTool:GetDescendants()) do
-											adjustAppearance(child)
-										end
-										attachModel(playerTool, toolData, CFrame.new(0.4, 0, -0.9))
-									end
-								end
-							end
-						end
-
-
-						local loadedTools = game:GetObjects(ASSET_ID)
-						local mainAsset = loadedTools[1]
-						mainAsset.Parent = Services.Storage
-
-						wait(1)
-
-
-						for _, child in pairs(mainAsset:GetChildren()) do
-							--print("Found tool in asset:", child.Name)
-						end
-
-						initializeToolIndex(mainAsset)
-						Services.Workspace:WaitForChild("Camera").Viewmodel.ChildAdded:Connect(processTool)
-					elseif ChosenPack.Value == "16x Pack" then
-						local Services = {
-							Storage = game:GetService("ReplicatedStorage"),
-							Workspace = game:GetService("Workspace"),
-							Players = game:GetService("Players")
-						}
-
-						local ASSET_ID = "rbxassetid://14474879594"
-						local PRIMARY_ROTATION = CFrame.Angles(0, -math.pi/4, 0)
-
-						local ToolMaterials = {
-							sword = {"wood", "stone", "iron", "diamond", "emerald"},
-							pickaxe = {"wood", "stone", "iron", "diamond"},
-							axe = {"wood", "stone", "iron", "diamond"}
-						}
-
-						local Offsets = {
-							sword = CFrame.Angles(0, -math.pi/2, -math.pi/2),
-							pickaxe = CFrame.Angles(0, -math.pi, -math.pi/2),
-							axe = CFrame.Angles(0, -math.pi/18, -math.pi/2)
-						}
-
-						local ToolIndex = {}
-
-						local function initializeToolIndex(asset)
-							for toolType, materials in pairs(ToolMaterials) do
-								for _, material in ipairs(materials) do
-									local identifier = material .. "_" .. toolType
-									local toolModel = asset:FindFirstChild(identifier)
-
-									if toolModel then
-										--print("Found tool in initializeToolIndex:", identifier)
-										table.insert(ToolIndex, {
-											Name = identifier,
-											Offset = Offsets[toolType],
-											Model = toolModel
-										})
-									else
-										--warn("Model for " .. identifier .. " not found in initializeToolIndex!")
-									end
-								end
-							end
-						end
-
-						local function adjustAppearance(part)
-							if part:IsA("BasePart") then
-								part.Transparency = 1
-							end
-						end
-
-						local function attachModel(target, data, modifier)
-							local clonedModel = data.Model:Clone()
-							clonedModel.CFrame = target:FindFirstChild("Handle").CFrame * data.Offset * PRIMARY_ROTATION * (modifier or CFrame.new())
-							clonedModel.Parent = target
-
-							local weld = Instance.new("WeldConstraint", clonedModel)
-							weld.Part0 = clonedModel
-							weld.Part1 = target:FindFirstChild("Handle")
-						end
-
-						local function processTool(tool)
-							if not tool:IsA("Accessory") then return end
-
-							for _, toolData in ipairs(ToolIndex) do
-								if toolData.Name == tool.Name then
-									for _, child in pairs(tool:GetDescendants()) do
-										adjustAppearance(child)
-									end
-									attachModel(tool, toolData)
-
-									local playerTool = Services.Players.LocalPlayer.Character:FindFirstChild(tool.Name)
-									if playerTool then
-										for _, child in pairs(playerTool:GetDescendants()) do
-											adjustAppearance(child)
-										end
-										attachModel(playerTool, toolData, CFrame.new(0.4, 0, -0.9))
-									end
-								end
-							end
-						end
-
-
-						local loadedTools = game:GetObjects(ASSET_ID)
-						local mainAsset = loadedTools[1]
-						mainAsset.Parent = Services.Storage
-
-						wait(1)
-
-
-						for _, child in pairs(mainAsset:GetChildren()) do
-							--print("Found tool in asset:", child.Name)
-						end
-
-						initializeToolIndex(mainAsset)
-						Services.Workspace:WaitForChild("Camera").Viewmodel.ChildAdded:Connect(processTool)
-					elseif ChosenPack.Value == "Garbage" then
-						local Services = {
-							Storage = game:GetService("ReplicatedStorage"),
-							Workspace = game:GetService("Workspace"),
-							Players = game:GetService("Players")
-						}
-
-						local ASSET_ID = "rbxassetid://14336548540"
-						local PRIMARY_ROTATION = CFrame.Angles(0, -math.pi/4, 0)
-
-						local ToolMaterials = {
-							sword = {"wood", "stone", "iron", "diamond", "emerald"},
-							pickaxe = {"wood", "stone", "iron", "diamond"},
-							axe = {"wood", "stone", "iron", "diamond"}
-						}
-
-						local Offsets = {
-							sword = CFrame.Angles(0, -math.pi/2, -math.pi/2),
-							pickaxe = CFrame.Angles(0, -math.pi, -math.pi/2),
-							axe = CFrame.Angles(0, -math.pi/18, -math.pi/2)
-						}
-
-						local ToolIndex = {}
-
-						local function initializeToolIndex(asset)
-							for toolType, materials in pairs(ToolMaterials) do
-								for _, material in ipairs(materials) do
-									local identifier = material .. "_" .. toolType
-									local toolModel = asset:FindFirstChild(identifier)
-
-									if toolModel then
-										--print("Found tool in initializeToolIndex:", identifier)
-										table.insert(ToolIndex, {
-											Name = identifier,
-											Offset = Offsets[toolType],
-											Model = toolModel
-										})
-									else
-										--warn("Model for " .. identifier .. " not found in initializeToolIndex!")
-									end
-								end
-							end
-						end
-
-						local function adjustAppearance(part)
-							if part:IsA("BasePart") then
-								part.Transparency = 1
-							end
-						end
-
-						local function attachModel(target, data, modifier)
-							local clonedModel = data.Model:Clone()
-							clonedModel.CFrame = target:FindFirstChild("Handle").CFrame * data.Offset * PRIMARY_ROTATION * (modifier or CFrame.new())
-							clonedModel.Parent = target
-
-							local weld = Instance.new("WeldConstraint", clonedModel)
-							weld.Part0 = clonedModel
-							weld.Part1 = target:FindFirstChild("Handle")
-						end
-
-						local function processTool(tool)
-							if not tool:IsA("Accessory") then return end
-
-							for _, toolData in ipairs(ToolIndex) do
-								if toolData.Name == tool.Name then
-									for _, child in pairs(tool:GetDescendants()) do
-										adjustAppearance(child)
-									end
-									attachModel(tool, toolData)
-
-									local playerTool = Services.Players.LocalPlayer.Character:FindFirstChild(tool.Name)
-									if playerTool then
-										for _, child in pairs(playerTool:GetDescendants()) do
-											adjustAppearance(child)
-										end
-										attachModel(playerTool, toolData, CFrame.new(0.4, 0, -0.9))
-									end
-								end
-							end
-						end
-
-
-						local loadedTools = game:GetObjects(ASSET_ID)
-						local mainAsset = loadedTools[1]
-						mainAsset.Parent = Services.Storage
-
-						wait(1)
-
-
-						for _, child in pairs(mainAsset:GetChildren()) do
-							--print("Found tool in asset:", child.Name)
-						end
-
-						initializeToolIndex(mainAsset)
-						Services.Workspace:WaitForChild("Camera").Viewmodel.ChildAdded:Connect(processTool)
-					end
-				end)
-			end
-		end
-	})
-	ChosenPack = TexturePacks:CreateDropdown({
-        Name = "Pack",
-        List = {
-            "Realistic Pack",
-            "32x Pack",
-            "16x Pack",
-            "Garbage",
-        },
-        Function = function() end,
-    })
-end)--]]
 
 run(function()
 	local PlayerLevelSet = {Enabled = false}
@@ -36795,433 +34541,6 @@ run(function()
     })
 end)
 
---[[run(function()
-	task.spawn(function()
-		pcall(function()
-			GuiLibrary.RemoveObject("SetEmote")
-			local SetEmote = {}
-			local SetEmoteList = {Value = ''}
-			local oldemote
-			local emo2 = {}
-			local credits
-			SetEmote = vape.Categories.Utility:CreateModule({
-				Name = 'SetEmote',
-				Tooltip = "Sets your emote",
-				Function = function(calling)
-					if calling then
-						oldemote = lplr:GetAttribute('EmoteTypeSlot1')
-						lplr:SetAttribute('EmoteTypeSlot1', emo2[SetEmoteList.Value])
-					else
-						if oldemote then
-							lplr:GetAttribute('EmoteTypeSlot1', oldemote)
-							oldemote = nil
-						end
-					end
-					SetEmote:Clean(lplr.PlayerGui.ChildAdded:Connect(function(v)
-						local anim
-						if tostring(v) == 'RoactTree' and isAlive(lplr, true) and not emoting then
-							v:WaitForChild('1'):WaitForChild('1')
-							if not v['1']:IsA('ImageButton') then
-								return
-							end
-							v['1'].Visible = false
-							emoting = true
-							bedwars.Client:Get('Emote'):CallServer({emoteType = lplr:GetAttribute('EmoteTypeSlot1')})
-							local oldpos = lplr.Character:WaitForChild("HumanoidRootPart").Position
-							if tostring(lplr:GetAttribute('EmoteTypeSlot1')):lower():find('nightmare') then
-								anim = Instance.new('Animation')
-								anim.AnimationId = 'rbxassetid://9191822700'
-								anim = lplr.Character:WaitForChild("Humanoid").Animator:LoadAnimation(anim)
-								task.spawn(function()
-									repeat
-										anim:Play()
-										anim.Completed:Wait()
-									until not anim
-								end)
-							end
-							repeat task.wait() until ((lplr.Character:WaitForChild("HumanoidRootPart").Position - oldpos).Magnitude >= 0.3 or not isAlive(lplr, true))
-							pcall(function() anim:Stop() end)
-							anim = nil
-							emoting = false
-							bedwars.Client:Get('EmoteCancelled'):CallServer({emoteType = lplr:GetAttribute('EmoteTypeSlot1')})
-						end
-					end))
-				end
-			})
-			local emo = {}
-			for i,v in pairs(bedwars.EmoteMeta) do
-				table.insert(emo, v.name)
-				emo2[v.name] = i
-			end
-			table.sort(emo, function(a, b) return a:lower() < b:lower() end)
-			SetEmoteList = SetEmote:CreateDropdown({
-				Name = 'Emote',
-				List = emo,
-				Function = function(emote)
-					if SetEmote.Enabled then
-						lplr:SetAttribute('EmoteTypeSlot1', emo2[emote])
-					end
-				end
-			})
-		end)
-	end)
-end)--]]
-
---[[if shared.TestingMode then
-	pcall(function()
-		run(function()
-			local SessionInfo = {Enabled = false}
-			local BackgroundColor = {Hue = 0, Sat = 0, Value = 0}
-			local lplr = game:GetService("Players").LocalPlayer
-			local plrgui = lplr.PlayerGui
-			local deathCount = 0
-			local regionDisplayText = plrgui:WaitForChild("ServerRegionDisplay").ServerRegionText.Text
-			local playerDead = false
-			local debounce = false
-
-			SessionInfo = vape.Categories.Utility:CreateModule({
-				Name = "SessionInfo Custom",
-				Tooltip = "Customizable session info.",
-				Function = function(call)
-					if call then
-						local function extractValue(text, pattern)
-							return text:match(pattern)
-						end
-
-						local components = {
-							Gui = Instance.new("ScreenGui"),
-							Background = Instance.new("Frame"),
-							UICorner = Instance.new("UICorner"),
-							SessionInfoLabel = Instance.new("TextLabel"),
-							TimePlayed = Instance.new("TextLabel"),
-							Kills = Instance.new("TextLabel"),
-							Deaths = Instance.new("TextLabel"),
-							Region = Instance.new("TextLabel"),
-							DropShadowHolder = Instance.new("Frame"),
-							DropShadow = Instance.new("ImageLabel")
-						}
-
-						local function setupLabel(label, text, positionY)
-							label.Font = Enum.Font.SourceSans
-							label.Text = text
-							label.TextColor3 = Color3.fromRGB(255, 255, 255)
-							label.TextScaled = true
-							label.TextWrapped = true
-							label.TextXAlignment = Enum.TextXAlignment.Left
-							label.BackgroundTransparency = 1
-							label.Position = UDim2.new(0.04, 0, positionY, 0)
-							label.Size = UDim2.new(1, 0, 0.17, 0)
-							label.Parent = components.Background
-						end
-
-						components.Gui.Name = "SessionInfo"
-						components.Gui.Parent = plrgui
-						components.Gui.ResetOnSpawn = false
-
-						components.Background.Name = "Background"
-						components.Background.Parent = components.Gui
-						components.Background.BackgroundColor3 = Color3.fromHSV(0, 0, 0)
-						components.Background.BackgroundTransparency = 0.8
-						components.Background.Size = UDim2.new(0.13, 0, 0.16, 0)
-						components.Background.Position = UDim2.new(0.01, 0, 0.38, 0)
-						components.UICorner.Parent = components.Background
-
-						setupLabel(components.SessionInfoLabel, "Session Info", 0)
-						setupLabel(components.TimePlayed, "Time Played: 00:00", 0.28)
-						setupLabel(components.Kills, "Kills: 0", 0.45)
-						setupLabel(components.Deaths, "Deaths: 0", 0.62)
-						setupLabel(components.Region, "Region: " .. extractValue(regionDisplayText, "REGION:%s*([^<]+)"), 0.79)
-
-						components.DropShadowHolder.Parent = components.Background
-						components.DropShadowHolder.BackgroundTransparency = 1
-						components.DropShadowHolder.Size = UDim2.new(1, 0, 1, 0)
-						components.DropShadow.Name = "DropShadow"
-						components.DropShadow.Parent = components.DropShadowHolder
-						components.DropShadow.Image = "rbxassetid://6014261993"
-						components.DropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-						components.DropShadow.ImageTransparency = 0.5
-						components.DropShadow.ScaleType = Enum.ScaleType.Slice
-						components.DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
-						components.DropShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-						components.DropShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-						components.DropShadow.Size = UDim2.new(1, 47, 1, 47)
-
-						local function updateTimer()
-							while enabled do
-								wait()
-								local timerText = plrgui.TopBarAppGui.TopBarApp["2"]["5"].Text
-								components.TimePlayed.Text = "Time Played: " .. extractValue(timerText, "<b>(%d+:%d+)</b>")
-							end
-						end
-
-						local function updateKills()
-							while enabled do
-								wait()
-								local killsText = plrgui.TopBarAppGui.TopBarApp["3"]["5"].Text
-								components.Kills.Text = "Kills: " .. extractValue(killsText, "<b>(%d+)</b>")
-							end
-						end
-
-						local function trackDeaths()
-							lplr.Character:WaitForChild("Humanoid").HealthChanged:Connect(function(health)
-								if debounce then return end
-								debounce = true
-								if health <= 0 and not playerDead then
-									deathCount += 1
-									components.Deaths.Text = "Deaths: " .. deathCount
-									playerDead = true
-								elseif health > 0 then
-									playerDead = false
-								end
-								debounce = false
-							end)
-						end
-
-						task.spawn(updateTimer)
-						task.spawn(updateKills)
-						task.spawn(trackDeaths)
-
-					else
-						if plrgui:FindFirstChild("SessionInfo") then
-							plrgui.SessionInfo:Destroy()
-						else
-							errorNotification("SessionInfo", "Session Info not found, please DM erchodev#0 about this.", 3)
-						end
-					end
-				end
-			})
-
-			BackgroundColor = SessionInfo:CreateColorSlider({
-				Name = "Background Color",
-				Function = function(h, s, v)
-					local sessionInfo = game.Players.LocalPlayer.PlayerGui:FindFirstChild("SessionInfo")
-					if sessionInfo then
-						sessionInfo.Background.BackgroundColor3 = Color3.fromHSV(h, s, v)
-					else
-						print("No SessionInfo found.")
-					end
-				end
-			})
-		end)
-	end)
-else
-	run(function()
-		local lplr = game.Players.LocalPlayer
-		local plrgui = lplr.PlayerGui
-		local deathscounter = 0
-		local regiondisplay = plrgui:WaitForChild("ServerRegionDisplay").ServerRegionText.Text
-		local playerded = false
-		local debouncegaming = false
-		local SessionInfo = vape.Categories.Utility:CreateModule({
-			Name = "SessionInfo Custom",
-			Tooltip = "Customizable session info.",
-			Function = function(callback)
-				if callback then
-					local function extractnumber(text)
-						local number = text:match("<b>(%d+)</b>")
-						return tonumber(number)
-					end
-					local function extracttimer(text)
-						local minutes, seconds = text:match("<b>(%d+:%d+)</b>")
-						return minutes
-					end
-					local function extractregion(text)
-						local region = text:match("REGION:%s*([^<]+)")
-						return region
-					end
-
-					local Converted = {
-						["_SessionInfo"] = Instance.new("ScreenGui");
-						["_Background"] = Instance.new("Frame");
-						["_UICorner"] = Instance.new("UICorner");
-						["_SessionInfoLabel"] = Instance.new("TextLabel");
-						["_TimePlayed"] = Instance.new("TextLabel");
-						["_Kills"] = Instance.new("TextLabel");
-						["_Deaths"] = Instance.new("TextLabel");
-						["_Region"] = Instance.new("TextLabel");
-						["_DropShadowHolder"] = Instance.new("Frame");
-						["_DropShadow"] = Instance.new("ImageLabel");
-					}
-
-					Converted["_SessionInfo"].ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-					Converted["_SessionInfo"].Name = "SessionInfo"
-					Converted["_SessionInfo"].Parent = plrgui
-					Converted["_SessionInfo"].ResetOnSpawn = false
-
-					Converted["_Background"].BackgroundColor3 = Color3.fromHSV(0, 0, 0)
-					Converted["_Background"].BackgroundTransparency = 0.800000011920929
-					Converted["_Background"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_Background"].BorderSizePixel = 0
-					Converted["_Background"].Position = UDim2.new(0.0116598075, 0, 0.375, 0)
-					Converted["_Background"].Size = UDim2.new(0.128257886, 0, 0.16310975, 0)
-					Converted["_Background"].Name = "Background"
-					Converted["_Background"].Parent = Converted["_SessionInfo"]
-
-					Converted["_UICorner"].Parent = Converted["_Background"]
-
-					Converted["_SessionInfoLabel"].Font = Enum.Font.SourceSansBold
-					Converted["_SessionInfoLabel"].Text = "Session Info"
-					Converted["_SessionInfoLabel"].TextColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_SessionInfoLabel"].TextScaled = true
-					Converted["_SessionInfoLabel"].TextSize = 14
-					Converted["_SessionInfoLabel"].TextWrapped = true
-					Converted["_SessionInfoLabel"].TextXAlignment = Enum.TextXAlignment.Left
-					Converted["_SessionInfoLabel"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_SessionInfoLabel"].BackgroundTransparency = 1
-					Converted["_SessionInfoLabel"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_SessionInfoLabel"].BorderSizePixel = 0
-					Converted["_SessionInfoLabel"].Position = UDim2.new(0.0374331549, 0, 0, 0)
-					Converted["_SessionInfoLabel"].Size = UDim2.new(1, 0, 0.242990658, 0)
-					Converted["_SessionInfoLabel"].Name = "SessionInfoLabel"
-					Converted["_SessionInfoLabel"].Parent = Converted["_Background"]
-
-					Converted["_TimePlayed"].Font = Enum.Font.SourceSans
-					Converted["_TimePlayed"].Text = "Time Played: 00:00"
-					Converted["_TimePlayed"].TextColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_TimePlayed"].TextScaled = true
-					Converted["_TimePlayed"].TextSize = 14
-					Converted["_TimePlayed"].TextWrapped = true
-					Converted["_TimePlayed"].TextXAlignment = Enum.TextXAlignment.Left
-					Converted["_TimePlayed"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_TimePlayed"].BackgroundTransparency = 1
-					Converted["_TimePlayed"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_TimePlayed"].BorderSizePixel = 0
-					Converted["_TimePlayed"].Position = UDim2.new(0.0374331549, 0, 0.275288522, 0)
-					Converted["_TimePlayed"].Size = UDim2.new(1, 0, 0.168224305, 0)
-					Converted["_TimePlayed"].Name = "TimePlayed"
-					Converted["_TimePlayed"].Parent = Converted["_Background"]
-
-					Converted["_Kills"].Font = Enum.Font.SourceSans
-					Converted["_Kills"].Text = "Kills: 0"
-					Converted["_Kills"].TextColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_Kills"].TextScaled = true
-					Converted["_Kills"].TextSize = 14
-					Converted["_Kills"].TextWrapped = true
-					Converted["_Kills"].TextXAlignment = Enum.TextXAlignment.Left
-					Converted["_Kills"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_Kills"].BackgroundTransparency = 1
-					Converted["_Kills"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_Kills"].BorderSizePixel = 0
-					Converted["_Kills"].Position = UDim2.new(0.0374331549, 0, 0.445024729, 0)
-					Converted["_Kills"].Size = UDim2.new(1, 0, 0.168224305, 0)
-					Converted["_Kills"].Name = "Kills"
-					Converted["_Kills"].Parent = Converted["_Background"]
-
-					Converted["_Deaths"].Font = Enum.Font.SourceSans
-					Converted["_Deaths"].Text = "Deaths: 0"
-					Converted["_Deaths"].TextColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_Deaths"].TextScaled = true
-					Converted["_Deaths"].TextSize = 14
-					Converted["_Deaths"].TextWrapped = true
-					Converted["_Deaths"].TextXAlignment = Enum.TextXAlignment.Left
-					Converted["_Deaths"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_Deaths"].BackgroundTransparency = 1
-					Converted["_Deaths"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_Deaths"].BorderSizePixel = 0
-					Converted["_Deaths"].Position = UDim2.new(0.0374331549, 0, 0.614760935, 0)
-					Converted["_Deaths"].Size = UDim2.new(1, 0, 0.168224305, 0)
-					Converted["_Deaths"].Name = "Deaths"
-					Converted["_Deaths"].Parent = Converted["_Background"]
-
-					Converted["_Region"].Font = Enum.Font.SourceSans
-					Converted["_Region"].Text = "Region: "..extractregion(regiondisplay)
-					Converted["_Region"].TextColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_Region"].TextScaled = true
-					Converted["_Region"].TextSize = 14
-					Converted["_Region"].TextWrapped = true
-					Converted["_Region"].TextXAlignment = Enum.TextXAlignment.Left
-					Converted["_Region"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Converted["_Region"].BackgroundTransparency = 1
-					Converted["_Region"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_Region"].BorderSizePixel = 0
-					Converted["_Region"].Position = UDim2.new(0.0374331549, 0, 0.78298521, 0)
-					Converted["_Region"].Size = UDim2.new(1, 0, 0.168224305, 0)
-					Converted["_Region"].Name = "Region"
-					Converted["_Region"].Parent = Converted["_Background"]
-
-					Converted["_DropShadowHolder"].BackgroundTransparency = 1
-					Converted["_DropShadowHolder"].BorderSizePixel = 0
-					Converted["_DropShadowHolder"].Size = UDim2.new(1, 0, 1, 0)
-					Converted["_DropShadowHolder"].ZIndex = 0
-					Converted["_DropShadowHolder"].Name = "DropShadowHolder"
-					Converted["_DropShadowHolder"].Parent = Converted["_Background"]
-
-					Converted["_DropShadow"].Image = "rbxassetid://6014261993"
-					Converted["_DropShadow"].ImageColor3 = Color3.fromRGB(0, 0, 0)
-					Converted["_DropShadow"].ImageTransparency = 0.5
-					Converted["_DropShadow"].ScaleType = Enum.ScaleType.Slice
-					Converted["_DropShadow"].SliceCenter = Rect.new(49, 49, 450, 450)
-					Converted["_DropShadow"].AnchorPoint = Vector2.new(0.5, 0.5)
-					Converted["_DropShadow"].BackgroundTransparency = 1
-					Converted["_DropShadow"].BorderSizePixel = 0
-					Converted["_DropShadow"].Position = UDim2.new(0.5, 0, 0.5, 0)
-					Converted["_DropShadow"].Size = UDim2.new(1, 47, 1, 47)
-					Converted["_DropShadow"].ZIndex = 0
-					Converted["_DropShadow"].Name = "DropShadow"
-					Converted["_DropShadow"].Parent = Converted["_DropShadowHolder"]
-
-					local function timerupdate()
-						while true do
-							wait()
-							local timercounter = plrgui.TopBarAppGui.TopBarApp["2"]["5"].Text
-							local timergaming = extracttimer(timercounter)
-							Converted["_TimePlayed"].Text = "Time Played: " .. timergaming
-						end
-					end
-
-					local function killsupdate()
-						while true do
-							wait()
-							local killscounter = plrgui.TopBarAppGui.TopBarApp["3"]["5"].Text
-							local kills = extractnumber(killscounter)
-							Converted["_Kills"].Text = "Kills: " .. kills
-						end
-					end
-
-					local function deathcounterfunc()
-						local humanoid = lplr.Character:WaitForChild("Humanoid")
-						humanoid.HealthChanged:Connect(function(health)
-							if not debouncegaming then
-								debouncegaming = true
-								if health <= 0 and not playerded then
-									deathscounter = deathscounter + 1
-									Converted["_Deaths"].Text = "Deaths: " .. deathscounter
-									playerded = true
-									debouncegaming = false
-									wait(1)
-								elseif health > 0 and playerded then
-									playerded = false
-								end
-							end
-						end)
-					end
-
-					task.spawn(timerupdate)
-					task.spawn(killsupdate)
-					task.spawn(deathcounterfunc)
-				else
-					local plrgui = game.Players.LocalPlayer.PlayerGui
-					if plrgui:FindFirstChild("SessionInfo") then
-						local sessioninfo = plrgui.SessionInfo
-						sessioninfo:Destroy()
-					else
-						ErrorWarning("SessionInfo", "Session Info not found, please dm salad about this.", 30)
-					end
-				end
-			end
-		})
-		SessioninfoBgColor = SessionInfo:CreateColorSlider({
-			Name = "Background Color",
-			Function = function(h, s, v)
-				if game.Players.LocalPlayer.PlayerGui:FindFirstChild("SessionInfo") then
-					game.Players.LocalPlayer.PlayerGui.SessionInfo.Background.BackgroundColor3 = Color3.fromHSV(h, s, v)
-				else
-					print("no session info found lol")
-				end
-			end
-		})
-	end)
-end--]]
 
 run(function()
     local tppos2 = nil
@@ -39769,64 +37088,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-	local AutoUpgradeEra = {}
-
-	local function invokePurchaseEra(eras)
-		for _, era in ipairs(eras) do
-			local args = {
-				[1] = {
-					["era"] = era
-				}
-			}
-			game:GetService("ReplicatedStorage")
-				:WaitForChild("rbxts_include")
-				:WaitForChild("node_modules")
-				:WaitForChild("@rbxts")
-				:WaitForChild("net")
-				:WaitForChild("out")
-				:WaitForChild("_NetManaged")
-				:WaitForChild("RequestPurchaseEra")
-				:InvokeServer(unpack(args))
-			task.wait(0.1)
-		end
-	end
-
-	local function invokePurchaseUpgrade(upgrades)
-		for _, upgrade in ipairs(upgrades) do
-			local args = {
-				[1] = {
-					["upgrade"] = upgrade
-				}
-			}
-			game:GetService("ReplicatedStorage")
-				:WaitForChild("rbxts_include")
-				:WaitForChild("node_modules")
-				:FindFirstChild("@rbxts")
-				:WaitForChild("net")
-				:WaitForChild("out")
-				:WaitForChild("_NetManaged")
-				:WaitForChild("RequestPurchaseTeamUpgrade")
-				:InvokeServer(unpack(args))
-			task.wait(0.1)
-		end
-	end
-
-	AutoUpgradeEra = vape.Categories.Blatant:CreateModule({
-		Name = 'AutoUpgradeEra',
-		Function = function(calling)
-			if calling then
-				task.spawn(function()
-					repeat
-						task.wait()
-						invokePurchaseEra({"iron_era", "diamond_era", "emerald_era"})
-						invokePurchaseUpgrade({"altar_i", "bed_defense_i", "destruction_i", "magic_i", "altar_ii", "destruction_ii", "magic_ii", "altar_iii"})
-					until not AutoUpgradeEra.Enabled
-				end)
-			end
-		end
-	})
-end)--]]
 
 run(function()
     local AdetundeRemote
@@ -39877,15 +37138,6 @@ run(function()
         Name = 'AdetundeExploit',
         Function = function(calling)
             if calling then
-                --[[task.spawn(function()
-					repeat task.wait() until store.equippedKit ~= ""
-					if store.equippedKit ~= "adetunde" then
-						warningNotification("AdetundeExploit", "Adetunde kit required!", 3)
-						if AdetundeExploit.Enabled then
-							AdetundeExploit:Toggle()
-						end
-					end
-				end)--]]
                 task.spawn(function()
                     repeat
 						if not getItem("frosty_hammer") then return end
@@ -40278,8 +37530,8 @@ local vapeAssert = function(argument, title, text, duration, hault, moduledisabl
 	if not argument then
     local suc, res = pcall(function()
     local notification = GuiLibrary.CreateNotification(title or "Pealzware", text or "Failed to call function.", duration or 20, "assets/WarningNotification.png")
-    notification.IconLabel.ImageColor3 = Color3.new(220, 0, 0)
-    notification.Frame.Frame.ImageColor3 = Color3.new(220, 0, 0)
+    notification.IconLabel.ImageColor3 = Color3.fromRGB(220, 0, 0)
+    notification.Frame.Frame.ImageColor3 = Color3.fromRGB(220, 0, 0)
     if moduledisable and (module and vape.Modules[module].Enabled) then vape.Modules[module]:Toggle(false) end
     end)
     if hault then while true do task.wait() end end end
@@ -40668,11 +37920,6 @@ run(function()
 					Autowin:Clean(lplr.CharacterAdded:Connect(function()
 						if (not isAlive(lplr, true)) then repeat task.wait() until isAlive(lplr, true) end
 						if (not store.matchState == 2) then return end
-						--[[local oldpos = lplr.Character:WaitForChild("HumanoidRootPart").CFrame
-						repeat
-							lplr.Character:WaitForChild("HumanoidRootPart").CFrame = oldpos
-							task.wait()
-						until (not isAlive(lplr, true)) or (not Autowin.Enabled)--]]
 					end))
 				end)
 			else
@@ -40827,389 +38074,6 @@ run(function()
 	lplr_gui.ChildAdded:Connect(handle_new_ui)
 end)
 
---[[run(function()
-	local isAlive = function(plr, healthblacklist)
-		plr = plr or lplr
-		local alive = false
-		if plr.Character and plr.Character.PrimaryPart and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") and plr.Character:FindFirstChild("Head") then
-			alive = true
-		end
-		if not healthblacklist and alive and plr.Character.Humanoid.Health and plr.Character.Humanoid.Health <= 0 then
-			alive = false
-		end
-		return alive
-	end
-
-	local playerRaycasted = function(player, direction)
-		if not isAlive(player, true) then
-			return false
-		end
-
-		local root = player.Character.HumanoidRootPart
-		local rayOrigin = root.Position
-		local rayDirection = direction or Vector3.new(0, -15, 0)
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = {player.Character}
-		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-		local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-		return raycastResult ~= nil
-	end
-
-	local ExploitDetectionSystemConfig = {
-		Enabled = false,
-		DetectionThresholds = {
-			TeleportDistance = 400,
-			SpeedDistance = 25,
-			FlyDistance = 10000,
-			CheckInterval = 2.5
-		},
-		DetectedPlayers = {
-			Teleport = {},
-			Speed = {},
-			InfiniteFly = {},
-			Invisibility = {},
-			NameSuspicious = {},
-			Cached = {}
-		},
-		CacheEnabled = true,
-		TeleportDetection = false,
-		InfiniteFlyDetection = false,
-		InvisibilityDetection = false,
-		NukerDetection = false,
-		SpeedDetection = false,
-		NameDetection = false,
-		Connections = {}
-	}
-
-	local DetectionCore = {
-		updateCache = function(player, detectionType)
-			if not ExploitDetectionSystemConfig.CacheEnabled then return end
-
-			local success, cache = pcall(function()
-				local file = readfile('vape/Libraries/exploiters.json')
-				return file and httpService:JSONDecode(file) or {}
-			end)
-
-			cache = cache or {}
-			cache[player.Name] = cache[player.Name] or {
-				DisplayName = player.DisplayName,
-				UserId = tostring(player.UserId),
-				Detections = {}
-			}
-
-			if not table.find(cache[player.Name].Detections, detectionType) then
-				table.insert(cache[player.Name].Detections, detectionType)
-				pcall(function()
-					writefile('vape/Libraries/exploiters.json', httpService:JSONEncode(cache))
-				end)
-			end
-		end,
-
-		isValidTarget = function(player)
-			return player ~= lplr and not player:GetAttribute('Spectator') and store.queueType:find('bedwars') ~= nil
-		end,
-
-		notify = function(title, message, duration)
-			InfoNotification('HackerDetector', message, duration)
-			whitelist.customtags[title] = {{text = 'PEALZWARE USER', color = Color3.fromRGB(255, 255, 0)}}
-		end
-	}
-
-	local DetectionMethods = {
-		Teleport = function(player)
-			local lastTeleport = player:GetAttribute('LastTeleported') or 0
-			local lastPosition = Vector3.zero
-
-			table.insert(ExploitDetectionSystemConfig.Connections, player:GetAttributeChangedSignal('LastTeleported'):Connect(function()
-				lastTeleport = player:GetAttribute('LastTeleported')
-			end))
-
-			table.insert(ExploitDetectionSystemConfig.Connections, player.CharacterAdded:Connect(function()
-				task.spawn(function()
-					repeat task.wait() until isAlive(player, true)
-					lastPosition = player.Character.HumanoidRootPart.Position
-
-					task.delay(ExploitDetectionSystemConfig.DetectionThresholds.CheckInterval, function()
-						if isAlive(player, true) and not table.find(ExploitDetectionSystemConfig.DetectedPlayers.Teleport, player) then
-							local distance = (player.Character.HumanoidRootPart.Position - lastPosition).Magnitude
-							if distance >= ExploitDetectionSystemConfig.DetectionThresholds.TeleportDistance and
-							   (player:GetAttribute('LastTeleported') - lastTeleport) == 0 then
-								DetectionCore.notify(player.Name, player.DisplayName .. ' detected using Teleport!', 100)
-								table.insert(ExploitDetectionSystemConfig.DetectedPlayers.Teleport, player)
-								DetectionCore.updateCache(player, 'Teleport')
-							end
-						end
-					end)
-				end)
-			end))
-		end,
-
-		Speed = function(player)
-			local lastTeleport = player:GetAttribute('LastTeleported') or 0
-			local lastPosition = Vector3.zero
-
-			table.insert(ExploitDetectionSystemConfig.Connections, player:GetAttributeChangedSignal('LastTeleported'):Connect(function()
-				lastTeleport = player:GetAttribute('LastTeleported')
-			end))
-
-			task.spawn(function()
-				repeat
-					if isAlive(player, true) and not table.find(ExploitDetectionSystemConfig.DetectedPlayers.Speed, player) then
-						local magnitude = (player.Character.HumanoidRootPart.Position - lastPosition).Magnitude
-						local kitDistance = ExploitDetectionSystemConfig.DetectionThresholds.SpeedDistance
-						local threshold = kitDistance + (playerRaycasted(player, Vector3.new(0, -15, 0)) and 0 or 40)
-
-						if magnitude >= threshold and (player:GetAttribute('LastTeleported') - lastTeleport) ~= 0 then
-							DetectionCore.notify(player.Name, player.DisplayName .. ' detected using Speed!', 60)
-							table.insert(ExploitDetectionSystemConfig.DetectedPlayers.Speed, player)
-							DetectionCore.updateCache(player, 'Speed')
-						end
-						lastPosition = player.Character.HumanoidRootPart.Position
-						task.wait(ExploitDetectionSystemConfig.DetectionThresholds.CheckInterval)
-					end
-				until not ExploitDetectionSystemConfig.Enabled or not ExploitDetectionSystemConfig.SpeedDetection
-			end)
-		end,
-
-		InfiniteFly = function(player)
-			task.spawn(function()
-				repeat
-					if isAlive(player, true) and not table.find(ExploitDetectionSystemConfig.DetectedPlayers.InfiniteFly, player) then
-						local distance = (lplr.Character:WaitForChild("HumanoidRootPart").Position - player.Character.HumanoidRootPart.Position).Magnitude
-						if distance >= ExploitDetectionSystemConfig.DetectionThresholds.FlyDistance and
-						   not playerRaycasted(player) then
-							DetectionCore.notify(player.Name, player.DisplayName .. ' detected using Infinite Fly!', 60)
-							table.insert(ExploitDetectionSystemConfig.DetectedPlayers.InfiniteFly, player)
-							DetectionCore.updateCache(player, 'InfiniteFly')
-						end
-						task.wait(ExploitDetectionSystemConfig.DetectionThresholds.CheckInterval)
-					end
-				until not ExploitDetectionSystemConfig.Enabled or not ExploitDetectionSystemConfig.InfiniteFlyDetection
-			end)
-		end,
-
-		Invisibility = function(player)
-			task.spawn(function()
-				repeat
-					if isAlive(player, true) and not table.find(ExploitDetectionSystemConfig.DetectedPlayers.Invisibility, player) then
-						for _, track in pairs(player.Character.Humanoid:GetPlayingAnimationTracks()) do
-							local animId = track.Animation.AnimationId
-							if animId == 'http://www.roblox.com/asset/?id=11335949902' or animId == 'rbxassetid://11335949902' then
-								DetectionCore.notify(player.Name, player.DisplayName .. ' detected using Invisibility!', 60)
-								table.insert(ExploitDetectionSystemConfig.DetectedPlayers.Invisibility, player)
-								DetectionCore.updateCache(player, 'Invisibility')
-							end
-						end
-						task.wait(0.5)
-					end
-				until not ExploitDetectionSystemConfig.Enabled or not ExploitDetectionSystemConfig.InvisibilityDetection
-			end)
-		end,
-
-		NameCheck = function(player)
-			task.spawn(function()
-				local suspiciousNames = {'godsploit', 'alsploit', 'renderintents'}
-				local nameLower = player.Name:lower()
-				local displayLower = player.DisplayName:lower()
-
-				for _, term in ipairs(suspiciousNames) do
-					if nameLower:find(term) or displayLower:find(term) then
-						DetectionCore.notify(player.Name, player.DisplayName .. ' has suspicious ' .. (nameLower:find(term) and 'username' or 'display name') .. ' "' .. term .. '"!', 20)
-						DetectionCore.updateCache(player, 'SuspiciousName')
-						return
-					end
-				end
-			end)
-		end,
-
-		CacheCheck = function(player)
-			local success, cache = pcall(function()
-				return httpService:JSONDecode(readfile('vape/Libraries/exploiters.json'))
-			end)
-
-			if success and cache[player.Name] then
-				DetectionCore.notify(player.Name, player.DisplayName .. ' found in exploiter cache!', 30)
-				table.insert(ExploitDetectionSystemConfig.DetectedPlayers.Cached, player)
-			end
-		end
-	}
-
-	local function initializeDetections(player)
-		local toggles = {
-			Teleport = ExploitDetectionSystemConfig.TeleportDetection,
-			Speed = ExploitDetectionSystemConfig.SpeedDetection,
-			InfiniteFly = ExploitDetectionSystemConfig.InfiniteFlyDetection,
-			Invisibility = ExploitDetectionSystemConfig.InvisibilityDetection,
-			NameCheck = ExploitDetectionSystemConfig.NameDetection,
-			CacheCheck = ExploitDetectionSystemConfig.CacheEnabled
-		}
-
-		for detection, method in pairs(DetectionMethods) do
-			if toggles[detection] then
-				task.spawn(method, player)
-			end
-		end
-	end
-
-	local CORE_CONNECTIONS = {}
-
-	local function clean(con)
-		table.insert(CORE_CONNECTIONS, con)
-	end
-
-	local ExploitDetectionSystem = {
-		Enabled = false,
-		ToggleButton = function() end,
-		Toggle = function(self, enabled)
-			ExploitDetectionSystemConfig.Enabled = enabled
-			if enabled then
-				for _, player in pairs(playersService:GetPlayers()) do
-					if player ~= lplr then
-						initializeDetections(player)
-					end
-				end
-				clean(playersService.PlayerAdded:Connect(initializeDetections))
-			else
-				for _, conn in pairs(ExploitDetectionSystemConfig.Connections) do
-					conn:Disconnect()
-				end
-				table.clear(ExploitDetectionSystemConfig.Connections)
-				for _, conn in pairs(CORE_CONNECTIONS) do
-					conn:Disconnect()
-				end
-				table.clear(CORE_CONNECTIONS)
-			end
-		end
-	}
-
-	local module = vape.Categories.Utility:CreateModule({
-		Name = 'HackerDetector',
-		Tooltip = 'Advanced exploit detection system for monitoring suspicious player behavior',
-		ExtraText = function() return 'Enhanced' end,
-		Function = function(enabled)
-			ExploitDetectionSystem:Toggle(enabled)
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'Teleport',
-		Default = true,
-		Function = function(call)
-			ExploitDetectionSystemConfig.TeleportDetection = call
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'InfiniteFly',
-		Default = true,
-		Function = function(call)
-			ExploitDetectionSystemConfig.InfiniteFlyDetection = call
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'Invisibility',
-		Default = true,
-		Function = function(call)
-			ExploitDetectionSystemConfig.InvisibilityDetection = call
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'Nuker',
-		Default = true,
-		Function = function(call)
-			ExploitDetectionSystemConfig.NukerDetection = call
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'Speed',
-		Default = true,
-		Function = function(call)
-			ExploitDetectionSystemConfig.SpeedDetection = call
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'Name',
-		Default = true,
-		Function = function(call)
-			ExploitDetectionSystemConfig.NameDetection = call
-		end
-	})
-
-	module:CreateToggle({
-		Name = 'Cached detections',
-		Tooltip = 'Manages detection cache in vape/Libraries/exploiters.json',
-		Default = true,
-		Function = function(state)
-			ExploitDetectionSystemConfig.CacheEnabled = state
-		end
-	})
-end)--]]
-
---[[run(function()
-	local DoubleHighJump = {Enabled = false}
-	local DoubleHighJumpHeight = {Value = 500}
-	local DoubleHighJumpHeight2 = {Value = 500}
-	local jumps = 0
-	DoubleHighJump = vape.Categories.Blatant:CreateModule({
-		Name = "DoubleHighJump",
-		NoSave = true,
-		Tooltip = "A very interesting high jump.",
-		Function = function(callback)
-			if callback then
-				task.spawn(function()
-					if entityLibrary.isAlive and lplr.Character:WaitForChild("Humanoid").FloorMaterial == Enum.Material.Air or jumps > 0 then
-						DoubleHighJump:Toggle(false)
-						return
-					end
-					for i = 1, 2 do
-						if not entityLibrary.isAlive then
-							DoubleHighJump:Toggle(false)
-							return
-						end
-						if i == 2 and lplr.Character:WaitForChild("Humanoid").FloorMaterial ~= Enum.Material.Air then
-							continue
-						end
-						lplr.Character:WaitForChild("HumanoidRootPart").Velocity = Vector3.new(0, i == 1 and DoubleHighJumpHeight.Value or DoubleHighJumpHeight2.Value, 0)
-						jumps = i
-						task.wait(i == 1 and 1 or 0.3)
-					end
-					task.spawn(function()
-						for i = 1, 20 do
-							if entityLibrary.isAlive then
-								lplr.Character:WaitForChild("Humanoid"):ChangeState(Enum.HumanoidStateType.Landed)
-							end
-						end
-					end)
-					task.delay(1.6, function() jumps = 0 end)
-					if DoubleHighJump.Enabled then
-					   DoubleHighJump:Toggle(false)
-					end
-				end)
-			else
-				PealzwareStore.jumpTick = tick() + 5
-			end
-		end
-	})
-	DoubleHighJumpHeight = DoubleHighJump:CreateSlider({
-		Name = "First Jump",
-		Min = 50,
-		Max = 500,
-		Default = 500,
-		Function = function() end
-	})
-	DoubleHighJumpHeight2 = DoubleHighJump:CreateSlider({
-		Name = "Second Jump",
-		Min = 50,
-		Max = 450,
-		Default = 450,
-		Function = function() end
-	})
-end)--]]
 
 shared.restore_function = shared.vape.Uninject
 
@@ -41454,114 +38318,8 @@ pcall(function()
 		})
 	end)
 
-	--[[task.spawn(function()
-		pcall(function()
-			repeat task.wait() until shared.VapeFullyLoaded
-			if (not StaffDetector.Enabled) then StaffDetector.ToggleButton(false) end
-		end)
-	end)--]]
 end)
 
---[[local isEnabled = function() return false end
-local function isEnabled(module)
-	return vape.Modules[module] and vape.Modules[module].Api.Enabled and true or false
-end
-local isAlive = function() return false end
-isAlive = function(plr, nohealth)
-	plr = plr or lplr
-	local alive = false
-	if plr.Character and plr.Character:FindFirstChildWhichIsA('Humanoid') and plr.Character.PrimaryPart and plr.Character:FindFirstChild('Head') then
-		alive = true
-	end
-	local success, health = pcall(function() return plr.Character:FindFirstChildWhichIsA('Humanoid').Health end)
-	if success and health <= 0 and not nohealth then
-		alive = false
-	end
-	return alive
-end
-local isnetworkowner = function(part)
-	local suc, res = pcall(function() return gethiddenproperty(part, "NetworkOwnershipRule") end)
-	if suc and res == Enum.NetworkOwnership.Manual then
-		sethiddenproperty(part, "NetworkOwnershipRule", Enum.NetworkOwnership.Automatic)
-		networkownerswitch = tick() + 8
-	end
-	return networkownerswitch <= tick()
-end
-run(function()
-	local runService = game:GetService("RunService")
-	local Invisibility = {}
-	local collideparts = {}
-	local invisvisual = {}
-	local visualrootcolor = {Hue = 0, Sat = 0, Sat = 0}
-	local oldcamoffset = Vector3.zero
-	local oldcolor
-	Invisibility = vape.Categories.Blatant:CreateModule({
-		Name = 'Invisibility',
-		Tooltip = 'Makes your invisible.',
-		Function = function(calling)
-			if calling then
-				task.spawn(function()
-				repeat task.wait() until ((isAlive(lplr, true) or not Invisibility.Enabled) and (isEnabled('Lobby Check', 'Toggle') == false or store.matchState ~= 0))
-				if not Invisibility.Enabled then
-					return
-				end
-				task.wait(0.5)
-				local anim = Instance.new('Animation')
-				anim.AnimationId = 'rbxassetid://11360825341'
-				local anim2 = lplr.Character:WaitForChild("Humanoid").Animator:LoadAnimation(anim)
-				for i,v in next, lplr.Character:GetDescendants() do
-					if v:IsA('BasePart') and v.CanCollide and v ~= lplr.Character:WaitForChild("HumanoidRootPart") then
-						v.CanCollide = false
-						table.insert(collideparts, v)
-					end
-				end
-				table.insert(Invisibility.Connections, runService.Stepped:Connect(function()
-					for i,v in next, collideparts do
-						pcall(function() v.CanCollide = false end)
-					end
-				end))
-				repeat
-					if isEnabled('AnimationPlayer') then
-						vape.Modules.AnimationPlayer:Toggle()
-					end
-					if isAlive(lplr, true) and isnetworkowner(lplr.Character:WaitForChild("HumanoidRootPart")) then
-						lplr.Character:WaitForChild("HumanoidRootPart").Transparency = (invisvisual.Enabled and 0.6 or 1)
-						oldcolor = lplr.Character:WaitForChild("HumanoidRootPart").Color
-						lplr.Character:WaitForChild("HumanoidRootPart").Color = Color3.fromHSV(visualrootcolor.Hue, visualrootcolor.Sat, visualrootcolor.Value)
-						anim2:Play(0.1, 9e9, 0.1)
-					elseif Invisibility.Enabled then
-						Invisibility:Toggle()
-						break
-					end
-					task.wait()
-				until not Invisibility.Enabled
-			end)
-			else
-				for i,v in next, collideparts do
-					pcall(function() v.CanCollide = true end)
-				end
-				table.clear(collideparts)
-				if isAlive(lplr, true) then
-					lplr.Character:WaitForChild("HumanoidRootPart").Transparency = 1
-					lplr.Character:WaitForChild("HumanoidRootPart").Color = oldcolor
-					task.wait()
-				    bedwars.SwordController:swingSwordAtMouse()
-				end
-			end
-		end
-	})
-	invisvisual = Invisibility:CreateToggle({
-		Name = 'Show Root',
-		Function = function(calling)
-			pcall(function() visualrootcolor.Object.Visible = calling end)
-		end
-	})
-	visualrootcolor = Invisibility:CreateColorSlider({
-		Name = 'Root Color',
-		Function = function() end
-	})
-	visualrootcolor.Object.Visible = false
-end)--]]
 
 run(function()
 	local ZoomUnlocker = {Enabled = false}
@@ -41632,69 +38390,6 @@ run(function()
 	end)
 end)
 
---[[run(function()
-	local entityLibrary = shared.vapeentity
-    local Headless = {Enabled = false};
-    Headless = vape.Categories.Utility:CreateModule({
-		PerformanceModeBlacklisted = true,
-        Name = 'Headless',
-        Tooltip = 'Makes your head transparent.',
-        Function = function(callback)
-            if callback then
-				local old, y = nil, nil;
-				local x = old;
-                task.spawn(function()
-                    repeat task.wait()
-						entityLibrary.character.Head.Transparency = 1
-						y = entityLibrary.character.Head:FindFirstChild('face');
-						if y then
-							old = y;
-							y.Parent = game.Workspace;
-						end;
-						for _, v in next, entityLibrary.character:GetChildren() do
-							if v:IsA'Accessory' then
-								v.Handle.Transparency = 0
-							end
-						end
-                    until not Headless.Enabled;
-                end);
-            else
-                entityLibrary.character.Head.Transparency = 0;
-				for _, v in next, entityLibrary.character:GetChildren() do
-					if v:IsA'Accessory' then
-						v.Handle.Transparency = 0;
-					end;
-				end;
-				if old then
-					old.Parent = entityLibrary.character.Head;
-					old = x;
-				end;
-            end;
-        end,
-        Default = false
-    })
-end)--]]
-
---[[run(function()
-	local NoNameTag = {Enabled = false}
-	NoNameTag = vape.Categories.Utility:CreateModule({
-		PerformanceModeBlacklisted = true,
-		Name = 'NoNameTag',
-        Tooltip = 'Removes your NameTag.',
-		Function = function(callback)
-			if callback then
-				RunLoops:BindToHeartbeat('NoNameTag', function()
-					pcall(function()
-						lplr.Character.Head.Nametag:Destroy()
-					end)
-				end)
-			else
-				RunLoops:UnbindFromHeartbeat('NoNameTag')
-			end
-		end,
-        Default = false
-	})
-end)--]]
 
 run(function()
     local GuiLibrary = shared.GuiLibrary
@@ -42017,7 +38712,6 @@ run(function()
 							offset = CFrame.Angles(math.rad(0), math.rad(-89), math.rad(-95)),
 							model = import:WaitForChild("Diamond_Axe"),
 						 },
-
 
 
 					 }
@@ -42779,103 +39473,6 @@ run(function()
 	})
 end)
 
---[[if not shared.CheatEngineMode then
-	run(function()
-		local AntiLagback = {Enabled = false}
-		local control_module = require(lplr:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")).controls
-		local old = control_module.moveFunction
-		local clone
-		local connection
-		local function clone_lplr_char()
-			if not (lplr.Character ~= nil and lplr.Character.PrimaryPart ~= nil) then return nil end
-			lplr.Character.Archivable = true
-
-			local clone = lplr.Character:Clone()
-
-			clone.Parent = game.Workspace
-			clone.Name = "Clone"
-
-			clone.PrimaryPart.CFrame = lplr.Character.PrimaryPart.CFrame
-
-			gameCamera.CameraSubject = clone.Humanoid
-
-			task.spawn(function()
-				for i, v in next, clone:FindFirstChild("Head"):GetDescendants() do
-					v:Destroy()
-				end
-				for i, v in next, clone:GetChildren() do
-					if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-						v.Transparency = 1
-					end
-					if v:IsA("Accessory") then
-						v:FindFirstChild("Handle").Transparency = 1
-					end
-				end
-			end)
-			return clone
-		end
-		local function bypass()
-			clone = clone_lplr_char()
-			if not entitylib.isAlive then return AntiLagback:Toggle() end
-			if not clone then return AntiLagback:Toggle() end
-			control_module.moveFunction = function(self, vec, ...)
-				local RaycastParameters = RaycastParams.new()
-
-				RaycastParameters.FilterType = Enum.RaycastFilterType.Include
-				RaycastParameters.FilterDescendantsInstances = {CollectionService:GetTagged("block")}
-
-				local LookVector = Vector3.new(gameCamera.CFrame.LookVector.X, 0, gameCamera.CFrame.LookVector.Z).Unit
-
-				if clone.PrimaryPart then
-					local Raycast = game.Workspace:Raycast((clone.PrimaryPart.Position + LookVector), Vector3.new(0, -1000, 0), RaycastParameters)
-					local Raycast2 = game.Workspace:Raycast(((clone.PrimaryPart.Position - Vector3.new(0, 15, 0)) + (LookVector * 3)), Vector3.new(0, -1000, 0), RaycastParameters)
-
-					if Raycast or Raycast2 then
-						clone.PrimaryPart.CFrame = CFrame.new(clone.PrimaryPart.Position + (LookVector / (GetSpeed())))
-						vec = LookVector
-					end
-
-					if (not clone) and entitylib.isAlive then
-						control_module.moveFunction = OldMoveFunction
-						gameCamera.CameraSubject = lplr.Character.Humanoid
-					end
-				end
-
-				return old(self, vec, ...)
-			end
-		end
-		local function safe_revert()
-			control_module.moveFunction = old
-			if entitylib.isAlive then
-				gameCamera.CameraSubject = lplr.Character:WaitForChild("Humanoid")
-			end
-						pcall(function()
-				clone:Destroy()
-			end)
-		end
-		AntiLagback = vape.Categories.Blatant:CreateModule({
-			Name = "AntiLagback",
-			Function = function(call)
-				if call then
-					connection = lplr:GetAttributeChangedSignal("LastTeleported"):Connect(function()
-						if entitylib.isAlive and store.matchState ~= 0 and not lplr.Character:FindFirstChildWhichIsA("ForceField") and (not vape.Modules.BedTP.Enabled) and (not vape.Modules.PlayerTP.Enabled) then
-							bypass()
-							task.wait(4.5)
-							safe_revert()
-						end
-					end)
-				else
-					pcall(function() connection:Disconnect() end)
-					control_module.moveFunction = old
-					if entitylib.isAlive then
-						gameCamera.CameraSubject = lplr.Character:WaitForChild("Humanoid")
-					end
-					pcall(function() clone:Destroy() end)
-				end
-			end
-		})
-	end)
-end--]]
 
 run(function()
 	local Maid = {}
@@ -44582,13 +41179,25 @@ run(function()
 		end
 	})
 end)
-    -- END game pealzware
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 5: GAME PEALZWARE
+-- --------------------------------------------------------------------------------
+-- End of game pealzware modules.
+-- --------------------------------------------------------------------------------
+
 end
 end
 
 if bedwarsMainIsLobby and not shared.CheatEngineMode then
 do
-    -- BEGIN lobby core
+
+-- ================================================================================
+-- >>>  SECTION 6: LOBBY CORE
+-- ================================================================================
+-- Runs when bedwarsMainIsLobby and not CheatEngineMode.
+-- ================================================================================
+
 local run = function(func) func() end
 local cloneref = cloneref or function(obj) return obj end
 
@@ -44740,21 +41349,45 @@ local function onChange2(key, oldValue, newValue)
 end
 
 bedwars = createMonitoredTable(bedwars, onChange2)
-    -- END lobby core
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 6: LOBBY CORE
+-- --------------------------------------------------------------------------------
+-- End of lobby core modules.
+-- --------------------------------------------------------------------------------
+
 end
 end
 
 if bedwarsMainIsLobby and shared.CheatEngineMode then
 do
-    -- BEGIN lobby cheat engine
+
+-- ================================================================================
+-- >>>  SECTION 7: LOBBY CHEAT ENGINE
+-- ================================================================================
+-- Runs when bedwarsMainIsLobby and CheatEngineMode.
+-- ================================================================================
+
 shared.GlobalBedwars = {NotificationController = {SendNotification = function() end}}
-    -- END lobby cheat engine
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 7: LOBBY CHEAT ENGINE
+-- --------------------------------------------------------------------------------
+-- End of lobby cheat engine.
+-- --------------------------------------------------------------------------------
+
 end
 end
 
 if bedwarsMainIsLobby and not shared.NoPealzwareModules then
 do
-    -- BEGIN lobby pealzware
+
+-- ================================================================================
+-- >>>  SECTION 8: LOBBY PEALZWARE
+-- ================================================================================
+-- Runs when bedwarsMainIsLobby and not NoPealzwareModules.
+-- ================================================================================
+
 repeat task.wait() until game:IsLoaded()
 repeat task.wait() until shared.GuiLibrary
 repeat task.wait() until shared.GlobalBedwars
@@ -44828,14 +41461,6 @@ if shared.TeleportExploitAutowinEnabled then
 			end
 		}
 	}
-	--[[local function InfoNotification2(title, text, delay, button_table)
-		local suc, res = pcall(function()
-			local frame = GuiLibrary.CreateInteractableNotification(title or "Pealzware", text or "Successfully called function", delay or 7, "assets/InfoNotification.png", button_table)
-			return frame
-		end)
-		return (suc and res)
-	end
-	InfoNotification2("EmptyGameTP - AutowinMode", "An error might have happened while auto-queueing. Would you like to \n join back to the queue?", 10000000, interactable_buttons_table)--]]
 	task.wait(3)
 	if (not shared.MadeChoice) then queue() end
 end
@@ -44953,58 +41578,6 @@ run(function()
     })
 end)
 
---[[run(function()
-	local AutoCrate = {Enabled = false}
-	local aut = 0
-	local replicatedStorage = game:GetService("ReplicatedStorage")
-	local rbxts_include = replicatedStorage:WaitForChild("rbxts_include")
-	local net = rbxts_include:WaitForChild("node_modules"):WaitForChild("@rbxts"):WaitForChild("net"):WaitForChild("out"):WaitForChild("_NetManaged")
-
-	local function openCrate(crateType, altarId, crateName)
-		local spawnArgs = {
-			[1] = {
-				["crateType"] = crateType,
-				["altarId"] = altarId
-			}
-		}
-		net:WaitForChild("RewardCrate/SpawnRewardCrate"):FireServer(unpack(spawnArgs))
-
-		local crateAltar = game.Workspace:FindFirstChild("CrateAltar_" .. altarId)
-		if crateAltar and crateAltar:FindFirstChild(crateName) then
-			local openArgs = {
-				[1] = {
-					["crateId"] = tostring(crateAltar:FindFirstChild(crateName):GetAttribute("crateId"))
-				}
-			}
-			net:WaitForChild("RewardCrate/OpenRewardCrate"):FireServer(unpack(openArgs))
-		end
-	end
-
-	AutoCrate = vape.Categories.Blatant:CreateModule({
-		Name = "AutoCrate",
-		Tooltip = "Automatically open crates if you have any.",
-		Function = function(callback)
-			if callback then
-			    task.spawn(function()
-			        repeat task.wait()
-			        aut = aut + 1
-					if aut >= 45 then
-						openCrate("level_up_crate", 0, "RewardCrate")
-						openCrate("level_up_crate", 1, "RewardCrate")
-						openCrate("diamond_lucky_crate", 0, "DiamondLuckyCrate")
-						openCrate("diamond_lucky_crate", 1, "DiamondLuckyCrate")
-						aut = 0
-					end
-			        until not AutoCrate.Enabled
-			    end)
-				--RunLoops:BindToStepped("crate", 1, function()
-				--end)
-			else
-				--RunLoops:UnbindFromStepped("crate")
-			end
-		end
-	})
-end)--]]
 
 task.spawn(function()
     pcall(function()
@@ -45028,309 +41601,6 @@ end)
 
 local GuiLibrary = shared.GuiLibrary
 shared.slowmode = 0
---[[run(function()
-    local function resetSlowmode()
-        task.spawn(function()
-            repeat shared.slowmode = shared.slowmode - 1 task.wait(1) until shared.slowmode < 1
-            shared.slowmode = 0
-        end)
-    end
-    local HS = game:GetService("HttpService")
-    local StaffDetector = {}
-    local StaffDetector_Games = {Value = "Bedwars"}
-    local Custom_Group = {Enabled = false}
-	local IgnoreOnlineStaff = {Enabled = false}
-	local AutoCheck = {Enabled = false}
-    local Roles_List = {ObjectList = {}}
-    local Custom_GroupId = {Value = ""}
-    local Staff_Members_Limit = {Value = 50}
-    local Games_StaffTable = {
-        ["Bedwars"] = {
-            ["groupid"] = 5774246,
-            ["roles"] = {
-                79029254,
-                86172137,
-                43926962,
-                37929139,
-                87049509,
-                37929138
-            }
-        },
-		["PS99"] = {
-			["groupid"] = 5060810,
-			["roles"] = {
-				33738740,
-				33738765
-			}
-		}
-    }
-    local function getUsersInRole(groupId, roleId, cursor)
-        local limit = Staff_Members_Limit.Value or 100
-        local url = "https://groups.roblox.com/v1/groups/"..groupId.."/roles/"..roleId.."/users?limit="..limit
-        if cursor then
-            url = url .. "&cursor=" .. cursor
-        end
-
-        local response = request({
-            Url = url,
-            Method = "GET"
-        })
-
-        return game:GetService("HttpService"):JSONDecode(response.Body)
-    end
-    local function getUserPresence(userIds)
-        local url = "https://presence.roblox.com/v1/presence/users"
-        local requestBody = game:GetService("HttpService"):JSONEncode({userIds = userIds})
-
-        local response = request({
-            Url = url,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = requestBody
-        })
-        return game:GetService("HttpService"):JSONDecode(response.Body)
-    end
-    local function getUsersInRoleWithPresence(groupId, roleId)
-        local users = {}
-        local cursor = nil
-        local userIds = {}
-        repeat
-            local data = getUsersInRole(groupId, roleId, cursor)
-            for _, user in pairs(data.data) do
-                table.insert(users, user)
-                table.insert(userIds, user.userId)
-            end
-            cursor = data.nextPageCursor
-        until not cursor
-        local presenceData = getUserPresence(userIds)
-        for _, user in pairs(users) do
-            for _, presence in pairs(presenceData.userPresences) do
-                if user.userId == presence.userId then
-                    user.presenceType = presence.userPresenceType
-                    user.lastLocation = presence.lastLocation
-                    break
-                end
-            end
-        end
-        return users
-    end
-    local function getGroupRoles(groupId)
-        local url = "https://groups.roblox.com/v1/groups/"..groupId.."/roles"
-        local res = request({
-            Url = url,
-            Method = "GET"
-        })
-        if res.StatusCode == 200 then
-            local roles = {}
-            for i,v in pairs(HS:JSONDecode(res.Body).roles) do
-                table.insert(roles, v.id)
-            end
-            return true, roles, nil
-        else
-            return false, nil, "Status Code isnt 200! "..res.StatusCode
-        end
-    end
-    local function getData()
-        if Custom_Group.Enabled then
-            local suc1, custom_group_id, err1 = false, "", nil
-            if Custom_GroupId.Value ~= "" then
-                suc1 = true
-                custom_group_id = tonumber(Custom_GroupId.Value)
-            else
-                suc1 = false
-                custom_group_id = nil
-                err1 = "Custom GroupID not specified!"
-            end
-            local suc2, roles, err2 = false, {}, nil
-            if #Roles_List.ObjectList < 1 then
-                suc2 = false
-                roles = nil
-                err2 = "Roles not specified!"
-            else
-                if suc1 then
-                    local suc3, res, err3 = getGroupRoles(custom_group_id)
-                    if suc3 then
-                        suc2 = true
-                        roles = res
-                    else
-                        err2 = err3
-                    end
-                end
-            end
-            return {suc1, custom_group_id, err1}, {suc2, roles, err2}, "Custom"
-        else
-            if StaffDetector_Games.Value ~= "" then
-                local roles = Games_StaffTable[StaffDetector_Games.Value]["roles"]
-                local groupid = Games_StaffTable[StaffDetector_Games.Value]["groupid"]
-                return {true, groupid, nil}, {true, roles, nil}, "Normal"
-            else
-                return {false, nil, nil}, {false, nil, nil}, "Normal"
-            end
-        end
-    end
-    local core_table = {}
-    local function handle_checks(groupid, roleid)
-        local res = getUsersInRoleWithPresence(groupid, roleid)
-        for _, user in pairs(res) do
-            local presenceStatus = "Offline"
-            if user.presenceType == 1 then
-                presenceStatus = "Online"
-            elseif user.presenceType == 2 then
-                presenceStatus = "In Game"
-            elseif user.presenceType == 3 then
-                presenceStatus = "In Studio"
-            end
-			local function online()
-				if IgnoreOnlineStaff.Enabled then
-					if presenceStatus == "Online" then
-						return true
-					else
-						return false
-					end
-				else
-					return false
-				end
-			end
-            if (presenceStatus == "In Game" or online()) then
-                table.insert(core_table, {["UserID"] = user.userId, ["Username"] = user.username, ["Status"] = presenceStatus})
-            end
-            print("Username: " .. user.username .. " - UserID: " .. user.userId .. " - Status: " .. presenceStatus)
-        end
-    end
-	local checked_data = {}
-	StaffDetector = vape.Categories.Utility:CreateModule({
-		Name = 'StaffDetector',
-		Function = function(calling)
-			if calling then
-				if (not AutoCheck.Enabled) then
-					StaffDetector["ToggleButton"](false)
-				end
-				if AutoCheck.Enabled then errorNotification("StaffDetector-AutoCheck", "Please disable auto check to manually use this module!", 5) end
-                if shared.slowmode > 0 then if (not AutoCheck.Enabled) then return errorNotification("StaffDetector-Slowmode", "You are currently on slowmode! Wait "..tostring(shared.slowmode).."seconds!", shared.slowmode) end end
-				shared.slowmode = 5
-                resetSlowmode()
-				InfoNotification("StaffDetector", "Sent request! Please wait...", 5)
-				local function dostuff()
-					local limit = Staff_Members_Limit.Value
-					local tbl1, tbl2, Type = getData()
-                    local suc1, res1, err1 = tbl1[1], tbl1[2], tbl1[3]
-                    local suc2, res2, err2 = tbl2[1], tbl2[2], tbl2[3]
-					local handle_table = {}
-					local number = 0
-					if (suc1 and suc2) then
-						for i,v in pairs(res2) do handle_checks(res1, v) end
-						for i,v in pairs(core_table) do
-							if (not table.find(handle_table, tostring(v["UserID"]))) then
-								table.insert(handle_table, tostring(v["UserID"]))
-								number = number + 1
-                                local a, b, c = tostring(v["UserID"]), tostring(v["Username"]), tostring(v["Status"])
-								local function checked()
-									for i,v in pairs(checked_data) do
-										if v["UserID"] == a then
-											if v["Status"] == c then
-												return true
-											end
-										end
-									end
-									return false
-								end
-								if checked() then return end
-								table.insert(checked_data, {["UserID"] = a, ["Status"] = c})
-								if tostring(v["Status"]) == "Online" then
-									if (not IgnoreOnlineStaff.Enabled) then
-										errorNotification("StaffDetector", "@"..b.."("..a..") is currently "..c, 7)
-									end
-								else
-									errorNotification("StaffDetector", "@"..b.."("..a..") is currently "..c, 7)
-								end
-							end
-						end
-						InfoNotification("StaffDetector", tostring(number).." total staffs were detected as online/ingame!", 7)
-					else
-						shared.slowmode = 0
-						if (not suc1) then
-							errorNotification("StaffDetector-GroupID Error", tostring(err1), 5)
-						end
-						if (not suc2) then
-							errorNotification("StaffDetector-Roles Error", tostring(err2), 5)
-						end
-					end
-				end
-				if (not AutoCheck.Enabled) then
-					dostuff()
-				else
-					task.spawn(function()
-						repeat
-							dostuff()
-							task.wait(30)
-						until (not StaffDetector.Enabled) or (not AutoCheck.Enabled)
-						StaffDetector["ToggleButton"](false)
-					end)
-				end
-			end
-		end
-	})
-    local list = {}
-    for i,v in pairs(Games_StaffTable) do table.insert(list, i) end
-    StaffDetector_Games = StaffDetector:CreateDropdown({
-		Name = "GameChoice",
-		Function = function() end,
-		List = list
-	})
-    Roles_List = StaffDetector:CreateTextList({
-		Name = "CustomRoles",
-		TempText = "RoleId (number)"
-	})
-    Custom_GroupId = StaffDetector:CreateTextBox({
-        Name = "CustomGroupId",
-        TempText = "Type here a groupid",
-        TempText = "GroupId (number)",
-        Function = function() end
-    })
-    Custom_GroupId.Object.Visible = false
-    Roles_List.Object.Visible = false
-    Custom_Group = StaffDetector:CreateToggle({
-		Name = "CustomGroup",
-		Function = function(calling)
-            if calling then
-                Custom_GroupId.Object.Visible = true
-                Roles_List.Object.Visible = true
-                StaffDetector_Games.Object.Visible = false
-            else
-                Custom_GroupId.Object.Visible = false
-                Roles_List.Object.Visible = false
-                StaffDetector_Games.Object.Visible = true
-            end
-        end,
-		Tooltip = "Choose another staff group",
-		Default = false
-	})
-	IgnoreOnlineStaff = StaffDetector:CreateToggle({
-		Name = "IgnoreOnlineStaff",
-		Function = function() end,
-		Tooltip = "Make the module ignore online staff and only \n show ingame staff",
-		Default = false
-	})
-    Staff_Members_Limit = StaffDetector:CreateSlider({
-		Name = "StaffMembersLimit",
-		Min = 1,
-		Max = 100,
-		Function = function() end,
-		Default = 100
-	})
-	AutoCheck = StaffDetector:CreateToggle({
-		Name = "AutoCheck",
-		Function = function() end,
-		Tooltip = "Checks for new staffs every 30 seconds",
-		Default = false
-	}) --- work in progress
-	task.spawn(function()
-		repeat task.wait() until shared.vapewhitelist.loaded
-		if shared.vapewhitelist:get(game:GetService("Players").LocalPlayer) ~= 2 then AutoCheck.Object.Visible = false end
-	end)
-end)--]]
 
 run(function()
 	local ScytheFunny = {}
@@ -45347,207 +41617,6 @@ run(function()
 	})
 end)
 
---[[run(function()
-    local LeaderboardEditor = {Enabled = false}
-    local RankIconTable = {["Emerald"] = "rbxassetid://12599231807",["Nightmare"] = "rbxassetid://7904292926",["Pealzware"] = "rbxassetid://18518244636"}
-    local AllowedMethods = {["Place"] = true,["Username"] = true,["RP"] = true}
-    local AllowedEditMethods = {["Place"] = true,["Username"] = true,["RP"] = true, ["CrownIconColor"] = true, ["RankIcon"] = true, ["RankName"] = true}
-    local ExtraFunctions = {extractUsername = function(richText) return richText:match("@</font></b>(.+)") end, extractNumberBeforeRP = function(text) return tonumber(text:match("<b>(%d+)%sRP</b>")) end, extractBoldText = function(text) return text:match("<b>(.-)</b>") end, resolvePlayerUserID = function(username) return game:GetService("Players"):GetUserIdFromNameAsync(username) end, resolveProfileImage = function(userid) return "rbxthumb://type=AvatarHeadShot&id="..tostring(userid).."&w=60&h=60" end, resolveUsername = function(username) return string.format('<b><font color="rgb(185, 188, 255)">@</font></b>%s', username) end, resolveNumberBeforeRP = function(number) return string.format('<b>%d RP</b>', number) end, resolveBoldText = function(text) return string.format('<b>%s</b>', text) end, resolveIconID = function(iconName) return RankIconTable[iconName] end, fetchDefaultTable = function() return {Place = nil, CrownIcon = nil, User = {Name = nil, Profile = nil}, Rank = {Name = nil, Icon = nil, RP = nil}} end}
-    local function getBoard()
-        --assert(game.game.Workspace:findFirstChild("Lobby") and game.game.Workspace:findFirstChild("Lobby").ClassName == "Folder", "Error finding Lobby folder in game.Workspace!")
-        local suc, Leaderboard, Statboard = false, "Not found", "Not found"
-        for i,v in pairs(game.game.Workspace:WaitForChild("Lobby"):GetChildren()) do
-            if v.Name == "Podium" and v.ClassName == "Model" and v:FindFirstChild("Boards") then
-                if v:FindFirstChild("Boards").ClassName == "Folder" then
-                    suc = true
-                    Leaderboard = v:findFirstChild("Boards"):FindFirstChild("Leaderboard") or "Not found"
-                    Statboard = v:findFirstChild("Boards"):FindFirstChild("Statboard") or "Not found"
-                end
-            end
-        end
-        return {Status = suc, Response = {Leaderboard = Leaderboard, Statboard = Statboard}}
-    end
-    local function findChild(name, className, children)
-        for i,v in pairs(children) do if v.Name == name and v.ClassName == className then return v end end
-        local args = {Name = tostring(name), ClassName == tostring(className), Children = children}
-        warn("[findChild]: CHILD NOT FOUND! Args: ", game:GetService("HttpService"):JSONEncode(args), name, className, children)
-        return nil
-    end
-    local function getLeaderboardFrame(Leaderboard)
-        local board = findChild("Board", "Part", Leaderboard:GetChildren())
-        if board then
-            local leaderboardApp = findChild("LeaderboardApp", "SurfaceGui", board:GetChildren())
-            if leaderboardApp then
-                local frame_1 = findChild("1", "Frame", leaderboardApp:GetChildren())
-                if frame_1 then
-                    local frame_1_1 = findChild("1", "Frame", frame_1:GetChildren())
-                    if frame_1_1 then
-                        local frame_2 = findChild("2", "Frame", frame_1_1:GetChildren())
-                        if frame_2 then
-                            local AutoCanvasScrollingFrame = findChild("AutoCanvasScrollingFrame", "ScrollingFrame", frame_2:GetChildren())
-                            if AutoCanvasScrollingFrame then return AutoCanvasScrollingFrame end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    local function resolveLeaderboardChildData(child)
-        local leaderboard_data = ExtraFunctions.fetchDefaultTable()
-        local leaderboard_editor = ExtraFunctions.fetchDefaultTable()
-        local PlayerContainer, StatValuesContainer, CrownIcon = findChild("PlayerContainer", "Frame", child:GetChildren()), findChild("StatValuesContainer", "Frame", child:GetChildren()), findChild("CrownIcon", "ImageLabel", child.Parent:GetChildren())
-        if PlayerContainer then
-            local LeaderboardRank, PlayerUsername, PlayerAvatar = findChild("LeaderboardRank", "TextLabel", PlayerContainer:GetChildren()), findChild("PlayerUsername", "TextLabel", PlayerContainer:GetChildren()), findChild("PlayerAvatar", "ImageLabel", PlayerContainer:GetChildren())
-            if LeaderboardRank then leaderboard_data.Place = tonumber(LeaderboardRank.Text); leaderboard_editor.Place = LeaderboardRank end
-            if PlayerUsername then leaderboard_data.User.Name = ExtraFunctions.extractUsername(PlayerUsername.Text); leaderboard_editor.User.Name = PlayerUsername end
-            if PlayerAvatar then leaderboard_data.User.Profile = PlayerAvatar.Image; leaderboard_editor.User.Profile = PlayerAvatar end
-        end
-        if StatValuesContainer then
-            local StatValue, frame_2 = findChild("StatValue", "TextLabel", StatValuesContainer:GetChildren()), findChild("2", "Frame", StatValuesContainer:GetChildren())
-            if StatValue then leaderboard_data.Rank.RP = ExtraFunctions.extractNumberBeforeRP(StatValue.Text); leaderboard_editor.Rank.RP = StatValue end
-            if frame_2 then
-                local image_2, text_3 = findChild("2", "ImageLabel", frame_2:GetChildren()), findChild("3", "TextLabel", frame_2:GetChildren())
-                if image_2 then leaderboard_data.Rank.Icon = image_2.Image; leaderboard_editor.Rank.Icon = image_2 end
-                if text_3 then leaderboard_data.Rank.Name = ExtraFunctions.extractBoldText(text_3.Text); leaderboard_editor.Rank.Name = text_3 end
-            end
-        end
-        if CrownIcon then leaderboard_data.CrownIcon = CrownIcon.Image; leaderboard_editor.CrownIcon = CrownIcon end
-        return {data = leaderboard_data, editor = leaderboard_editor}
-    end
-    local function checkResolveResponseOfLeaderboard(methodType, methodArg, res)
-        local editor = res.editor
-        local MethodTypeMethods = {["Place"] = function(full) return ExtraFunctions.extractBoldText(editor.Place.Text) end,["Username"] = function(full) return ExtraFunctions.extractUsername(editor.User.Name.Text) end,["RP"] = function(full) return ExtraFunctions.extractNumberBeforeRP(editor.Rank.RP.Text) end}
-        local a = MethodTypeMethods[methodType](res.editor)
-        if a == methodArg or a == tostring(methodArg) or a == tonumber(methodArg) then return true, res else return false, nil end
-    end
-    local function getResolveResponseOfLeaderboard(leaderboard_frame, methodType, methodArg)
-        if leaderboard_frame then
-            for i,v in pairs(leaderboard_frame:GetChildren()) do
-                local LeaderboardElementBody = findChild("LeaderboardElementBody", "Frame", v:GetChildren())
-                if LeaderboardElementBody then
-                    local UserLeaderBoardDataContainer = findChild("UserLeaderBoardDataContainer", "Frame", LeaderboardElementBody:GetChildren())
-                    if UserLeaderBoardDataContainer then
-                        --return resolveLeaderboardChildData(UserLeaderBoardDataContainer)
-                        local suc, res = checkResolveResponseOfLeaderboard(methodType, methodArg, resolveLeaderboardChildData(UserLeaderBoardDataContainer))
-                        if suc then return res end
-                    end
-                end
-            end
-            warn("ERROR FINDING PROPER CHILD!")
-            return nil
-        else
-            warn("Failure getting leaderboard frame!")
-        end
-    end
-    local function getLeaderboardChild(methodType, methodArg, leaderboard) if AllowedMethods[methodType] then return getResolveResponseOfLeaderboard(getLeaderboardFrame(leaderboard), methodType, methodArg) else return false end end
-    local function resolveEditArgs(editArgs, editor)
-        local resolveTable = {Place = editor.Place, Username = editor.User.Name, ProfileImage = editor.User.Profile, RankName = editor.Rank.Name, RP = editor.Rank.RP, RankIcon = editor.Rank.Icon, CrownIcon = editor.CrownIcon}
-        local function handleEditResolve(editName, editArg)
-            if resolveTable[editName] then
-                if editName == "Place" then resolveTable[editName].Text = ExtraFunctions.resolveBoldText(editArg);
-                elseif editName == "Username" then resolveTable[editName].Text = ExtraFunctions.resolveUsername(editArg);
-                elseif editName == "ProfileImage" then resolveTable[editName].Image = ExtraFunctions.resolveProfileImage(ExtraFunctions.resolvePlayerUserID(editArg));
-                elseif editName == "RankName" then resolveTable[editName].Text = ExtraFunctions.resolveBoldText(editArg);
-                elseif editName == "RP" then resolveTable[editName].Text = ExtraFunctions.resolveNumberBeforeRP(editArg);
-                elseif editName == "RankIcon" then resolveTable[editName].Image = ExtraFunctions.resolveIconID(editArg);
-                elseif editName == "CrownIcon" and resolveTable[editName] then resolveTable[editName].ImageColor3 = editArg end
-            end
-        end
-        for i,v in pairs(editArgs) do handleEditResolve(i, v) end
-    end
-    local function EditLeaderboard(methodType, methodArg, editArgs)
-        local res = getBoard()
-        local status, response = res.Status, res.Response
-        if status == true then
-            local Leaderboard, Statboard = response.Leaderboard, response.Statboard
-            local resolve = getLeaderboardChild(methodType, methodArg, Leaderboard)
-            local editor
-            if resolve then editor = resolve.editor end
-            if editor then resolveEditArgs(editArgs, editor) else warn("NO EDITOR FOUND!") end
-        end
-    end
-    local function msend(mes, dur)
-        warningNotification("LeaderboardEditor", mes, dur or 5)
-    end
-
-    local LeaderboardEditor_Types = {}
-    local LeaderboardEditor_Editors = {}
-
-    local Leaderboard_AddOnCreator_Helper = {}
-
-    local function fetchToggleObjectData(name)
-        local a = "LeaderboardEditor"..name.."Toggle"
-        local b = shared.GuiLibrary.ObjectsThatCanBeSaved[a] or {Api = {Enabled = false}}
-        return b.Api
-    end
-
-    local function fetchValidEditArgs()
-        local validated = {Place = LeaderboardEditor_Editors["Place"][Leaderboard_AddOnCreator_Helper["Place"].ResType]}
-        for i,v in pairs(LeaderboardEditor_Editors) do
-            --print(fetchToggleObjectData(i).Enabled)
-            if fetchToggleObjectData(i).Enabled == true then
-                --print("[1]", i)
-                if i == "Username" then
-                    validated[i] = v[Leaderboard_AddOnCreator_Helper[i].ResType]
-                    validated["ProfileImage"] = v[Leaderboard_AddOnCreator_Helper[i].ResType]
-                elseif i == "CrownIconColor" then
-                    validated[i] = Color3.new(v.Hue, v.Sat, v.Value)
-                else
-                    validated[i] = v[Leaderboard_AddOnCreator_Helper[i].ResType]
-                end
-            --else
-              --  print("[2]", i)
-            end
-        end
-        --print(game:GetService("HttpService"):JSONEncode(validated))
-        return validated
-    end
-
-    local function fetchObjectData(name)
-        local function convertText(input) return input:gsub("^Create", "") end
-        local a = "LeaderboardEditor"..name..convertText(Leaderboard_AddOnCreator_Helper[name].Type)
-        if Leaderboard_AddOnCreator_Helper[name].Type == "ColorSlider" then a = a.."Color" end
-        return shared.GuiLibrary.ObjectsThatCanBeSaved[a]
-    end
-
-    local function checkAddOns()
-        for i,v in pairs(LeaderboardEditor_Editors) do if i ~= "Place" then  fetchObjectData(i).Object.Visible = false end end
-        for i,v in pairs(LeaderboardEditor_Types) do if fetchToggleObjectData(i).Enabled == true then fetchObjectData(i).Object.Visible = true end end
-    end
-
-    LeaderboardEditor = vape.Categories.Utility:CreateModule({
-        Name = "LeaderboardEditor",
-        Function = function(call)
-            checkAddOns()
-            if call then
-                EditLeaderboard("Place", LeaderboardEditor_Editors.Place[Leaderboard_AddOnCreator_Helper["Place"].ResType], fetchValidEditArgs())
-                getgenv().EditLeaderboard = EditLeaderboard
-                msend("Hello")
-            else
-                getgenv().EditLeaderboard = nil
-            end
-        end
-    })
-    local function fetchDefaultFunction(call) if call then LeaderboardEditor.Restart() end end
-    local function fetchRankIconNames() local iconNames = {}; for i,v in pairs(RankIconTable) do table.insert(iconNames, i) end; return iconNames end
-
-    local function registerType(typeName)
-        if typeName == "Place" then LeaderboardEditor_Editors["Place"] = {Value = 1}; Leaderboard_AddOnCreator_Helper["Place"] = {Type = "CreateTextBox", Args = {Name = "Place", TempText = "PlaceNumber", Function = fetchDefaultFunction}, ResType = "Value"};
-        elseif typeName == "Username" then LeaderboardEditor_Editors["Username"] = {Value = game:GetService("Players").LocalPlayer.Name}; Leaderboard_AddOnCreator_Helper["Username"] = {Type = "CreateTextBox", Args = {Name = "Username", TempText = "username", Function = fetchDefaultFunction}, ResType = "Value"};
-        elseif typeName == "RP" then LeaderboardEditor_Editors["RP"] = {Value = 9999}; Leaderboard_AddOnCreator_Helper["RP"] = {Type = "CreateTextBox", Args = {Name = "RP", TempText = "RP (number)", Function = fetchDefaultFunction}, ResType = "Value"};
-        elseif typeName == "RankIcon" then LeaderboardEditor_Editors["RankIcon"] = {Value = "Pealzware"}; Leaderboard_AddOnCreator_Helper["RankIcon"] = {Type = "CreateDropdown", Args = {Name = "RankIcon", List = fetchRankIconNames(), Function = fetchDefaultFunction}, ResType = "Value"};
-        elseif typeName == "RankName" then LeaderboardEditor_Editors["RankName"] = {Value = "INFINITY"}; Leaderboard_AddOnCreator_Helper["RankName"] = {Type = "CreateTextBox", Args = {Name = "RankName", TempText = "rankname", Function = fetchDefaultFunction}, ResType = "Value"};
-        elseif typeName == "CrownIconColor" then LeaderboardEditor_Editors["CrownIconColor"] = {Hue = 255, Sat = 0, Value = 0}; Leaderboard_AddOnCreator_Helper["CrownIconColor"] = {Type = "CreateColorSlider", Args = {Name = "CrownIconColor", Function = fetchDefaultFunction}, ResType = {"Hue", "Sat", "Value"}}
-        else warn("Unknown registerType!", typeName) end
-    end
-
-    for i,v in pairs(AllowedEditMethods) do LeaderboardEditor_Types[i] = {Enabled = false}; registerType(i) end
-
-    for i,v in pairs(LeaderboardEditor_Editors) do v = LeaderboardEditor[Leaderboard_AddOnCreator_Helper[i].Type](Leaderboard_AddOnCreator_Helper[i].Args) end
-    for i,v in pairs(LeaderboardEditor_Types) do if i ~= "Place" then v = LeaderboardEditor:CreateToggle({Name = i, Function = function(call) fetchObjectData(i).Object.Visible = call end}) end end
-
-    checkAddOns()
-end)--]]
 
 local ReportDetector_Cooldown = 0
 run(function()
@@ -45710,40 +41779,6 @@ run(function()
 	end
 end)
 
---[[run(function()
-	local PlayerChanger = {Enabled = false}
-	if GuiLibrary.ObjectsThatCanBeSaved["PlayerChangerOptionsButton"] then
-		PlayerChanger = GuiLibrary.ObjectsThatCanBeSaved["PlayerChangerOptionsButton"]
-		local API = PlayerChanger.Api
-		local PlayerChanger_Functions = shared.PlayerChanger_Functions
-		local PlayerName = {Value = "Nigger"}
-		PlayerName = API:CreateTextBox({
-			Name = "Player Name",
-			TempText = "Type here a name",
-			Function = function(val)
-				if GuiLibrary.ObjectsThatCanBeSaved["PlayerChangerOptionsButton"].Api.Enabled then
-					local targetUser = shared.PlayerChanger_GUI_Elements_PlayersDropdown_Value
-					local plr = PlayerChanger_Functions.getPlayerFromUsername(targetUser)
-					if plr then
-						local char = PlayerChanger_Functions.getPlayerCharacter(plr)
-						if char then
-                            local displayName = char:WaitForChild("Head"):WaitForChild("Nametag"):WaitForChild("DisplayNameContainer"):WaitForChild("DisplayName")
-                            if displayName.ClassName == "TextLabel" then
-                                if not displayName.RichText then displayName.RichText = true end
-                                displayName.Text = val
-                            end
-                            table.insert(vapeConnections, displayName:GetPropertyChangedSignal("Text"):Connect(function()
-                                if displayName.Text ~= val and targetUser == shared.PlayerChanger_GUI_Elements_PlayersDropdown_Value then
-                                    displayName.Text = val
-                                end
-                            end))
-						else warn("Error fetching player CHARACTER! Player: "..tostring(targetUser).." Character Result: "..tostring(char)) end
-					else warn("Error fetching player! Player: "..tostring(targetUser)) end
-				end
-			end
-		})
-	else warn("PlayerChangerOptionsButton NOT found!") end
-end)--]]
 
 run(function()
 	local cheat = {57,84,142,96,195,198,254,218,104,79,208,20,197,34,10,112,20,53,226,37,133,215,119,171,130,96,107,239,245,109,145,250}
@@ -45765,209 +41800,6 @@ run(function()
 	end)
 end)
 
---[[run(function()
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 300, 0, 500)
-    mainFrame.Position = UDim2.new(1, 0, 0.8, -250)
-    mainFrame.AnchorPoint = Vector2.new(0, 0.5)
-    mainFrame.BackgroundTransparency = 1
-    mainFrame.Parent = shared.vape.gui.ScaledGui
-    shared.GuiLibrary.SelfDestructEvent.Event:Connect(function()
-        mainFrame:Destroy()
-    end)
-
-    local groupId = 5774246
-    local roleIds = {
-        79029254,
-        86172137,
-        43926962,
-        37929139,
-        87049509,
-        37929138
-    }
-
-    local scrollingFrame = Instance.new("ScrollingFrame")
-    scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1000)
-    scrollingFrame.ScrollBarThickness = 5
-    scrollingFrame.BackgroundTransparency = 1
-    scrollingFrame.Parent = mainFrame
-
-    local function createUICorner(instance, radius)
-        local uiCorner = Instance.new("UICorner")
-        uiCorner.CornerRadius = UDim.new(0, radius)
-        uiCorner.Parent = instance
-    end
-
-    local tweenService = game:GetService("TweenService")
-    local function fadeOut(frame)
-        local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = tweenService:Create(frame, tweenInfo, {Transparency = 1, Position = frame.Position + UDim2.new(0, 100, 0, 0)})
-        tween:Play()
-        tween.Completed:Connect(function() frame:Destroy() end)
-    end
-
-    local function fadeIn(frame)
-        frame.Transparency = 1
-        frame.Position = frame.Position - UDim2.new(0, 100, 0, 0)
-        local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-        local tween = tweenService:Create(frame, tweenInfo, {Position = frame.Position + UDim2.new(0, 100, 0, 0)})
-        tween:Play()
-    end
-
-    local function updateUsers(users)
-        for _, child in pairs(scrollingFrame:GetChildren()) do
-            if child:IsA("Frame") then
-                fadeOut(child)
-            end
-        end
-
-        for index, user in ipairs(users) do
-            local userFrame = Instance.new("Frame")
-            userFrame.Size = UDim2.new(1, -10, 0, 50)
-            userFrame.Position = UDim2.new(0, 5, 0, (index - 1) * 55)
-            userFrame.BackgroundTransparency = 1
-            userFrame.Parent = scrollingFrame
-
-            local avatar = Instance.new("ImageLabel")
-            avatar.Size = UDim2.new(0, 40, 0, 40)
-            avatar.Position = UDim2.new(0, 5, 0, 5)
-            avatar.Image = "rbxthumb://type=AvatarHeadShot&id="..user.userId.."&w=420&h=420"
-            avatar.Parent = userFrame
-            avatar.BackgroundTransparency = 1
-
-            createUICorner(avatar, 40)
-
-            local statusIndicator = Instance.new("Frame")
-            statusIndicator.Size = UDim2.new(0, 10, 0, 10)
-            statusIndicator.Position = UDim2.new(1, -10, 1, -10)
-            statusIndicator.BackgroundColor3 = user.StatusColor
-            statusIndicator.BorderSizePixel = 2
-            statusIndicator.BorderColor3 = Color3.fromRGB(255, 255, 255)
-            statusIndicator.Parent = avatar
-
-            createUICorner(statusIndicator, 10)
-
-            local userInfo = Instance.new("TextLabel")
-            userInfo.Size = UDim2.new(1, -60, 1, 0)
-            userInfo.Position = UDim2.new(0, 55, 0, 0)
-            userInfo.Text = tostring(user.displayName) .. "(@".. tostring(user.username) ..")\nStatus: "..tostring(user.StatusType).."    ID: " .. tostring(user.userId)
-            userInfo.TextColor3 = Color3.fromRGB(255, 255, 255)
-            userInfo.TextXAlignment = Enum.TextXAlignment.Left
-            userInfo.TextYAlignment = Enum.TextYAlignment.Center
-            userInfo.Font = Enum.Font.ArialBold
-            userInfo.TextSize = 14
-            userInfo.Parent = userFrame
-            userInfo.BackgroundTransparency = 1
-
-            fadeIn(userFrame)
-        end
-    end
-
-    local function getUsersInRole(groupId, roleId, cursor)
-        local limit = 100
-        local url = "https://groups.roblox.com/v1/groups/"..groupId.."/roles/"..roleId.."/users?limit="..limit
-        if cursor then
-            url = url .. "&cursor=" .. cursor
-        end
-
-        local response = request({
-            Url = url,
-            Method = "GET"
-        })
-
-        return game:GetService("HttpService"):JSONDecode(response.Body)
-    end
-
-    local function getUserPresence(userIds)
-        local url = "https://presence.roblox.com/v1/presence/users"
-        local requestBody = game:GetService("HttpService"):JSONEncode({userIds = userIds})
-
-        local response = request({
-            Url = url,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = requestBody
-        })
-        return game:GetService("HttpService"):JSONDecode(response.Body)
-    end
-
-    local function getUsersForRolesWithPresence(groupId, roleIds)
-        local users = {}
-        local userIds = {}
-        for _, roleId in pairs(roleIds) do
-            local cursor = nil
-            repeat
-                local data = getUsersInRole(groupId, roleId, cursor)
-                for _, user in pairs(data.data) do
-                    table.insert(users, user)
-                    table.insert(userIds, user.userId)
-                end
-                cursor = data.nextPageCursor
-            until not cursor
-        end
-
-        local presenceData = getUserPresence(userIds)
-        for _, user in pairs(users) do
-            for _, presence in pairs(presenceData.userPresences) do
-                if user.userId == presence.userId then
-                    user.presenceType = presence.userPresenceType
-                    user.lastLocation = presence.lastLocation
-                    break
-                end
-            end
-        end
-        return users
-    end
-
-    local function filterUsersByPresence(users, presenceType)
-        local filteredUsers = {}
-        for _, user in pairs(users) do
-            if user.presenceType == presenceType then
-                table.insert(filteredUsers, user)
-            end
-        end
-        updateUsers(filteredUsers)
-    end
-
-    local function getUsersForRolesPresence(groupId, roleIds)
-        local users = getUsersForRolesWithPresence(groupId, roleIds)
-
-        local StatusTypes = {
-            ["0"] = "Offline",
-            ["1"] = "Online",
-            ["2"] = "InGame"
-        }
-
-        for _, user in pairs(users) do
-            local statusColor = Color3.fromRGB(0, 255, 0)
-            if user.presenceType == 0 then
-                statusColor = Color3.fromRGB(255, 0, 0)
-            elseif user.presenceType == 2 then
-                statusColor = Color3.fromRGB(0, 0, 255)
-            end
-            user.StatusColor = statusColor
-            user.StatusType = StatusTypes[tostring(user.presenceType)]
-        end
-        updateUsers(users)
-    end
-
-    local refreshButton = Instance.new("TextButton")
-    refreshButton.Size = UDim2.new(0, 80, 0, 30)
-    refreshButton.Position = UDim2.new(0.5, -40, 0, -40)
-    refreshButton.Text = "Refresh"
-    refreshButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    refreshButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    refreshButton.Parent = mainFrame
-    refreshButton.TextScaled = true
-    refreshButton.BackgroundTransparency = 1
-    refreshButton.MouseButton1Click:Connect(function()
-        getUsersForRolesPresence(groupId, roleIds)
-    end)
-    getUsersForRolesPresence(groupId, roleIds)
-end)--]]
 
 run(function()
     local anim
@@ -46306,6 +42138,12 @@ run(function()
     StaffDetectionSystemUI.GroupIdInput.Object.Visible = false
     StaffDetectionSystemUI.RolesList.Object.Visible = false
 end)
-    -- END lobby pealzware
+
+-- --------------------------------------------------------------------------------
+-- >>>  END SECTION 8: LOBBY PEALZWARE
+-- --------------------------------------------------------------------------------
+-- End of lobby pealzware modules.
+-- --------------------------------------------------------------------------------
+
 end
 end
