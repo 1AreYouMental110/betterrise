@@ -67,18 +67,17 @@ pcall(function()
         local suc, res = pcall(identifyexecutor)
         if suc then
             local name = string.lower(tostring(res))
-            local blacklist = {'solara', 'cryptic', 'xeno', 'ember', 'ronix'}
+            local blacklist = {"solara", "cryptic", "xeno", "ember", "ronix"}
             for _, v in pairs(blacklist) do
                 if name:find(v) then CheatEngineMode = true end
             end
-            if name:find('solara') or name:find('xeno') then
+            if name:find("solara") or name:find("xeno") then
                 pcall(function()
-                    getgenv().queue_on_teleport = function() warn('queue_on_teleport disabled!') end
+                    getgenv().queue_on_teleport = function() warn("queue_on_teleport disabled!") end
                 end)
             end
-            if name:find('delta') then
+            if name:find("delta") then
                 getgenv().isnetworkowner = function() return true end
-            end
             end
         end
     end
