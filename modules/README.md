@@ -1,6 +1,6 @@
 # Module Layout
 
-Canonical gameplay modules now use descriptive names. Numeric place-id references are resolved by `main.lua` and the `games/` wrappers, not by duplicate files inside `modules/`.
+Canonical gameplay modules now use descriptive names. Numeric place-id references are resolved by `main.lua` and `core/manifest.lua`, not by duplicate files inside `modules/`.
 
 ## Canonical modules
 

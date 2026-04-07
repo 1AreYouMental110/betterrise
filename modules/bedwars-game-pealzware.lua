@@ -40,7 +40,7 @@ if (not shared.GlobalBedwars) or (shared.GlobalBedwars and type(shared.GlobalBed
 		end
 	end)
 	local delfile = delfile or function(file) writefile(file, "") end
-	if isfile('vape/games/6872274481.lua') then delfile('vape/games/6872274481.lua') end
+	if isfile('vape/games/bedwars-game.lua') then delfile('vape/games/bedwars-game.lua') end
 end
 local entityLibrary = entitylib
 local PealzwareStore = {
