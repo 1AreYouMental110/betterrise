@@ -208,10 +208,10 @@ if not shared.VapeIndependent then
 	if not (isGame or isLobby) then fileName2 = "PW"..fileName2 end
 	if isInkGame then
 		vape.Place = 99567941238278
-		pload('modules/99567941238278.lua')
+		pload('modules/inkgame.lua')
 	else
 		local resolvedFileName1 = manifest.resolveModuleFile(fileName1)
-		local resolvedFileName2 = manifest.resolveModuleFile(fileName2)
+		local resolvedFileName2 = manifest.resolveOptionalModuleFile(fileName2)
 
 		warn("[CheatEngineMode]: ", tostring(shared.CheatEngineMode))
 		warn("[TestingMode]: ", tostring(shared.TestingMode))
@@ -219,7 +219,7 @@ if not shared.VapeIndependent then
 		warn("[FileName2]: ", tostring(fileName2), " -> ", tostring(resolvedFileName2))
 
 		pload('modules/'..resolvedFileName1)
-		if not shared.NoPealzwareModules then
+		if not shared.NoPealzwareModules and resolvedFileName2 and resolvedFileName2 ~= resolvedFileName1 then
 			pload('modules/'..resolvedFileName2)
 		end
 	end

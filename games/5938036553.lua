@@ -1,5 +1,5 @@
 local loader = (shared and shared.pload) or (getgenv and getgenv().pload)
 if loader then
-    return loader('modules/5938036553.lua', true, true)
+    return loader('modules/frontlines.lua', true, true)
 end
-return loadstring(game:HttpGet('https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/modules/5938036553.lua', true))()
+return loadstring(game:HttpGet('https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/modules/frontlines.lua', true))()
