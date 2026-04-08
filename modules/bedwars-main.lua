@@ -23,6 +23,8 @@ if not bedwarsMainIsGame and not bedwarsMainIsLobby then
     error('bedwars-main.lua loaded outside BedWars')
 end
 
+shared.PealzwareMergedSystems = shared.PealzwareMergedSystems or {}
+
 do
 
 -- ================================================================================
@@ -4331,8 +4333,88 @@ run(function()
 	local UseTeamColors
 	local HeldItem
 	local DistanceLabel
+	local TracerToggle
+	local TracerStartPosition
+	local TracerEndPosition
+	local TracerColor
+	local TracerTransparency
+	local TracerDistanceColor
+	local TracerBehind
 	local Reference = {}
 	local methodused
+
+	local function getTracerSystem()
+		return shared.PealzwareMergedSystems.Tracers
+	end
+
+	local function updateTracerControlVisibility(enabled)
+		for _, option in {TracerStartPosition, TracerEndPosition, TracerColor, TracerTransparency, TracerDistanceColor, TracerBehind} do
+			if option and option.Object then
+				option.Object.Visible = enabled
+			end
+		end
+	end
+
+	local function syncTracerSharedSettings()
+		local tracer = getTracerSystem()
+		if not tracer then
+			return
+		end
+		if Targets and tracer.Targets then
+			for _, optionName in {'Players', 'NPCs', 'Invisible', 'Walls'} do
+				local source = Targets[optionName]
+				local backend = tracer.Targets[optionName]
+				if source and backend and backend.Enabled ~= source.Enabled then
+					backend:Toggle()
+				end
+			end
+		end
+		if Teammates and tracer.Teammates and tracer.Teammates.Enabled ~= Teammates.Enabled then
+			tracer.Teammates:Toggle()
+		end
+		if Distance and tracer.Distance and tracer.Distance.Enabled ~= Distance.Enabled then
+			tracer.Distance:Toggle()
+		end
+		if DistanceLimit and tracer.DistanceLimit then
+			tracer.DistanceLimit:SetValue(false, DistanceLimit.ValueMin)
+			tracer.DistanceLimit:SetValue(true, DistanceLimit.ValueMax)
+		end
+	end
+
+	local function syncTracerCustomSettings()
+		local tracer = getTracerSystem()
+		if not tracer then
+			return
+		end
+		if TracerStartPosition and tracer.StartPosition and tracer.StartPosition.Value ~= TracerStartPosition.Value then
+			tracer.StartPosition:SetValue(TracerStartPosition.Value)
+		end
+		if TracerEndPosition and tracer.EndPosition and tracer.EndPosition.Value ~= TracerEndPosition.Value then
+			tracer.EndPosition:SetValue(TracerEndPosition.Value)
+		end
+		if TracerColor and tracer.Color then
+			tracer.Color:SetValue(TracerColor.Hue, TracerColor.Sat, TracerColor.Value)
+		end
+		if TracerTransparency and tracer.Transparency and tracer.Transparency.Value ~= TracerTransparency.Value then
+			tracer.Transparency:SetValue(TracerTransparency.Value, nil, true)
+		end
+		if TracerDistanceColor and tracer.DistanceColor and tracer.DistanceColor.Enabled ~= TracerDistanceColor.Enabled then
+			tracer.DistanceColor:Toggle()
+		end
+		if TracerBehind and tracer.Behind and tracer.Behind.Enabled ~= TracerBehind.Enabled then
+			tracer.Behind:Toggle()
+		end
+	end
+
+	local function restartTracerSystem()
+		local tracer = getTracerSystem()
+		if tracer and tracer.Module and tracer.Module.Enabled then
+			syncTracerSharedSettings()
+			syncTracerCustomSettings()
+			tracer.Module:Toggle()
+			tracer.Module:Toggle()
+		end
+	end
 
 	local function ESPWorldToViewport(pos)
 		local newpos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:pointToWorldSpace(gameCamera.CFrame:PointToObjectSpace(pos)))
@@ -4652,8 +4734,14 @@ run(function()
 	local ESPLoop = {
 		Drawing2D = function()
 			for ent, EntityESP in Reference do
+				if not ent.RootPart or not ent.RootPart.Parent then
+					for _, obj in EntityESP do
+						obj.Visible = false
+					end
+					continue
+				end
 				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = entitylib.isAlive and entitylib.character.RootPart and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						setESPVisible(EntityESP, false)
 						continue
@@ -4856,10 +4944,12 @@ run(function()
 	Targets = ESP:CreateTargets({
 		Players = true,
 		Function = function()
+			syncTracerSharedSettings()
 			if ESP.Enabled then
 				ESP:Toggle()
 				ESP:Toggle()
 			end
+			restartTracerSystem()
 		end
 	})
 	Method = ESP:CreateDropdown({
@@ -5007,10 +5097,12 @@ run(function()
 	Teammates = ESP:CreateToggle({
 		Name = 'Priority Only',
 		Function = function()
+			syncTracerSharedSettings()
 			if ESP.Enabled then
 				ESP:Toggle()
 				ESP:Toggle()
 			end
+			restartTracerSystem()
 		end,
 		Default = true,
 		Tooltip = 'Hides teammates & non targetable entities'
@@ -5019,6 +5111,8 @@ run(function()
 		Name = 'Distance Check',
 		Function = function(callback)
 			DistanceLimit.Object.Visible = callback
+			syncTracerSharedSettings()
+			restartTracerSystem()
 		end
 	})
 	DistanceLimit = ESP:CreateTwoSlider({
@@ -5028,7 +5122,77 @@ run(function()
 		DefaultMin = 0,
 		DefaultMax = 64,
 		Darker = true,
-		Visible = false
+		Visible = false,
+		Function = function()
+			syncTracerSharedSettings()
+		end
+	})
+	TracerToggle = ESP:CreateToggle({
+		Name = 'Tracers',
+		Tooltip = 'Renders tracer lines from your screen to each target.',
+		Function = function(callback)
+			updateTracerControlVisibility(callback)
+			syncTracerSharedSettings()
+			syncTracerCustomSettings()
+			local tracer = getTracerSystem()
+			if tracer and tracer.Module and tracer.Module.Enabled ~= callback then
+				tracer.Module:Toggle()
+			end
+		end
+	})
+	TracerStartPosition = ESP:CreateDropdown({
+		Name = 'Tracer Start',
+		List = {'Middle', 'Bottom', 'Mouse'},
+		Visible = false,
+		Darker = true,
+		Function = function()
+			syncTracerCustomSettings()
+		end
+	})
+	TracerEndPosition = ESP:CreateDropdown({
+		Name = 'Tracer End',
+		List = {'Head', 'Torso'},
+		Visible = false,
+		Darker = true,
+		Function = function()
+			syncTracerCustomSettings()
+		end
+	})
+	TracerColor = ESP:CreateColorSlider({
+		Name = 'Tracer Color',
+		Visible = false,
+		Darker = true,
+		Function = function()
+			syncTracerCustomSettings()
+		end
+	})
+	TracerTransparency = ESP:CreateSlider({
+		Name = 'Tracer Transparency',
+		Min = 0,
+		Max = 1,
+		Decimal = 10,
+		Visible = false,
+		Darker = true,
+		Function = function()
+			syncTracerCustomSettings()
+		end
+	})
+	TracerDistanceColor = ESP:CreateToggle({
+		Name = 'Tracer Color by distance',
+		Visible = false,
+		Darker = true,
+		Function = function()
+			syncTracerCustomSettings()
+		end
+	})
+	TracerBehind = ESP:CreateToggle({
+		Name = 'Tracer Behind',
+		Default = true,
+		Visible = false,
+		Darker = true,
+		Function = function()
+			syncTracerCustomSettings()
+		end
 	})
 end)
 
@@ -6325,6 +6489,7 @@ run(function()
 
 	Tracers = vape.Categories.Render:CreateModule({
 		Name = 'Tracers',
+		Visible = false,
 		Function = function(callback)
 			if callback then
 				Tracers:Clean(entitylib.Events.EntityRemoved:Connect(Removed))
@@ -6439,6 +6604,19 @@ run(function()
 		Default = true,
 		Tooltip = 'Hides teammates & non targetable entities'
 	})
+	shared.PealzwareMergedSystems.Tracers = {
+		Behind = Behind,
+		Color = Color,
+		Distance = Distance,
+		DistanceColor = DistanceColor,
+		DistanceLimit = DistanceLimit,
+		EndPosition = EndPosition,
+		Module = Tracers,
+		StartPosition = StartPosition,
+		Targets = Targets,
+		Teammates = Teammates,
+		Transparency = Transparency
+	}
 end)
 
 run(function()
@@ -7080,25 +7258,36 @@ end)
 
 run(function()
 	local connections = {}
-	if getconnections ~= nil and type(getconnections) == "function" then
-		vape.Categories.World:CreateModule({
-			Name = 'Anti-AFK',
-			Function = function(callback)
-				if callback then
+	local AntiAFKModule
+	AntiAFKModule = vape.Categories.World:CreateModule({
+		Name = 'Anti-AFK',
+		Function = function(callback)
+			if callback then
+				if getconnections ~= nil and type(getconnections) == "function" then
 					for _, v in getconnections(lplr.Idled) do
 						table.insert(connections, v)
 						v:Disable()
 					end
-				else
+				end
+				repeat
+					local vu = game:GetService("VirtualUser")
+					pcall(function()
+						vu:CaptureController()
+						vu:ClickButton2(Vector2.new())
+					end)
+					task.wait(60)
+				until not AntiAFKModule.Enabled
+			else
+				if getconnections ~= nil and type(getconnections) == "function" then
 					for _, v in connections do
 						v:Enable()
 					end
 					table.clear(connections)
 				end
-			end,
-			Tooltip = 'Lets you stay ingame without getting kicked'
-		})
-	end
+			end
+		end,
+		Tooltip = 'Lets you stay ingame without getting kicked'
+	})
 end)
 
 if not shared.CheatEngineMode then
@@ -8770,8 +8959,8 @@ task.spawn(function()
 			}
 			local S_Name = "CONSOLE"
 			local main = {}
-			if isfile('PW_Error_Log.json') then
-				local res = loadJson('PW_Error_Log.json')
+			if isfile('pealzware/PW_Error_Log.json') then
+				local res = loadJson('pealzware/PW_Error_Log.json')
 				main = res or main
 			end
 			main["LogInfo"] = {
@@ -8807,7 +8996,7 @@ task.spawn(function()
 				return httpService:JSONEncode(main)
 			end)
 			if success then
-				writefile('PW_Error_Log.json', jsonResult)
+				writefile('pealzware/PW_Error_Log.json', jsonResult)
 			else
 				warn("Failed to encode JSON: " .. jsonResult)
 			end
@@ -10087,6 +10276,7 @@ run(function()
     })
 end)
 
+--[[ REMOVED: RichShader
 run(function() local Shader = {Enabled = false}
 	local ShaderColor = {Hue = 0, Sat = 0, Value = 0}
 	local ShaderTintSlider
@@ -10167,6 +10357,7 @@ run(function() local Shader = {Enabled = false}
 		end
 	})
 end)
+--]] -- END REMOVED: RichShader
 
 run(function() local chatDisable = {Enabled = false}
 	local function getChatIcon()
@@ -10394,7 +10585,7 @@ run(function()
 	local CustomJumpVelocity = {Value = 50}
 	local UIS_Connection = {Disconnect = function() end}
 	CustomJump = vape.Categories.Blatant:CreateModule({
-		Name = "InfJUmp",
+		Name = "InfJump",
         Tooltip = "Customizes your jumping ability",
 		Function = function(callback)
 			if callback then
@@ -11799,6 +11990,7 @@ run(function()
 end)
 
 
+--[[ REMOVED: AmongusChanger
 run(function()
     local RunLoops = {}
     RunLoops._loops = {}
@@ -11980,6 +12172,7 @@ run(function()
         end
     })
 end)
+--]] -- END REMOVED: AmongusChanger
 
 run(function()
 	local PlayerAttach = {Enabled = false}
@@ -12311,15 +12504,7 @@ run(function()
     if NeonCircles_Color3 and NeonCircles_Color3.Object then NeonCircles_Color3.Object.Visible = false end
 end)
 
-run(function()
-	local WaterAmbient = {Enabled = false}
-	WaterAmbient = vape.Categories.World:CreateModule({
-		Name = "Water Ambient",
-		Function = function(call)
-			workspace.Terrain:FillBlock(CFrame.new(Vector3.new(0, 0, 0)), Vector3.new(4096, 50, 4096), call and Enum.Material.Water or Enum.Material.Air)
-		end
-	})
-end)
+-- REMOVED: Water Ambient
 
 -- --------------------------------------------------------------------------------
 -- >>>  END SECTION 2: SHARED PEALZWARE
@@ -13400,8 +13585,8 @@ local function saveErrorLog(err, S_Name)
 	if not err then return end
 	if not S_Name then S_Name = "Not specified" end
 	local main = {}
-	if isfile('PW_Error_Log.json') then
-		local res = loadJson('PW_Error_Log.json')
+	if isfile('pealzware/PW_Error_Log.json') then
+		local res = loadJson('pealzware/PW_Error_Log.json')
 		main = res or main
 	end
 	local errorLog = {
@@ -13412,16 +13597,21 @@ local function saveErrorLog(err, S_Name)
 		PlaceId = game.PlaceId,
 		JobId = game.JobId
 	}
+	local dateKey = toDate()
+	local placeJobKey = tostring(game.PlaceId).." | "..tostring(game.JobId)
 	main.DebugLog = main.DebugLog or {}
-	main.DebugLog[toDate()] = main.DebugLog[toDate()] or {}
-	main.DebugLog[toDate()][tostring(game.PlaceId).." | "..tostring(game.JobId)] = main[toDate()][tostring(game.PlaceId).." | "..tostring(game.JobId)] or {}
-	main.DebugLog[toDate()][tostring(game.PlaceId).." | "..tostring(game.JobId)][S_Name] = main[toDate()][tostring(game.PlaceId).." | "..tostring(game.JobId)][S_Name] or {}
-	table.insert(main.DebugLog[toDate()][tostring(game.PlaceId).." | "..tostring(game.JobId)][S_Name], {
+	main.DebugLog[dateKey] = main.DebugLog[dateKey] or {}
+	main.DebugLog[dateKey][placeJobKey] = main.DebugLog[dateKey][placeJobKey] or {}
+	main.DebugLog[dateKey][placeJobKey][S_Name] = main.DebugLog[dateKey][placeJobKey][S_Name] or {}
+	table.insert(main.DebugLog[dateKey][placeJobKey][S_Name], {
 		Time = getExecutionTime(),
 		Data = errorLog
 	})
-	writefile('PW_Error_Log.json', HttpService:JSONEncode(main))
-	errorNotification("Pealzware -  Error Logger", 'If you can please send the\n PW_Error_Log.json file in your workspace to erchodev#0 or discord.gg/pealzware', 10)
+	local suc, json = pcall(function() return HttpService:JSONEncode(main) end)
+	if suc then
+		writefile('pealzware/PW_Error_Log.json', json)
+	end
+	errorNotification("Pealzware - Error Logger", 'Error logged to pealzware/PW_Error_Log.json\nReport to pealz on discord.gg/pealzware', 10)
 	warn('---------------[ERROR LOG START]--------------')
 	warn(HttpService:JSONEncode(errorLog))
 	warn('---------------[ERROR LOG END]--------------')
@@ -13789,7 +13979,7 @@ run(function()
                 local dblock, dpos = getPlacedBlock(pos)
                 if not dblock then return end
 
-                if (game.Workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.4 then
+                if (game.workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > 0.4 then
                     local breaktype = bedwars.ItemMeta[dblock.Name].block.breakType
                     local tool = store.tools[breaktype]
                     if tool then
@@ -14286,9 +14476,9 @@ function KaidaController:request(target)
 end
 
 if not bedwars.Client then
-	errorNotification('Pealzware Bedwars', "There was a critical loading error! \n Please report this issue to erchodev#0 or discord.gg/pealzware", 10)
+	errorNotification('Pealzware Bedwars', "There was a critical loading error! \n Please report this issue to pealz on discord.gg/pealzware", 10)
 end
-assert(bedwars.Client ~= nil and type(bedwars.Client) == "table", "There was a critical loading error! \n Please report this issue to erchodev#0 or discord.gg/pealzware")
+assert(bedwars.Client ~= nil and type(bedwars.Client) == "table", "There was a critical loading error! \n Please report this issue to pealz on discord.gg/pealzware")
 
 for _, v in {'AntiRagdoll', 'TriggerBot', 'SilentAim', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'MouseTP', 'MurderMystery'} do
 	vape:Remove(v)
@@ -14470,7 +14660,7 @@ run(function()
 				if not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
 					local blockPlacer = bedwars.BlockPlacementController.blockPlacer
 					if store.hand.toolType == 'block' and blockPlacer then
-						if (game.Workspace:GetServerTimeNow() - bedwars.BlockCpsController.lastPlaceTimestamp) >= ((1 / 12) * 0.5) then
+						if (game.workspace:GetServerTimeNow() - bedwars.BlockCpsController.lastPlaceTimestamp) >= ((1 / 12) * 0.5) then
 							local mouseinfo = blockPlacer.clientManager:getBlockSelector():getMouseInfo(0)
 							if mouseinfo and mouseinfo.placementPosition == mouseinfo.placementPosition then
 								task.spawn(blockPlacer.placeBlock, blockPlacer, mouseinfo.placementPosition)
@@ -15467,9 +15657,9 @@ run(function()
 						if isnetworkowner(oldroot) then
 							speedCFrame[1] = clone.CFrame.X
 							speedCFrame[3] = clone.CFrame.Z
-							if speedCFrame[2] < 2000 then speedCFrame[2] = 100000 end
+							if speedCFrame[2] < 500 then speedCFrame[2] = clone.CFrame.Y + 50 end
 							oldroot.CFrame = CFrame.new(unpack(speedCFrame))
-							oldroot.Velocity = Vector3.new(clone.Velocity.X, oldroot.Velocity.Y, clone.Velocity.Z)
+							oldroot.Velocity = Vector3.new(clone.Velocity.X, 0, clone.Velocity.Z)
 						else
 							speedCFrame[2] = clone.CFrame.Y
 							clone.CFrame = CFrame.new(unpack(speedCFrame))
@@ -15734,7 +15924,7 @@ run(function()
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				lastSwingServerTime = Workspace:GetServerTimeNow()
+				lastSwingServerTime = workspace:GetServerTimeNow()
                 lastSwingServerTimeDelta = 0
 
 				if RangeCircle.Enabled then
@@ -21337,7 +21527,7 @@ run(function()
 				end
 			end
 			local suc, res = pcall(function() return lplr.leaderstats.Bed.Value == "✅"  end)
-			if AutoBankDeath.Enabled and (game.Workspace:GetServerTimeNow() - lplr.Character:GetAttribute("LastDamageTakenTime")) < 2 and suc and res then
+			if AutoBankDeath.Enabled and (game.workspace:GetServerTimeNow() - lplr.Character:GetAttribute("LastDamageTakenTime")) < 2 and suc and res then
 				return nil, false, false
 			end
 			if AutoBankStay.Enabled then
@@ -22910,7 +23100,7 @@ run(function()
 									if obj.Parent ~= nil then
 										if obj.Name == "bed" and tostring(obj:GetAttribute("TeamId")) == tostring(lplr:GetAttribute("Team")) then continue end
 										if obj:GetAttribute("BedShieldEndTime") then
-											if obj:GetAttribute("BedShieldEndTime") > game.Workspace:GetServerTimeNow() then continue end
+											if obj:GetAttribute("BedShieldEndTime") > game.workspace:GetServerTimeNow() then continue end
 										end
 										if playerPos and (playerPos - obj.Position).magnitude <= nukerrange.Value then
 											local tool, respectHand = resolveNukerTool(obj)
@@ -25508,7 +25698,7 @@ bedwars.InfernalShieldController = {
 }
 bedwars.SwordController = {
     lastSwing = tick(),
-	lastAttack = game.Workspace:GetServerTimeNow(),
+	lastAttack = game.workspace:GetServerTimeNow(),
 	isClickingTooFast = function() end,
 	canSee = function() return true end,
 	playSwordEffect = function(swordmeta, status)
@@ -28676,7 +28866,7 @@ run(function()
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				lastSwingServerTime = Workspace:GetServerTimeNow()
+				lastSwingServerTime = workspace:GetServerTimeNow()
                 lastSwingServerTimeDelta = 0
 				nextAttackTick = 0
 
@@ -29249,8 +29439,8 @@ run(function()
 		wood_dao = function(tnt, pos2)
 			task.spawn(function()
 				switchItem(tnt.tool)
-				if not (not lplr.Character:GetAttribute("CanDashNext") or lplr.Character:GetAttribute("CanDashNext") < game.Workspace:GetServerTimeNow()) then
-					repeat task.wait() until (not lplr.Character:GetAttribute("CanDashNext") or lplr.Character:GetAttribute("CanDashNext") < game.Workspace:GetServerTimeNow()) or not LongJump.Enabled
+				if not (not lplr.Character:GetAttribute("CanDashNext") or lplr.Character:GetAttribute("CanDashNext") < game.workspace:GetServerTimeNow()) then
+					repeat task.wait() until (not lplr.Character:GetAttribute("CanDashNext") or lplr.Character:GetAttribute("CanDashNext") < game.workspace:GetServerTimeNow()) or not LongJump.Enabled
 				end
 				if LongJump.Enabled then
 					local vec = entityLibrary.character.HumanoidRootPart.CFrame.lookVector
@@ -31607,11 +31797,17 @@ run(function()
 		Name = "AntiAFK",
 		Function = function(callback)
 			if callback then
-				bedwars.Client:Get("AfkInfo"):FireServer({
-					afk = false
-				})
+				repeat
+					pcall(function()
+						bedwars.Client:Get("AfkInfo"):FireServer({
+							afk = false
+						})
+					end)
+					task.wait(30)
+				until not AntiAFK.Enabled
 			end
-		end
+		end,
+		Tooltip = 'Prevents AFK kick by periodically resetting your idle status.'
 	})
 end)
 
@@ -31815,7 +32011,7 @@ run(function()
 				end
 			end
 			local suc, res = pcall(function() return lplr.leaderstats.Bed.Value == "✅"  end)
-			if AutoBankDeath.Enabled and (game.Workspace:GetServerTimeNow() - lplr.Character:GetAttribute("LastDamageTakenTime")) < 2 and suc and res then
+			if AutoBankDeath.Enabled and (game.workspace:GetServerTimeNow() - lplr.Character:GetAttribute("LastDamageTakenTime")) < 2 and suc and res then
 				return nil, false, false
 			end
 			if AutoBankStay.Enabled then
@@ -34254,7 +34450,7 @@ run(function()
 									if obj.Parent ~= nil then
 										if obj.Name == "bed" and tostring(obj:GetAttribute("TeamId")) == tostring(lplr:GetAttribute("Team")) then continue end
 										if obj:GetAttribute("BedShieldEndTime") then
-											if obj:GetAttribute("BedShieldEndTime") > game.Workspace:GetServerTimeNow() then continue end
+											if obj:GetAttribute("BedShieldEndTime") > game.workspace:GetServerTimeNow() then continue end
 										end
 										if playerPos and (playerPos - obj.Position).magnitude <= nukerrange.Value then
 											local tool, respectHand = resolveNukerTool(obj)
@@ -35391,7 +35587,7 @@ local CollectionService = collectionService
 shared.vapewhitelist = vape.Libraries.whitelist
 local playersService = game:GetService("Players")
 if (not shared.GlobalBedwars) or (shared.GlobalBedwars and type(shared.GlobalBedwars) ~= "table") or (not shared.GlobalStore) or (shared.GlobalStore and type(shared.GlobalStore) ~= "table") then
-	errorNotification("PW-BEDWARS", "Critical! Important connection is missing! Please report this bug to erchodev#0", 10)
+	errorNotification("PW-BEDWARS", "Critical! Important connection is missing! Please report this bug to pealz", 10)
 	pcall(function()
 		function GuiLibrary:Save()
 			warningNotification("GuiLibrary.SaveSettings", "Profiles saving is disabled due to error in the code!", 1)
@@ -38195,6 +38391,7 @@ run(function()
 
 	TexturePacks = vape.Categories.Render:CreateModule({
 		["Name"] = "TexturePacksV3",
+		["Visible"] = false,
 		["Function"] = function(callback)
 			if callback then
 				packfunctions[packselected["Value"]]()
@@ -38212,6 +38409,10 @@ run(function()
 		["Function"] = function() if TexturePacks.Enabled then packfunctions[packselected["Value"]](); refresh() end end,
 		["List"] = list
 	})
+	shared.PealzwareMergedSystems.TexturePackPreset = {
+		Module = TexturePacks,
+		Pack = packselected
+	}
 end)
 
 
@@ -39540,10 +39741,11 @@ end)
 
 
 run(function()
-    local GuiLibrary = shared.GuiLibrary
+	local GuiLibrary = shared.GuiLibrary
 	local texture_pack = {};
 	texture_pack = vape.Categories.Render:CreateModule({
-		Name = 'TexturePack',
+		Name = 'TexturePackClassic',
+		Visible = false,
 		Tooltip = 'Customizes your texture pack.',
 		Function = function(callback)
 			if callback then
@@ -39912,6 +40114,10 @@ run(function()
 		Tooltip = 'Mode to render the texture pack.',
 		Function = function() end;
 	});
+	shared.PealzwareMergedSystems.TexturePackClassic = {
+		Mode = texture_pack_m,
+		Module = texture_pack
+	}
 end)
 
 run(function()
@@ -39963,6 +40169,7 @@ run(function()
 
     TexturePacksV2 = vape.Categories.Render:CreateModule({
         Name = "TexturePacksV2",
+        Visible = false,
         Function = function(call)
             if call then
 				refreshChildren()
@@ -40012,6 +40219,163 @@ run(function()
         Function = TexturePacksV2.Restart,
         Default = true
     })
+    shared.PealzwareMergedSystems.TexturePackMaterial = {
+        Color = TexturePacksV2_GUI_Elements.Color,
+        GuiSync = TexturePacksV2_GUI_Elements.GuiSync,
+        Material = TexturePacksV2_GUI_Elements.Material,
+        Module = TexturePacksV2
+    }
+end)
+
+run(function()
+	local TexturePack
+	local TexturePackSystem
+	local TexturePackClassicMode
+	local TexturePackPresetMode
+	local TexturePackMaterialMode
+	local TexturePackMaterialColor
+	local TexturePackMaterialGuiSync
+	local backendLabels = {
+		Classic = 'Classic Models',
+		Material = 'Material Override',
+		Preset = 'Preset Pack'
+	}
+	local backendByLabel = {}
+	for backendKey, label in backendLabels do
+		backendByLabel[label] = backendKey
+	end
+
+	local function getTexturePackBackend()
+		return backendByLabel[TexturePackSystem.Value] or 'Classic'
+	end
+
+	local function updateTexturePackVisibility()
+		local backend = getTexturePackBackend()
+		TexturePackClassicMode.Object.Visible = backend == 'Classic'
+		TexturePackPresetMode.Object.Visible = backend == 'Preset'
+		TexturePackMaterialMode.Object.Visible = backend == 'Material'
+		TexturePackMaterialColor.Object.Visible = backend == 'Material'
+		TexturePackMaterialGuiSync.Object.Visible = backend == 'Material'
+	end
+
+	local function syncTexturePackOptions()
+		local classic = shared.PealzwareMergedSystems.TexturePackClassic
+		local preset = shared.PealzwareMergedSystems.TexturePackPreset
+		local material = shared.PealzwareMergedSystems.TexturePackMaterial
+		if classic and TexturePackClassicMode and classic.Mode.Value ~= TexturePackClassicMode.Value then
+			classic.Mode:SetValue(TexturePackClassicMode.Value)
+		end
+		if preset and TexturePackPresetMode and preset.Pack.Value ~= TexturePackPresetMode.Value then
+			preset.Pack:SetValue(TexturePackPresetMode.Value)
+		end
+		if material then
+			if TexturePackMaterialMode and material.Material.Value ~= TexturePackMaterialMode.Value then
+				material.Material:SetValue(TexturePackMaterialMode.Value)
+			end
+			if TexturePackMaterialColor then
+				material.Color:SetValue(TexturePackMaterialColor.Hue, TexturePackMaterialColor.Sat, TexturePackMaterialColor.Value)
+			end
+			if TexturePackMaterialGuiSync and material.GuiSync.Enabled ~= TexturePackMaterialGuiSync.Enabled then
+				material.GuiSync:Toggle()
+			end
+		end
+	end
+
+	local function applyTexturePackState(callback)
+		syncTexturePackOptions()
+		local selected = getTexturePackBackend()
+		for backendKey, systemName in {
+			Classic = 'TexturePackClassic',
+			Material = 'TexturePackMaterial',
+			Preset = 'TexturePackPreset'
+		} do
+			local backend = shared.PealzwareMergedSystems[systemName]
+			if backend and backend.Module and backend.Module.Enabled ~= (callback and backendKey == selected) then
+				backend.Module:Toggle()
+			end
+		end
+	end
+
+	TexturePack = vape.Categories.Render:CreateModule({
+		Name = 'TexturePack',
+		Tooltip = 'Unified texture pack system for classic models, material overrides, and preset packs.',
+		Function = function(callback)
+			applyTexturePackState(callback)
+		end
+	})
+	TexturePackSystem = TexturePack:CreateDropdown({
+		Name = 'System',
+		List = {backendLabels.Classic, backendLabels.Preset, backendLabels.Material},
+		Default = backendLabels.Classic,
+		Tooltip = 'Select which texture-pack system to use.',
+		Function = function()
+			updateTexturePackVisibility()
+			if TexturePack.Enabled then
+				applyTexturePackState(true)
+			else
+				syncTexturePackOptions()
+			end
+		end
+	})
+	TexturePackClassicMode = TexturePack:CreateDropdown({
+		Name = 'Classic Mode',
+		List = {'Noboline', 'Aquarium', 'Ocean'},
+		Default = 'Noboline',
+		Tooltip = 'Choose the classic custom-model texture pack.',
+		Function = function()
+			syncTexturePackOptions()
+			if TexturePack.Enabled and getTexturePackBackend() == 'Classic' then
+				applyTexturePackState(true)
+			end
+		end
+	})
+	TexturePackPresetMode = TexturePack:CreateDropdown({
+		Name = 'Preset Pack',
+		List = {'SeventhPack', 'EighthPack', 'SixthPack', 'FifthPack', 'FourthPack', 'SecondPack', 'FirstPack', 'CottonCandy', 'EgirlPack', 'GlizzyPack', 'PrivatePack', 'DemonSlayerPack', 'FirstHighResPack', 'RandomPack', 'SecondHighResPack'},
+		Default = 'SeventhPack',
+		Visible = false,
+		Tooltip = 'Choose the preset weapon pack for the V3 system.',
+		Function = function()
+			syncTexturePackOptions()
+			if TexturePack.Enabled and getTexturePackBackend() == 'Preset' then
+				applyTexturePackState(true)
+			end
+		end
+	})
+	TexturePackMaterialMode = TexturePack:CreateDropdown({
+		Name = 'Material',
+		List = GetEnumItems("Material"),
+		Default = 'ForceField',
+		Visible = false,
+		Tooltip = 'Choose the material used by the material override pack.',
+		Function = function()
+			syncTexturePackOptions()
+			if TexturePack.Enabled and getTexturePackBackend() == 'Material' then
+				applyTexturePackState(true)
+			end
+		end
+	})
+	TexturePackMaterialColor = TexturePack:CreateColorSlider({
+		Name = 'Material Color',
+		Visible = false,
+		Tooltip = 'Adjust the override color for the material texture pack.',
+		Function = function()
+			syncTexturePackOptions()
+		end
+	})
+	TexturePackMaterialGuiSync = TexturePack:CreateToggle({
+		Name = 'Material GUI Sync',
+		Default = true,
+		Visible = false,
+		Tooltip = 'Sync the material override color to the GUI accent color.',
+		Function = function()
+			syncTexturePackOptions()
+			if TexturePack.Enabled and getTexturePackBackend() == 'Material' then
+				applyTexturePackState(true)
+			end
+		end
+	})
+	updateTexturePackVisibility()
 end)
 
 run(function()
@@ -40351,7 +40715,7 @@ run(function()
     local function handleError(res)
         local ErrorHandling = {
             ["404"] = "Critical error in the API endpoint!",
-            ["400"] = "No username specified! Contact erchodev#0 on discord.",
+            ["400"] = "No username specified! Contact pealz on discord.",
             ["500"] = "Critical server error! Try again later.",
             ["429"] = "You are being rate-limited. Please wait."
         }
@@ -41143,23 +41507,7 @@ end)
 if not shared.CheatEngineMode then
 	local inputService = game:GetService('UserInputService')
 	local isMobile = inputService.TouchEnabled and not inputService.KeyboardEnabled and not inputService.MouseEnabled
-	run(function()
-		local controller
-		local LegacyLayout = {Enabled = false}
-		LegacyLayout = vape.Categories.World:CreateModule({
-			Name = "LegacyLayout",
-			Function = function(call)
-				if not controller then
-					controller = require(game:GetService("ReplicatedStorage").rbxts_include.node_modules["@flamework"].core.out).Flamework.resolveDependency("@easy-games/game-core:client/controllers/ability/ability-controller@AbilityController").mobileAbilityUIController.mobileLayoutController
-				end
-				if call and not isMobile then
-					warningNotification("LegacyLayout", "Mobile devices only!", 3)
-					--LegacyLayout:Toggle(false)
-				end
-				controller:setIsLegacyMode(call)
-			end
-		})
-	end)
+	-- REMOVED: LegacyLayout
 end
 
 run(function()
@@ -41595,7 +41943,7 @@ run(function()
                 if bed.Name == "bed" and tostring(bed:GetAttribute("TeamId")) == tostring(lplr:GetAttribute("Team")) then
                     continue
                 end
-                if bed:GetAttribute("BedShieldEndTime") and bed:GetAttribute("BedShieldEndTime") > game.Workspace:GetServerTimeNow() then
+                if bed:GetAttribute("BedShieldEndTime") and bed:GetAttribute("BedShieldEndTime") > game.workspace:GetServerTimeNow() then
                     continue
                 end
                 local distance = (playerPos - bed.Position).Magnitude
@@ -42013,7 +42361,7 @@ run(function()
             end
         end,
         Default = false,
-        Tooltip = ""
+        Tooltip = "Hides your character visually with local animation and transparency changes."
     })
 
     LocalPlayer.CharacterAdded:Connect(function()
@@ -42852,7 +43200,7 @@ run(function()
     local function handleError(res)
         local ErrorHandling = {
             ["404"] = "Critical error in the API endpoint!",
-            ["400"] = "No username specified! Contact erchodev#0 on discord.",
+            ["400"] = "No username specified! Contact pealz on discord.",
             ["500"] = "Critical server error! Try again later.",
             ["429"] = "You are being rate-limited. Please wait."
         }

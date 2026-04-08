@@ -9,6 +9,7 @@ local mainapi = {
 	Keybind = {'RightShift'},
 	Loaded = false,
 	Libraries = {},
+	ModuleFavoriteCounter = 0,
 	Modules = {},
 	Place = game.PlaceId,
 	Profile = 'default',
@@ -58,7 +59,11 @@ local uipallet = {
 	--Color3.fromRGB(60, 60, 60),
 	Font = Font.fromEnum(Enum.Font.Arial),
 	FontSemiBold = Font.fromEnum(Enum.Font.Arial, Enum.FontWeight.SemiBold),
-	Tween = TweenInfo.new(0.16, Enum.EasingStyle.Linear)
+	Tween = TweenInfo.new(0.16, Enum.EasingStyle.Linear),
+	TweenSmooth = TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+	TweenClick = TweenInfo.new(0.08, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+	TweenBounce = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+	TweenFast = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 }
 
 local getcustomassets = {
@@ -214,8 +219,30 @@ local function addMaid(object)
 	end
 end
 
+local function resolveTooltipText(name, tooltipText, controlType)
+	if tooltipText and tostring(tooltipText):gsub('%s', '') ~= '' then
+		return tooltipText
+	end
+
+	local controlTips = {
+		Button = 'Run '..name..'.',
+		ColorSlider = 'Adjust '..name..'.',
+		Dropdown = 'Select '..name..'.',
+		Module = 'Toggle '..name..' and open its settings.',
+		Slider = 'Adjust '..name..'.',
+		Targets = 'Choose targets for '..name..'.',
+		TargetsButton = 'Configure '..name..'.',
+		TextBox = 'Edit '..name..'.',
+		TextList = 'Manage '..name..'.',
+		Toggle = 'Toggle '..name..'.',
+		TwoSlider = 'Adjust '..name..' range.'
+	}
+
+	return controlTips[controlType] or name
+end
+
 local function addTooltip(gui, text)
-	if not text then return end
+	if not text or tostring(text):gsub('%s', '') == '' then return end
 
 	local function tooltipMoved(x, y)
 		local right = x + 16 + tooltip.Size.X.Offset > (scale.Scale * 1920)
@@ -236,6 +263,37 @@ local function addTooltip(gui, text)
 	gui.MouseLeave:Connect(function()
 		tooltip.Visible = false
 	end)
+end
+
+function mainapi:UpdateModuleSorting(categoryName)
+	local sorting = {}
+	for _, module in self.Modules do
+		if module.Hidden then
+			continue
+		end
+		if categoryName and module.Category ~= categoryName then
+			continue
+		end
+		sorting[module.Category] = sorting[module.Category] or {}
+		table.insert(sorting[module.Category], module)
+	end
+
+	for _, modules in sorting do
+		table.sort(modules, function(a, b)
+			if a.Favorited ~= b.Favorited then
+				return a.Favorited
+			end
+			if a.Favorited and b.Favorited and a.FavoriteOrder ~= b.FavoriteOrder then
+				return a.FavoriteOrder > b.FavoriteOrder
+			end
+			return a.Name < b.Name
+		end)
+		for i, module in modules do
+			module.Index = i
+			module.Object.LayoutOrder = i
+			module.Children.LayoutOrder = i
+		end
+	end
 end
 
 local function checkKeybinds(compare, target, key)
@@ -598,7 +656,7 @@ local function hookCF(func, settings)
 					if S_Name ~= "Not Specified" then
 						if attemptedRestarts[S_Name] then
 							errorNotification('Pealzware | '..tostring(S_Name), "Restart failed!", 3)
-							errorNotification("Pealzware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n PW_Error_Log.json in your workspace to erchodev#0 or discord.gg/pealzware", 10)
+							errorNotification("Pealzware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n PW_Error_Log.json in your workspace to pealz on discord.gg/pealzware", 10)
 						else
 							errorNotification('Pealzware | '..tostring(S_Name), "There was an error with this module. Attempting restart...", 3)
 							attemptedRestarts[S_Name] = true
@@ -607,7 +665,7 @@ local function hookCF(func, settings)
 end
 						end
 					else
-						errorNotification("Pealzware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n PW_Error_Log.json in your workspace to erchodev#0 or discord.gg/pealzware", 10)
+						errorNotification("Pealzware | "..tostring(S_Name), "There was an error with this module. If you can please send the\n PW_Error_Log.json in your workspace to pealz on discord.gg/pealzware", 10)
 					end
 				end)
 				local errorLog = {
@@ -620,8 +678,8 @@ end
 					JobId = game.JobId
 				}
 				local main = {}
-				if isfile('PW_Error_Log.json') then
-					local res = loadJson('PW_Error_Log.json')
+				if isfile('pealzware/PW_Error_Log.json') then
+					local res = loadJson('pealzware/PW_Error_Log.json')
 					main = res or main
 				end
 				main["LogInfo"] = {
@@ -651,7 +709,7 @@ end
 					Time = getExecutionTime(),
 					Data = errorLog
 				})
-				writefile('PW_Error_Log.json', game:GetService("HttpService"):JSONEncode(main))
+				writefile('pealzware/PW_Error_Log.json', game:GetService("HttpService"):JSONEncode(main))
 				warn('---------------[ERROR LOG START]--------------')
 				warn(game:GetService("HttpService"):JSONEncode(errorLog))
 				warn('---------------[ERROR LOG END]--------------')
@@ -674,7 +732,7 @@ components = {
 		button.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		button.Text = ''
 		button.Parent = children
-		addTooltip(button, optionsettings.Tooltip)
+		addTooltip(button, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'Button'))
 		local bkg = Instance.new('Frame')
 		bkg.Size = UDim2.fromOffset(200, 27)
 		bkg.Position = UDim2.fromOffset(10, 2)
@@ -694,14 +752,32 @@ components = {
 		optionsettings.Function = optionsettings.Function or function() end
 
 		button.MouseEnter:Connect(function()
-			tween:Tween(bkg, uipallet.Tween, {
+			tween:Tween(bkg, uipallet.TweenSmooth, {
 				BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
+			})
+			tween:Tween(label, uipallet.TweenSmooth, {
+				TextColor3 = uipallet.Text
 			})
 		end)
 		button.MouseLeave:Connect(function()
-			tween:Tween(bkg, uipallet.Tween, {
+			tween:Tween(bkg, uipallet.TweenSmooth, {
 				BackgroundColor3 = color.Light(uipallet.Main, 0.05)
 			})
+			tween:Tween(label, uipallet.TweenSmooth, {
+				TextColor3 = color.Dark(uipallet.Text, 0.16)
+			})
+		end)
+		button.MouseButton1Down:Connect(function()
+			tween:Tween(bkg, uipallet.TweenFast, {
+				Size = UDim2.fromOffset(196, 25)
+			})
+		end)
+		button.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				tween:Tween(bkg, uipallet.TweenBounce, {
+					Size = UDim2.fromOffset(200, 27)
+				})
+			end
 		end)
 		button.MouseButton1Click:Connect(optionsettings.Function)
 	end,
@@ -792,13 +868,19 @@ components = {
 				end
 			end)
 			slider.MouseEnter:Connect(function()
-				tween:Tween(knob, uipallet.Tween, {
+				tween:Tween(knob, uipallet.TweenSmooth, {
 					Size = UDim2.fromOffset(16, 16)
+				})
+				tween:Tween(title, uipallet.TweenSmooth, {
+					TextColor3 = uipallet.Text
 				})
 			end)
 			slider.MouseLeave:Connect(function()
-				tween:Tween(knob, uipallet.Tween, {
+				tween:Tween(knob, uipallet.TweenSmooth, {
 					Size = UDim2.fromOffset(14, 14)
+				})
+				tween:Tween(title, uipallet.TweenSmooth, {
+					TextColor3 = color.Dark(uipallet.Text, 0.16)
 				})
 			end)
 
@@ -814,7 +896,7 @@ components = {
 		slider.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		slider.Text = ''
 		slider.Parent = children
-		addTooltip(slider, optionsettings.Tooltip)
+		addTooltip(slider, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'ColorSlider'))
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
 		title.Size = UDim2.fromOffset(60, 30)
@@ -977,23 +1059,23 @@ components = {
 			if self.Rainbow then
 				fill.Size = UDim2.fromScale(math.clamp(self.Hue, 0.04, 0.96), 1)
 			else
-				tween:Tween(fill, uipallet.Tween, {
+				tween:Tween(fill, uipallet.TweenSmooth, {
 					Size = UDim2.fromScale(math.clamp(self.Hue, 0.04, 0.96), 1)
 				})
 			end
 
 			if s then
-				tween:Tween(satSlider.Slider.Fill, uipallet.Tween, {
+				tween:Tween(satSlider.Slider.Fill, uipallet.TweenSmooth, {
 					Size = UDim2.fromScale(math.clamp(self.Sat, 0.04, 0.96), 1)
 				})
 			end
 			if v then
-				tween:Tween(vibSlider.Slider.Fill, uipallet.Tween, {
+				tween:Tween(vibSlider.Slider.Fill, uipallet.TweenSmooth, {
 					Size = UDim2.fromScale(math.clamp(self.Value, 0.04, 0.96), 1)
 				})
 			end
 			if o then
-				tween:Tween(opSlider.Slider.Fill, uipallet.Tween, {
+				tween:Tween(opSlider.Slider.Fill, uipallet.TweenSmooth, {
 					Size = UDim2.fromScale(math.clamp(self.Opacity, 0.04, 0.96), 1)
 				})
 			end
@@ -1072,13 +1154,19 @@ components = {
 			end
 		end)
 		slider.MouseEnter:Connect(function()
-			tween:Tween(knob, uipallet.Tween, {
+			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(16, 16)
+			})
+			tween:Tween(title, uipallet.TweenSmooth, {
+				TextColor3 = uipallet.Text
 			})
 		end)
 		slider.MouseLeave:Connect(function()
-			tween:Tween(knob, uipallet.Tween, {
+			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(14, 14)
+			})
+			tween:Tween(title, uipallet.TweenSmooth, {
+				TextColor3 = color.Dark(uipallet.Text, 0.16)
 			})
 		end)
 		slider:GetPropertyChangedSignal('Visible'):Connect(function()
@@ -1140,7 +1228,7 @@ components = {
 		dropdown.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		dropdown.Text = ''
 		dropdown.Parent = children
-		addTooltip(dropdown, optionsettings.Tooltip or optionsettings.Name)
+		addTooltip(dropdown, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'Dropdown'))
 		local bkg = Instance.new('Frame')
 		bkg.Name = 'BKG'
 		bkg.Size = UDim2.new(1, -20, 1, -9)
@@ -1179,6 +1267,8 @@ components = {
 		arrow.Parent = button
 		optionsettings.Function = optionsettings.Function or function() end
 		local dropdownchildren
+		local hovered = false
+		local pressed = false
 
 		function optionapi:Save(tab)
 			tab[optionsettings.Name] = {Value = self.Value}
@@ -1201,7 +1291,9 @@ components = {
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
 			title.Text = '         '..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
-				arrow.Rotation = 90
+				tween:Tween(arrow, uipallet.TweenSmooth, {
+					Rotation = 90
+				})
 				dropdownchildren:Destroy()
 				dropdownchildren = nil
 				dropdown.Size = UDim2.new(1, 0, 0, 40)
@@ -1211,7 +1303,9 @@ components = {
 
 		button.MouseButton1Click:Connect(function()
 			if not dropdownchildren then
-				arrow.Rotation = 270
+				tween:Tween(arrow, uipallet.TweenSmooth, {
+					Rotation = 270
+				})
 				dropdown.Size = UDim2.new(1, 0, 0, 40 + (#optionsettings.List - 1) * 26)
 				dropdownchildren = Instance.new('Frame')
 				dropdownchildren.Name = 'Children'
@@ -1237,12 +1331,15 @@ components = {
 					dropdownoption.FontFace = uipallet.Font
 					dropdownoption.Parent = dropdownchildren
 					dropdownoption.MouseEnter:Connect(function()
-						tween:Tween(dropdownoption, uipallet.Tween, {
+						tween:Tween(dropdownoption, uipallet.TweenSmooth, {
 							BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+						})
+						tween:Tween(title, uipallet.TweenSmooth, {
+							TextColor3 = uipallet.Text
 						})
 					end)
 					dropdownoption.MouseLeave:Connect(function()
-						tween:Tween(dropdownoption, uipallet.Tween, {
+						tween:Tween(dropdownoption, uipallet.TweenSmooth, {
 							BackgroundColor3 = uipallet.Main
 						})
 					end)
@@ -1256,14 +1353,50 @@ components = {
 			end
 		end)
 		dropdown.MouseEnter:Connect(function()
-			tween:Tween(bkg, uipallet.Tween, {
+			hovered = true
+			tween:Tween(bkg, uipallet.TweenSmooth, {
 				BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
+			})
+			tween:Tween(title, uipallet.TweenSmooth, {
+				TextColor3 = uipallet.Text
+			})
+			tween:Tween(arrow, uipallet.TweenSmooth, {
+				ImageColor3 = uipallet.Text
 			})
 		end)
 		dropdown.MouseLeave:Connect(function()
-			tween:Tween(bkg, uipallet.Tween, {
+			hovered = false
+			tween:Tween(bkg, uipallet.TweenSmooth, {
 				BackgroundColor3 = color.Light(uipallet.Main, 0.034)
 			})
+			tween:Tween(title, uipallet.TweenSmooth, {
+				TextColor3 = color.Dark(uipallet.Text, 0.16)
+			})
+			tween:Tween(arrow, uipallet.TweenSmooth, {
+				ImageColor3 = Color3.fromRGB(140, 140, 140)
+			})
+			pressed = false
+		end)
+		dropdown.MouseButton1Down:Connect(function()
+			pressed = true
+			tween:Tween(bkg, uipallet.TweenFast, {
+				Size = UDim2.new(1, -24, 1, -11),
+				Position = UDim2.fromOffset(12, 5)
+			})
+		end)
+		dropdown.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and pressed then
+				pressed = false
+				tween:Tween(bkg, uipallet.TweenBounce, {
+					Size = UDim2.new(1, -20, 1, -9),
+					Position = UDim2.fromOffset(10, 4)
+				})
+				if hovered then
+					tween:Tween(bkg, uipallet.TweenSmooth, {
+						BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
+					})
+				end
+			end
 		end)
 
 		optionapi.Object = dropdown
@@ -1346,7 +1479,7 @@ components = {
 		slider.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		slider.Text = ''
 		slider.Parent = children
-		addTooltip(slider, optionsettings.Tooltip)
+		addTooltip(slider, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'Slider'))
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
 		title.Size = UDim2.fromOffset(60, 30)
@@ -1413,6 +1546,8 @@ components = {
 		addCorner(knob, UDim.new(1, 0))
 		optionsettings.Function = optionsettings.Function or function() end
 		optionsettings.Decimal = optionsettings.Decimal or 1
+		local hovered = false
+		local pressed = false
 
 		function optionapi:Save(tab)
 			tab[optionsettings.Name] = {
@@ -1437,7 +1572,7 @@ components = {
 			if tonumber(value) == math.huge or value ~= value then return end
 			local check = self.Value ~= value
 			self.Value = value
-			tween:Tween(fill, uipallet.Tween, {
+			tween:Tween(fill, uipallet.TweenSmooth, {
 				Size = UDim2.fromScale(math.clamp(pos or math.clamp(value / optionsettings.Max, 0, 1), 0.04, 0.96), 1)
 			})
 			valuebutton.Text = self.Value..(optionsettings.Suffix and ' '..(type(optionsettings.Suffix) == 'function' and optionsettings.Suffix(self.Value) or optionsettings.Suffix) or '')
@@ -1481,14 +1616,49 @@ components = {
 			end
 		end)
 		slider.MouseEnter:Connect(function()
-			tween:Tween(knob, uipallet.Tween, {
+			hovered = true
+			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(16, 16)
+			})
+			tween:Tween(title, uipallet.TweenSmooth, {
+				TextColor3 = uipallet.Text
+			})
+			tween:Tween(valuebutton, uipallet.TweenSmooth, {
+				TextColor3 = uipallet.Text
+			})
+			tween:Tween(bkg, uipallet.TweenSmooth, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.08)
 			})
 		end)
 		slider.MouseLeave:Connect(function()
-			tween:Tween(knob, uipallet.Tween, {
+			hovered = false
+			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(14, 14)
 			})
+			tween:Tween(title, uipallet.TweenSmooth, {
+				TextColor3 = color.Dark(uipallet.Text, 0.16)
+			})
+			tween:Tween(valuebutton, uipallet.TweenSmooth, {
+				TextColor3 = color.Dark(uipallet.Text, 0.16)
+			})
+			tween:Tween(bkg, uipallet.TweenSmooth, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.034)
+			})
+			pressed = false
+		end)
+		slider.MouseButton1Down:Connect(function()
+			pressed = true
+			tween:Tween(knob, uipallet.TweenClick, {
+				Size = UDim2.fromOffset(13, 13)
+			})
+		end)
+		slider.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and pressed then
+				pressed = false
+				tween:Tween(knob, uipallet.TweenBounce, {
+					Size = UDim2.fromOffset(hovered and 16 or 14, hovered and 16 or 14)
+				})
+			end
 		end)
 		valuebutton.MouseButton1Click:Connect(function()
 			valuebutton.Visible = false
@@ -1525,7 +1695,7 @@ components = {
 		textlist.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		textlist.Text = ''
 		textlist.Parent = children
-		addTooltip(textlist, optionsettings.Tooltip)
+		addTooltip(textlist, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'Targets'))
 		local bkg = Instance.new('Frame')
 		bkg.Name = 'BKG'
 		bkg.Size = UDim2.new(1, -20, 1, -9)
@@ -1758,7 +1928,7 @@ components = {
 		targetbutton.Text = ''
 		targetbutton.Parent = children
 		addCorner(targetbutton)
-		addTooltip(targetbutton, optionsettings.Tooltip)
+		addTooltip(targetbutton, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'TargetsButton'))
 		local bkg = Instance.new('Frame')
 		bkg.Size = UDim2.new(1, -2, 1, -2)
 		bkg.Position = UDim2.fromOffset(1, 1)
@@ -1843,7 +2013,7 @@ components = {
 		textbox.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		textbox.Text = ''
 		textbox.Parent = children
-		addTooltip(textbox, optionsettings.Tooltip)
+		addTooltip(textbox, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'TextBox'))
 		local title = Instance.new('TextLabel')
 		title.Size = UDim2.new(1, -10, 0, 20)
 		title.Position = UDim2.fromOffset(10, 3)
@@ -1929,7 +2099,7 @@ components = {
 		textlist.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		textlist.Text = ''
 		textlist.Parent = children
-		addTooltip(textlist, optionsettings.Tooltip)
+		addTooltip(textlist, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'TextList'))
 		local bkg = Instance.new('Frame')
 		bkg.Name = 'BKG'
 		bkg.Size = UDim2.new(1, -20, 1, -9)
@@ -2285,7 +2455,7 @@ components = {
 		toggle.TextSize = 14
 		toggle.FontFace = uipallet.Font
 		toggle.Parent = children
-		addTooltip(toggle, optionsettings.Tooltip)
+		addTooltip(toggle, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'Toggle'))
 		local knobholder = Instance.new('Frame')
 		knobholder.Name = 'Knob'
 		knobholder.Size = UDim2.fromOffset(22, 12)
@@ -2299,6 +2469,7 @@ components = {
 		knob.BackgroundColor3 = uipallet.Main
 		knob.Parent = knobholder
 		local hovered = false
+		local pressed = false
 		optionsettings.Function = optionsettings.Function or function() end
 
 		function optionapi:Save(tab)
@@ -2321,11 +2492,14 @@ components = {
 		function optionapi:Toggle()
 			self.Enabled = not self.Enabled
 			local rainbowcheck = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
-			tween:Tween(knobholder, uipallet.Tween, {
+			tween:Tween(knobholder, uipallet.TweenSmooth, {
 				BackgroundColor3 = self.Enabled and (rainbowcheck and Color3.fromHSV(mainapi:Color((mainapi.GUIColor.Hue - (self.Index * 0.075)) % 1)) or Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)) or (hovered and color.Light(uipallet.Main, 0.37) or color.Light(uipallet.Main, 0.14))
 			})
-			tween:Tween(knob, uipallet.Tween, {
+			tween:Tween(knob, uipallet.TweenBounce, {
 				Position = UDim2.fromOffset(self.Enabled and 12 or 2, 2)
+			})
+			tween:Tween(toggle, uipallet.TweenSmooth, {
+				TextColor3 = self.Enabled and uipallet.Text or (hovered and uipallet.Text or color.Dark(uipallet.Text, 0.16))
 			})
 			optionsettings.Function(self.Enabled)
 		end
@@ -2337,16 +2511,47 @@ components = {
 		toggle.MouseEnter:Connect(function()
 			hovered = true
 			if not optionapi.Enabled then
-				tween:Tween(knobholder, uipallet.Tween, {
+				tween:Tween(knobholder, uipallet.TweenSmooth, {
 					BackgroundColor3 = color.Light(uipallet.Main, 0.37)
 				})
 			end
+			tween:Tween(toggle, uipallet.TweenSmooth, {
+				TextColor3 = uipallet.Text
+			})
+			tween:Tween(knob, uipallet.TweenSmooth, {
+				Size = UDim2.fromOffset(10, 10),
+				Position = UDim2.fromOffset(optionapi.Enabled and 11 or 1, 1)
+			})
 		end)
 		toggle.MouseLeave:Connect(function()
 			hovered = false
 			if not optionapi.Enabled then
-				tween:Tween(knobholder, uipallet.Tween, {
+				tween:Tween(knobholder, uipallet.TweenSmooth, {
 					BackgroundColor3 = color.Light(uipallet.Main, 0.14)
+				})
+			end
+			tween:Tween(toggle, uipallet.TweenSmooth, {
+				TextColor3 = optionapi.Enabled and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+			})
+			tween:Tween(knob, uipallet.TweenSmooth, {
+				Size = UDim2.fromOffset(8, 8),
+				Position = UDim2.fromOffset(optionapi.Enabled and 12 or 2, 2)
+			})
+			pressed = false
+		end)
+		toggle.MouseButton1Down:Connect(function()
+			pressed = true
+			tween:Tween(knob, uipallet.TweenClick, {
+				Size = UDim2.fromOffset(7, 7),
+				Position = UDim2.fromOffset(optionapi.Enabled and 13 or 3, 3)
+			})
+		end)
+		toggle.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and pressed then
+				pressed = false
+				tween:Tween(knob, uipallet.TweenBounce, {
+					Size = UDim2.fromOffset(hovered and 10 or 8, hovered and 10 or 8),
+					Position = UDim2.fromOffset(optionapi.Enabled and (hovered and 11 or 12) or (hovered and 1 or 2), hovered and 1 or 2)
 				})
 			end
 		end)
@@ -2381,7 +2586,7 @@ components = {
 		slider.Visible = optionsettings.Visible == nil or optionsettings.Visible
 		slider.Text = ''
 		slider.Parent = children
-		addTooltip(slider, optionsettings.Tooltip)
+		addTooltip(slider, resolveTooltipText(optionsettings.Name, optionsettings.Tooltip, 'TwoSlider'))
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
 		title.Size = UDim2.fromOffset(60, 30)
@@ -2500,29 +2705,30 @@ components = {
 			valuebutton.Text = self.ValueMax
 			valuebutton2.Text = self.ValueMin
 			local size = math.clamp(math.clamp(self.ValueMin / optionsettings.Max, 0, 1), 0.04, 0.96)
-			tween:Tween(fill, TweenInfo.new(0.1), {
+			tween:Tween(fill, uipallet.TweenSmooth, {
 				Position = UDim2.fromScale(size, 0),
 				Size = UDim2.fromScale(math.clamp(math.clamp(math.clamp(self.ValueMax / optionsettings.Max, 0.04, 0.96), 0.04, 0.96) - size, 0, 1), 1)
 			})
+			optionsettings.Function(self.ValueMin, self.ValueMax)
 		end
 
 		knobholder.MouseEnter:Connect(function()
-			tween:Tween(knob, uipallet.Tween, {
+			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(11, 18)
 			})
 		end)
 		knobholder.MouseLeave:Connect(function()
-			tween:Tween(knob, uipallet.Tween, {
+			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(9, 16)
 			})
 		end)
 		knobholdermax.MouseEnter:Connect(function()
-			tween:Tween(knobholdermax.Knob, uipallet.Tween, {
+			tween:Tween(knobholdermax.Knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(11, 18)
 			})
 		end)
 		knobholdermax.MouseLeave:Connect(function()
-			tween:Tween(knobholdermax.Knob, uipallet.Tween, {
+			tween:Tween(knobholdermax.Knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(9, 16)
 			})
 		end)
@@ -3045,6 +3251,7 @@ function mainapi:CreateGUI()
 			toggle.TextSize = 14
 			toggle.FontFace = uipallet.Font
 			toggle.Parent = childrentoggle
+			addTooltip(toggle, resolveTooltipText(togglesettings.Name, togglesettings.Tooltip, 'Toggle'))
 			local icon = Instance.new('ImageLabel')
 			icon.Name = 'Icon'
 			icon.Size = togglesettings.Size
@@ -3069,36 +3276,71 @@ function mainapi:CreateGUI()
 
 			function toggleapi:Toggle()
 				self.Enabled = not self.Enabled
-				tween:Tween(knob, uipallet.Tween, {
+				tween:Tween(knob, uipallet.TweenSmooth, {
 					BackgroundColor3 = self.Enabled and Color3.fromHSV(
 						mainapi.GUIColor.Hue,
 						mainapi.GUIColor.Sat,
 						mainapi.GUIColor.Value
 					) or (hovered and color.Light(uipallet.Main, 0.37) or color.Light(uipallet.Main, 0.14))
 				})
-				tween:Tween(knobmain, uipallet.Tween, {
+				tween:Tween(knobmain, uipallet.TweenBounce, {
 					Position = UDim2.fromOffset(self.Enabled and 12 or 2, 2)
+				})
+				tween:Tween(toggle, uipallet.TweenSmooth, {
+					TextColor3 = self.Enabled and uipallet.Text or (hovered and uipallet.Text or color.Dark(uipallet.Text, 0.16))
 				})
 				togglesettings.Function(self.Enabled)
 			end
 
 			local hovered = false
+			local pressed = false
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
 				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
 				if not toggleapi.Enabled then
-					tween:Tween(knob, uipallet.Tween, {
+					tween:Tween(knob, uipallet.TweenSmooth, {
 						BackgroundColor3 = color.Light(uipallet.Main, 0.37)
 					})
 				end
+				tween:Tween(toggle, uipallet.TweenSmooth, {
+					TextColor3 = uipallet.Text
+				})
+				tween:Tween(knobmain, uipallet.TweenSmooth, {
+					Size = UDim2.fromOffset(10, 10),
+					Position = UDim2.fromOffset(toggleapi.Enabled and 11 or 1, 1)
+				})
 			end)
 			toggle.MouseLeave:Connect(function()
 				hovered = false
 				if not toggleapi.Enabled then
-					tween:Tween(knob, uipallet.Tween, {
+					tween:Tween(knob, uipallet.TweenSmooth, {
 						BackgroundColor3 = color.Light(uipallet.Main, 0.14)
+					})
+				end
+				tween:Tween(toggle, uipallet.TweenSmooth, {
+					TextColor3 = toggleapi.Enabled and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+				})
+				tween:Tween(knobmain, uipallet.TweenSmooth, {
+					Size = UDim2.fromOffset(8, 8),
+					Position = UDim2.fromOffset(toggleapi.Enabled and 12 or 2, 2)
+				})
+				pressed = false
+			end)
+			toggle.MouseButton1Down:Connect(function()
+				pressed = true
+				tween:Tween(knobmain, uipallet.TweenClick, {
+					Size = UDim2.fromOffset(7, 7),
+					Position = UDim2.fromOffset(toggleapi.Enabled and 13 or 3, 3)
+				})
+			end)
+			toggle.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 and pressed then
+					pressed = false
+					tween:Tween(knobmain, uipallet.TweenBounce, {
+						Size = UDim2.fromOffset(hovered and 10 or 8, hovered and 10 or 8),
+						Position = UDim2.fromOffset(toggleapi.Enabled and (hovered and 11 or 12) or (hovered and 1 or 2), hovered and 1 or 2)
 					})
 				end
 			end)
@@ -3881,6 +4123,9 @@ function mainapi:CreateCategory(categorysettings)
 			Bind = {},
 			Index = getTableSize(mainapi.Modules),
 			ExtraText = modulesettings.ExtraText,
+			Favorited = false,
+			FavoriteOrder = 0,
+			Hidden = modulesettings.Visible == false or modulesettings.Hidden == true,
 			Name = modulesettings.Name,
 			Category = categorysettings.Name
 		}
@@ -3891,6 +4136,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = uipallet.Main
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
+		modulebutton.Visible = not moduleapi.Hidden
 		modulebutton.Text = '            '..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
@@ -3903,8 +4149,20 @@ function mainapi:CreateCategory(categorysettings)
 		gradient.Parent = modulebutton
 		local modulechildren = Instance.new('Frame')
 		local bind = Instance.new('TextButton')
-		addTooltip(modulebutton, modulesettings.Tooltip)
+		local favorite = Instance.new('ImageButton')
+		addTooltip(modulebutton, resolveTooltipText(modulesettings.Name, modulesettings.Tooltip, 'Module'))
 		addTooltip(bind, 'Click to bind')
+		addTooltip(favorite, 'Pin this module to the top of the tab')
+		favorite.Name = 'Favorite'
+		favorite.Size = UDim2.fromOffset(16, 16)
+		favorite.Position = UDim2.fromOffset(11, 12)
+		favorite.BackgroundTransparency = 1
+		favorite.AutoButtonColor = false
+		favorite.Image = getcustomasset('pealzware/assets/new/pin.png')
+		favorite.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		favorite.ImageTransparency = 0.15
+		favorite.Visible = false
+		favorite.Parent = modulebutton
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
 		bind.Position = UDim2.new(1, -36, 0, 9)
@@ -3990,6 +4248,28 @@ function mainapi:CreateCategory(categorysettings)
 		divider.Parent = modulebutton
 		modulesettings.Function = modulesettings.Function or function() end
 		addMaid(moduleapi)
+		local hovered = false
+		local pressed = false
+		local favoriteHovered = false
+
+		local function updateFavoriteVisual(instant)
+			local targetColor = moduleapi.Favorited and uipallet.Text or ((favoriteHovered or hovered) and uipallet.Text or color.Dark(uipallet.Text, 0.43))
+			local targetTransparency = moduleapi.Favorited and 0 or (favoriteHovered and 0 or 0.15)
+			local targetSize = UDim2.fromOffset(favoriteHovered and 17 or 16, favoriteHovered and 17 or 16)
+			if instant then
+				favorite.ImageColor3 = targetColor
+				favorite.ImageTransparency = targetTransparency
+				favorite.Size = targetSize
+				return
+			end
+			tween:Tween(favorite, uipallet.TweenSmooth, {
+				ImageColor3 = targetColor,
+				ImageTransparency = targetTransparency
+			})
+			tween:Tween(favorite, favoriteHovered and uipallet.TweenBounce or uipallet.TweenSmooth, {
+				Size = targetSize
+			})
+		end
 
 		function moduleapi:SetBind(tab, mouse)
 			if tab.Mobile then
@@ -4019,6 +4299,31 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end
 
+		function moduleapi:SetFavorite(state, order, skipSave)
+			local nextState = state
+			if nextState == nil then
+				nextState = not self.Favorited
+			end
+			if nextState then
+				if order == nil then
+					mainapi.ModuleFavoriteCounter += 1
+					order = mainapi.ModuleFavoriteCounter
+				else
+					mainapi.ModuleFavoriteCounter = math.max(mainapi.ModuleFavoriteCounter, order)
+				end
+			else
+				order = 0
+			end
+			self.Favorited = nextState
+			self.FavoriteOrder = order
+			favorite.Visible = hovered or favoriteHovered or self.Favorited
+			updateFavoriteVisual()
+			mainapi:UpdateModuleSorting(self.Category)
+			if not skipSave and mainapi.Loaded then
+				mainapi:Save()
+			end
+		end
+
 		function moduleapi:Toggle(multiple)
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
@@ -4026,9 +4331,16 @@ function mainapi:CreateCategory(categorysettings)
 			self.Enabled = not self.Enabled
 			divider.Visible = self.Enabled
 			gradient.Enabled = self.Enabled
-			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
-			modulebutton.BackgroundColor3 = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
-			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
+			local targetTextColor = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+			local targetBkgColor = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
+			local targetDotsColor = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
+			tween:Tween(modulebutton, uipallet.TweenSmooth, {
+				TextColor3 = targetTextColor,
+				BackgroundColor3 = targetBkgColor
+			})
+			tween:Tween(dots, uipallet.TweenSmooth, {
+				ImageColor3 = targetDotsColor
+			})
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			if not self.Enabled then
@@ -4073,6 +4385,30 @@ function mainapi:CreateCategory(categorysettings)
 			bindcover.Visible = true
 			mainapi.Binding = moduleapi
 		end)
+		favorite.MouseEnter:Connect(function()
+			favoriteHovered = true
+			updateFavoriteVisual()
+		end)
+		favorite.MouseLeave:Connect(function()
+			favoriteHovered = false
+			updateFavoriteVisual()
+			favorite.Visible = hovered or moduleapi.Favorited
+		end)
+		favorite.MouseButton1Down:Connect(function()
+			tween:Tween(favorite, uipallet.TweenClick, {
+				Size = UDim2.fromOffset(14, 14)
+			})
+		end)
+		favorite.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				tween:Tween(favorite, uipallet.TweenBounce, {
+					Size = UDim2.fromOffset(favoriteHovered and 17 or 16, favoriteHovered and 17 or 16)
+				})
+			end
+		end)
+		favorite.MouseButton1Click:Connect(function()
+			moduleapi:SetFavorite()
+		end)
 		dotsbutton.MouseEnter:Connect(function()
 			if not moduleapi.Enabled then
 				dots.ImageColor3 = uipallet.Text
@@ -4089,22 +4425,50 @@ function mainapi:CreateCategory(categorysettings)
 		dotsbutton.MouseButton2Click:Connect(function()
 			modulechildren.Visible = not modulechildren.Visible
 		end)
-		local hovered = false
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
 			if not moduleapi.Enabled and not modulechildren.Visible then
-				modulebutton.TextColor3 = uipallet.Text
-				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				tween:Tween(modulebutton, uipallet.TweenSmooth, {
+					TextColor3 = uipallet.Text,
+					BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+				})
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			favorite.Visible = true
+			updateFavoriteVisual()
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
 			if not moduleapi.Enabled and not modulechildren.Visible then
-				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
-				modulebutton.BackgroundColor3 = uipallet.Main
+				tween:Tween(modulebutton, uipallet.TweenSmooth, {
+					TextColor3 = color.Dark(uipallet.Text, 0.16),
+					BackgroundColor3 = uipallet.Main
+				})
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			favorite.Visible = favoriteHovered or moduleapi.Favorited
+			updateFavoriteVisual()
+			if pressed then
+				pressed = false
+				tween:Tween(modulebutton, uipallet.TweenBounce, {
+					Size = UDim2.fromOffset(220, 40)
+				})
+			end
+		end)
+		modulebutton.MouseButton1Down:Connect(function()
+			pressed = true
+			tween:Tween(modulebutton, uipallet.TweenFast, {
+				Size = UDim2.fromOffset(216, 38),
+				BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+			})
+		end)
+		modulebutton.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and pressed then
+				pressed = false
+				tween:Tween(modulebutton, uipallet.TweenBounce, {
+					Size = UDim2.fromOffset(220, 40)
+				})
+			end
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			moduleapi:Toggle()
@@ -4164,21 +4528,8 @@ function mainapi:CreateCategory(categorysettings)
 
 		moduleapi.Object = modulebutton
 		mainapi.Modules[modulesettings.Name] = moduleapi
-
-		local sorting = {}
-		for _, v in mainapi.Modules do
-			sorting[v.Category] = sorting[v.Category] or {}
-			table.insert(sorting[v.Category], v.Name)
-		end
-
-		for _, sort in sorting do
-			table.sort(sort)
-			for i, v in sort do
-				mainapi.Modules[v].Index = i
-				mainapi.Modules[v].Object.LayoutOrder = i
-				mainapi.Modules[v].Children.LayoutOrder = i
-			end
-		end
+		updateFavoriteVisual(true)
+		mainapi:UpdateModuleSorting(categorysettings.Name)
 
 		return moduleapi
 	end
@@ -5752,6 +6103,7 @@ function mainapi:Load(skipgui, profile)
 	end
 	local guidata = {}
 	local savecheck = true
+	self.ModuleFavoriteCounter = 0
 
 	local guiProfileFile = resolveGuiProfileFile()
 	if isfile(profilePath(guiProfileFile)) then
@@ -5823,6 +6175,8 @@ function mainapi:Load(skipgui, profile)
 			savecheck = false
 		end
 
+		self.ModuleFavoriteCounter = savedata.FavoriteCounter or 0
+
 		for i, v in savedata.Categories do
 			local object = self.Categories[i]
 			if not object then continue end
@@ -5852,7 +6206,7 @@ function mainapi:Load(skipgui, profile)
 
 		for i, v in savedata.Modules do
 			local object = self.Modules[i]
-			if not object then continue end
+			if not object or object.Hidden then continue end
 			if object.Options and v.Options then
 				task.spawn(function()
 					local suc, err = pcall(function()
@@ -5876,6 +6230,9 @@ function mainapi:Load(skipgui, profile)
 			end
 			object:SetBind(v.Bind)
 			object.Object.Bind.Visible = #v.Bind > 0
+			if v.Favorited ~= nil or v.FavoriteOrder then
+				object:SetFavorite(v.Favorited or false, v.FavoriteOrder or 0, true)
+			end
 		end
 
 		for i, v in savedata.Legit do
@@ -5943,8 +6300,8 @@ local function saveSavingError(data)
 	local errorLog = data
 	local S_Name = "SAVING"
 	local main = {}
-	if isfile('PW_Error_Log.json') then
-		local res = loadJson('PW_Error_Log.json')
+	if isfile('pealzware/PW_Error_Log.json') then
+		local res = loadJson('pealzware/PW_Error_Log.json')
 		main = res or main
 	end
 	local function toTime(timestamp)
@@ -5975,7 +6332,7 @@ local function saveSavingError(data)
 		return httpService:JSONEncode(main)
 	end)
 	if success then
-		writefile('PW_Error_Log.json', jsonResult)
+		writefile('pealzware/PW_Error_Log.json', jsonResult)
 	else
 		warn("Failed to encode JSON: " .. jsonResult)
 	end
@@ -5992,6 +6349,7 @@ function mainapi:Save(newprofile)
 		Keybind = self.Keybind,
 	}
 	local savedata = {
+		FavoriteCounter = self.ModuleFavoriteCounter,
 		Modules = {},
 		Categories = {},
 		Legit = {},
@@ -6010,11 +6368,16 @@ function mainapi:Save(newprofile)
 	end
 
 	for i, v in self.Modules do
+		if v.Hidden then
+			continue
+		end
 		savedata.Modules[i] = {
 			Enabled = v.Enabled,
 			Bind = v.Bind.Button
 					and { Mobile = true, X = v.Bind.Button.Position.X.Offset, Y = v.Bind.Button.Position.Y.Offset }
 				or v.Bind,
+			Favorited = v.Favorited,
+			FavoriteOrder = v.FavoriteOrder,
 			Options = mainapi:SaveOptions(v, true),
 		}
 	end
