@@ -4322,12 +4322,172 @@ run(function()
 	local Teammates
 	local Distance
 	local DistanceLimit
+	local Thickness
+	local UseTeamColors
+	local HeldItem
+	local DistanceLabel
 	local Reference = {}
 	local methodused
 
 	local function ESPWorldToViewport(pos)
 		local newpos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:pointToWorldSpace(gameCamera.CFrame:PointToObjectSpace(pos)))
 		return Vector2.new(newpos.X, newpos.Y)
+	end
+
+	local function getESPBaseColor()
+		return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+	end
+
+	local function getESPColor(ent)
+		return (UseTeamColors.Enabled and entitylib.getEntityColor(ent)) or getESPBaseColor()
+	end
+
+	local function getESPName(ent)
+		return ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+	end
+
+	local function formatHeldItemName(itemType)
+		if not itemType or itemType == '' then
+			return nil
+		end
+		local itemmeta = (bedwars.ItemMeta or bedwars.ItemTable or {})[itemType]
+		if itemmeta and itemmeta.displayName then
+			return itemmeta.displayName
+		end
+		return tostring(itemType):gsub('_', ' '):gsub('(%a)([%w]*)', function(first, rest)
+			return string.upper(first)..rest
+		end)
+	end
+
+	local function getESPHeldItem(ent)
+		if not (HeldItem.Enabled and ent.Player) then
+			return nil
+		end
+		local inventory = store.inventories[ent.Player]
+		local hand = inventory and inventory.hand
+		local itemName = hand and formatHeldItemName(hand.itemType)
+		return itemName and ('Holding: '..itemName) or nil
+	end
+
+	local function getESPDistanceText(ent)
+		if not (DistanceLabel.Enabled and entitylib.isAlive and entitylib.character and entitylib.character.RootPart and ent.RootPart) then
+			return nil
+		end
+		return string.format('%.0f studs', (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude)
+	end
+
+	local function getESPLabelText(ent)
+		local text = getESPName(ent)
+		local details = {}
+		local distanceText = getESPDistanceText(ent)
+		local heldItemText = getESPHeldItem(ent)
+		if distanceText then
+			table.insert(details, distanceText)
+		end
+		if heldItemText then
+			table.insert(details, heldItemText)
+		end
+		if #details > 0 then
+			text = text..' | '..table.concat(details, ' | ')
+		end
+		return text
+	end
+
+	local function updateESPText(EntityESP, ent)
+		if not EntityESP.Text then
+			return
+		end
+		local labelText = getESPLabelText(ent)
+		EntityESP.Text.Text = labelText
+		EntityESP.Drop.Text = labelText
+		EntityESP.Text.Color = getESPColor(ent)
+	end
+
+	local function updateESPTextPosition(EntityESP, position)
+		if not EntityESP.Text then
+			return
+		end
+		EntityESP.Text.Position = position // 1
+		EntityESP.Drop.Position = (position + Vector2.new(1, 1)) // 1
+		if EntityESP.TextBKG then
+			EntityESP.TextBKG.Size = EntityESP.Text.TextBounds + Vector2.new(8, 4)
+			EntityESP.TextBKG.Position = (position - Vector2.new(4 + (EntityESP.Text.TextBounds.X / 2), 0)) // 1
+		end
+	end
+
+	local function setESPTextVisible(EntityESP, visible)
+		if EntityESP.Text then
+			EntityESP.Text.Visible = visible
+			EntityESP.Drop.Visible = visible
+		end
+		if EntityESP.TextBKG then
+			EntityESP.TextBKG.Visible = visible
+		end
+	end
+
+	local function createESPText(EntityESP, ent)
+		if not Name.Enabled then
+			return
+		end
+		if Background.Enabled then
+			EntityESP.TextBKG = Drawing.new('Square')
+			EntityESP.TextBKG.Transparency = 0.35
+			EntityESP.TextBKG.ZIndex = 0
+			EntityESP.TextBKG.Thickness = 1
+			EntityESP.TextBKG.Filled = true
+			EntityESP.TextBKG.Color = Color3.new()
+		end
+		EntityESP.Drop = Drawing.new('Text')
+		EntityESP.Drop.Color = Color3.new()
+		EntityESP.Drop.ZIndex = 1
+		EntityESP.Drop.Center = true
+		EntityESP.Drop.Size = 18
+		EntityESP.Text = Drawing.new('Text')
+		EntityESP.Text.ZIndex = 2
+		EntityESP.Text.Center = true
+		EntityESP.Text.Size = 18
+		updateESPText(EntityESP, ent)
+	end
+
+	local function applyESPThickness(EntityESP)
+		local thickness = Thickness.Value
+		for key, obj in EntityESP do
+			pcall(function()
+				if key == 'HealthBorder' then
+					obj.Thickness = math.max(3, thickness + 2)
+				elseif key ~= 'Text' and key ~= 'Drop' and key ~= 'TextBKG' then
+					obj.Thickness = thickness
+				end
+			end)
+		end
+	end
+
+	local function updateESPColor(EntityESP, ent)
+		local color = getESPColor(ent)
+		if EntityESP.Main then
+			EntityESP.Main.Color = color
+		end
+		for key, obj in EntityESP do
+			if key ~= 'Border' and key ~= 'Border2' and key ~= 'HealthBorder' and key ~= 'HealthLine' and key ~= 'Drop' and key ~= 'Text' and key ~= 'TextBKG' and key ~= 'Main' then
+				pcall(function()
+					obj.Color = color
+				end)
+			end
+		end
+		if EntityESP.Text then
+			EntityESP.Text.Color = color
+		end
+		if EntityESP.HealthLine then
+			EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
+		end
+	end
+
+	local function setESPVisible(EntityESP, visible)
+		for _, obj in EntityESP do
+			pcall(function()
+				obj.Visible = visible
+			end)
+		end
 	end
 
 	local ESPAdded = {
@@ -4343,8 +4503,8 @@ run(function()
 			EntityESP.Main.Transparency = BoundingBox.Enabled and 1 or 0
 			EntityESP.Main.ZIndex = 2
 			EntityESP.Main.Filled = false
-			EntityESP.Main.Thickness = 1
-			EntityESP.Main.Color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+			EntityESP.Main.Thickness = Thickness.Value
+			EntityESP.Main.Color = getESPColor(ent)
 
 			if BoundingBox.Enabled then
 				EntityESP.Border = Drawing.new('Square')
@@ -4363,38 +4523,18 @@ run(function()
 
 			if HealthBar.Enabled then
 				EntityESP.HealthLine = Drawing.new('Line')
-				EntityESP.HealthLine.Thickness = 1
+				EntityESP.HealthLine.Thickness = Thickness.Value
 				EntityESP.HealthLine.ZIndex = 2
 				EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 				EntityESP.HealthBorder = Drawing.new('Line')
-				EntityESP.HealthBorder.Thickness = 3
+				EntityESP.HealthBorder.Thickness = math.max(3, Thickness.Value + 2)
 				EntityESP.HealthBorder.Transparency = 0.35
 				EntityESP.HealthBorder.ZIndex = 1
 				EntityESP.HealthBorder.Color = Color3.new()
 			end
 
-			if Name.Enabled then
-				if Background.Enabled then
-					EntityESP.TextBKG = Drawing.new('Square')
-					EntityESP.TextBKG.Transparency = 0.35
-					EntityESP.TextBKG.ZIndex = 0
-					EntityESP.TextBKG.Thickness = 1
-					EntityESP.TextBKG.Filled = true
-					EntityESP.TextBKG.Color = Color3.new()
-				end
-				EntityESP.Drop = Drawing.new('Text')
-				EntityESP.Drop.Color = Color3.new()
-				EntityESP.Drop.Text = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-				EntityESP.Drop.ZIndex = 1
-				EntityESP.Drop.Center = true
-				EntityESP.Drop.Size = 20
-				EntityESP.Text = Drawing.new('Text')
-				EntityESP.Text.Text = EntityESP.Drop.Text
-				EntityESP.Text.ZIndex = 2
-				EntityESP.Text.Color = EntityESP.Main.Color
-				EntityESP.Text.Center = true
-				EntityESP.Text.Size = 20
-			end
+			createESPText(EntityESP, ent)
+			applyESPThickness(EntityESP)
 			Reference[ent] = EntityESP
 		end,
 		Drawing3D = function(ent)
@@ -4418,11 +4558,11 @@ run(function()
 			EntityESP.Line11 = Drawing.new('Line')
 			EntityESP.Line12 = Drawing.new('Line')
 
-			local color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			for _, v in EntityESP do
-				v.Thickness = 1
-				v.Color = color
+				v.Color = getESPColor(ent)
 			end
+			createESPText(EntityESP, ent)
+			applyESPThickness(EntityESP)
 
 			Reference[ent] = EntityESP
 		end,
@@ -4444,11 +4584,11 @@ run(function()
 			EntityESP.LeftLeg = Drawing.new('Line')
 			EntityESP.RightLeg = Drawing.new('Line')
 
-			local color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			for _, v in EntityESP do
-				v.Thickness = 2
-				v.Color = color
+				v.Color = getESPColor(ent)
 			end
+			createESPText(EntityESP, ent)
+			applyESPThickness(EntityESP)
 
 			Reference[ent] = EntityESP
 		end
@@ -4481,36 +4621,24 @@ run(function()
 				if vape.ThreadFix then
 					setthreadidentity(8)
 				end
-
-				if EntityESP.HealthLine then
-					EntityESP.HealthLine.Color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-				end
-
-				if EntityESP.Text then
-					EntityESP.Text.Text = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-					EntityESP.Drop.Text = EntityESP.Text.Text
-				end
+				updateESPColor(EntityESP, ent)
+				updateESPText(EntityESP, ent)
+				applyESPThickness(EntityESP)
 			end
 		end
 	}
+	ESPUpdated.Drawing3D = ESPUpdated.Drawing2D
+	ESPUpdated.DrawingSkeleton = ESPUpdated.Drawing2D
 
 	local ColorFunc = {
 		Drawing2D = function(hue, sat, val)
-			local color = Color3.fromHSV(hue, sat, val)
 			for i, v in Reference do
-				v.Main.Color = entitylib.getEntityColor(i) or color
-				if v.Text then
-					v.Text.Color = v.Main.Color
-				end
+				updateESPColor(v, i)
 			end
 		end,
 		Drawing3D = function(hue, sat, val)
-			local color = Color3.fromHSV(hue, sat, val)
 			for i, v in Reference do
-				local playercolor = entitylib.getEntityColor(i) or color
-				for _, v2 in v do
-					v2.Color = playercolor
-				end
+				updateESPColor(v, i)
 			end
 		end
 	}
@@ -4522,23 +4650,20 @@ run(function()
 				if Distance.Enabled then
 					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
+						setESPVisible(EntityESP, false)
 						continue
 					end
 				end
 
 				local rootPos, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
+				setESPVisible(EntityESP, rootVis)
 				if not rootVis then continue end
 
 				local topPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(2, ent.HipHeight, 0)).p)
 				local bottomPos = gameCamera:WorldToViewportPoint((CFrame.lookAlong(ent.RootPart.Position, gameCamera.CFrame.LookVector) * CFrame.new(-2, -ent.HipHeight - 1, 0)).p)
 				local sizex, sizey = topPos.X - bottomPos.X, topPos.Y - bottomPos.Y
 				local posx, posy = (rootPos.X - sizex / 2),  ((rootPos.Y - sizey / 2))
+				updateESPColor(EntityESP, ent)
 				EntityESP.Main.Position = Vector2.new(posx, posy) // 1
 				EntityESP.Main.Size = Vector2.new(sizex, sizey) // 1
 				if EntityESP.Border then
@@ -4558,12 +4683,8 @@ run(function()
 				end
 
 				if EntityESP.Text then
-					EntityESP.Text.Position = Vector2.new(posx + (sizex / 2), posy + (sizey - 28)) // 1
-					EntityESP.Drop.Position = EntityESP.Text.Position + Vector2.new(1, 1)
-					if EntityESP.TextBKG then
-						EntityESP.TextBKG.Size = EntityESP.Text.TextBounds + Vector2.new(8, 4)
-						EntityESP.TextBKG.Position = EntityESP.Text.Position - Vector2.new(4 + (EntityESP.Text.TextBounds.X / 2), 0)
-					end
+					updateESPText(EntityESP, ent)
+					updateESPTextPosition(EntityESP, Vector2.new(posx + (sizex / 2), posy - 18))
 				end
 			end
 		end,
@@ -4572,19 +4693,16 @@ run(function()
 				if Distance.Enabled then
 					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
+						setESPVisible(EntityESP, false)
 						continue
 					end
 				end
 
 				local _, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
+				setESPVisible(EntityESP, rootVis)
 				if not rootVis then continue end
 
+				updateESPColor(EntityESP, ent)
 				local point1 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, 1.5))
 				local point2 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, -ent.HipHeight, 1.5))
 				local point3 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, 1.5))
@@ -4617,6 +4735,14 @@ run(function()
 				EntityESP.Line11.To = point8
 				EntityESP.Line12.From = point8
 				EntityESP.Line12.To = point4
+				if EntityESP.Text then
+					updateESPText(EntityESP, ent)
+					local headPos, headVisible = gameCamera:WorldToViewportPoint((ent.Head and ent.Head.Position or ent.RootPart.Position) + Vector3.new(0, 1.4, 0))
+					setESPTextVisible(EntityESP, headVisible)
+					if headVisible then
+						updateESPTextPosition(EntityESP, Vector2.new(headPos.X, headPos.Y))
+					end
+				end
 			end
 		end,
 		DrawingSkeleton = function()
@@ -4624,21 +4750,18 @@ run(function()
 				if Distance.Enabled then
 					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
+						setESPVisible(EntityESP, false)
 						continue
 					end
 				end
 
 				local _, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
+				setESPVisible(EntityESP, rootVis)
 				if not rootVis then continue end
 
 				local rigcheck = ent.Humanoid.RigType == Enum.HumanoidRigType.R6
 				pcall(function()
+					updateESPColor(EntityESP, ent)
 					local offset = rigcheck and CFrame.new(0, -0.8, 0) or CFrame.identity
 					local head = ESPWorldToViewport((ent.Head.CFrame).p)
 					local headfront = ESPWorldToViewport((ent.Head.CFrame * CFrame.new(0, 0, -0.5)).p)
@@ -4670,6 +4793,10 @@ run(function()
 					EntityESP.LeftLeg.To = leftleg
 					EntityESP.RightLeg.From = bottomrighttorso
 					EntityESP.RightLeg.To = rightleg
+					if EntityESP.Text then
+						updateESPText(EntityESP, ent)
+						updateESPTextPosition(EntityESP, Vector2.new(head.X, head.Y - 12))
+					end
 				end)
 			end
 		end
@@ -4741,9 +4868,10 @@ run(function()
 			BoundingBox.Object.Visible = (val == '2D')
 			Filled.Object.Visible = (val == '2D')
 			HealthBar.Object.Visible = (val == '2D')
-			Name.Object.Visible = (val == '2D')
-			DisplayName.Object.Visible = Name.Object.Visible and Name.Enabled
-			Background.Object.Visible = Name.Object.Visible and Name.Enabled
+			DisplayName.Object.Visible = Name.Enabled
+			Background.Object.Visible = Name.Enabled
+			HeldItem.Object.Visible = Name.Enabled
+			DistanceLabel.Object.Visible = Name.Enabled
 		end,
 	})
 	Color = ESP:CreateColorSlider({
@@ -4751,6 +4879,29 @@ run(function()
 		Function = function(hue, sat, val)
 			if ESP.Enabled and ColorFunc[methodused] then
 				ColorFunc[methodused](hue, sat, val)
+			end
+		end
+	})
+	Thickness = ESP:CreateSlider({
+		Name = 'Thickness',
+		Min = 1,
+		Max = 5,
+		Default = 2,
+		Function = function()
+			if ESP.Enabled then
+				for ent, EntityESP in Reference do
+					applyESPThickness(EntityESP)
+					updateESPColor(EntityESP, ent)
+				end
+			end
+		end
+	})
+	UseTeamColors = ESP:CreateToggle({
+		Name = 'Use Team Colors',
+		Default = true,
+		Function = function()
+			if ESP.Enabled and ColorFunc[methodused] then
+				ColorFunc[methodused](Color.Hue, Color.Sat, Color.Value)
 			end
 		end
 	})
@@ -4794,6 +4945,8 @@ run(function()
 			end
 			DisplayName.Object.Visible = callback
 			Background.Object.Visible = callback
+			HeldItem.Object.Visible = callback
+			DistanceLabel.Object.Visible = callback
 		end,
 		Darker = true
 	})
@@ -4818,6 +4971,34 @@ run(function()
 		end,
 		Darker = true
 	})
+	HeldItem = ESP:CreateToggle({
+		Name = 'Held Item',
+		Function = function()
+			if ESP.Enabled then
+				ESP:Toggle()
+				ESP:Toggle()
+			end
+		end,
+		Default = true,
+		Darker = true,
+		Visible = false
+	})
+	DistanceLabel = ESP:CreateToggle({
+		Name = 'Distance Text',
+		Function = function()
+			if ESP.Enabled then
+				ESP:Toggle()
+				ESP:Toggle()
+			end
+		end,
+		Default = true,
+		Darker = true,
+		Visible = false
+	})
+	DisplayName.Object.Visible = Name.Enabled
+	Background.Object.Visible = Name.Enabled
+	HeldItem.Object.Visible = Name.Enabled
+	DistanceLabel.Object.Visible = Name.Enabled
 	Teammates = ESP:CreateToggle({
 		Name = 'Priority Only',
 		Function = function()
@@ -14970,20 +15151,53 @@ run(function()
 	local Expand
 	local objects, set = {}
 
+	local function getEntityHitboxInfo(ent)
+		local root = ent and ent.RootPart
+		local character = ent and ent.Character
+		if not (root and character) then return end
+
+		local boundsCFrame, boundsSize = root.CFrame, root.Size
+		local suc, cf, size = pcall(function()
+			return character:GetBoundingBox()
+		end)
+		if suc and cf and size then
+			boundsCFrame, boundsSize = cf, size
+		end
+
+		local expandXZ = Expand.Value / 5
+		local expandY = math.min((Expand.Value / 6), expandXZ + 2)
+		return boundsCFrame, Vector3.new(
+			math.max(boundsSize.X, root.Size.X) + expandXZ,
+			math.max(boundsSize.Y, root.Size.Y) + expandY,
+			math.max(boundsSize.Z, root.Size.Z) + expandXZ
+		), root.CFrame:ToObjectSpace(boundsCFrame)
+	end
+
+	local function syncHitbox(ent, hitbox)
+		local _, size, offset = getEntityHitboxInfo(ent)
+		local weld = hitbox and hitbox:FindFirstChildOfClass('Motor6D')
+		if not (size and offset and weld and ent.RootPart) then return end
+		hitbox.Size = size
+		hitbox.CFrame = ent.RootPart.CFrame * offset
+		weld.C1 = offset
+	end
+
 	local function createHitbox(ent)
-		if ent.Targetable and ent.Player then
+		if ent.Targetable and ent.Player and ent.RootPart and ent.Character then
 			local hitbox = Instance.new('Part')
-			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 5)
-			hitbox.Position = ent.RootPart.Position
 			hitbox.CanCollide = false
+			hitbox.CanQuery = false
+			hitbox.CanTouch = false
 			hitbox.Massless = true
 			hitbox.Transparency = 1
+			hitbox.CFrame = ent.RootPart.CFrame
 			hitbox.Parent = ent.Character
 			local weld = Instance.new('Motor6D')
 			weld.Part0 = hitbox
 			weld.Part1 = ent.RootPart
 			weld.Parent = hitbox
 			objects[ent] = hitbox
+			syncHitbox(ent, hitbox)
 		end
 	end
 
@@ -15037,16 +15251,16 @@ run(function()
 		Default = 14.4,
 		Decimal = 10,
 		Function = function(val)
-			if HitBoxes.Enabled then
-				if Mode.Value == 'Sword' then
-					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
-				else
-					for _, part in objects do
-						part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 5)
+				if HitBoxes.Enabled then
+					if Mode.Value == 'Sword' then
+						debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
+					else
+						for ent, part in objects do
+							syncHitbox(ent, part)
+						end
 					end
 				end
-			end
-		end,
+			end,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end
@@ -16514,15 +16728,19 @@ run(function()
 	local FOV
 	local Range
 	local OtherProjectiles
+	local ClearTargetButton
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
-	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
+	local mapFolder = workspace:FindFirstChild('Map')
+	rayCheck.FilterDescendantsInstances = mapFolder and {mapFolder} or {}
+	local wallRayCheck = RaycastParams.new()
+	wallRayCheck.FilterType = Enum.RaycastFilterType.Exclude
 	local old
 	local selectedTarget = nil
 	local targetOutline = nil
 
 	local UserInputService = game:GetService("UserInputService")
-	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	local GuiService = game:GetService("GuiService")
 
 	local ProjectileAimbot = {Enabled = false}
 	local TargetVisualiser = {Enabled = false}
@@ -16532,7 +16750,7 @@ run(function()
 			targetOutline:Destroy()
 			targetOutline = nil
 		end
-		if target and TargetVisualiser.Enabled then
+		if target and target.Character and TargetVisualiser.Enabled then
 			targetOutline = Instance.new("Highlight")
 			targetOutline.FillTransparency = 1
 			targetOutline.OutlineColor = Color3.fromRGB(255, 0, 0)
@@ -16543,48 +16761,195 @@ run(function()
 	end
 
 	local CoreConnections = {}
-	local hovering = false
 	local Players = game:GetService("Players")
 
-	local function handlePlayerSelection()
-		local mouse = lplr:GetMouse()
-		local function selectTarget(target)
-			if not target then return end
-			if target and target.Parent then
-				local plr = Players:GetPlayerFromCharacter(target.Parent)
-				if plr then
-					if selectedTarget.Player == plr then
-						selectedTarget = nil
-						updateOutline(nil)
-					else
-						selectedTarget = {Player = plr, Character = plr.Character}
-						updateOutline(plr)
+	local function clearSelectedTarget()
+		selectedTarget = nil
+		updateOutline(nil)
+	end
+
+	local function disconnectProjectileConnections()
+		for _, connection in CoreConnections do
+			pcall(function()
+				connection:Disconnect()
+			end)
+		end
+		table.clear(CoreConnections)
+	end
+
+	local function getProjectileCursorPosition()
+		local inset = GuiService:GetGuiInset()
+		local mouseLocation = UserInputService:GetMouseLocation()
+		return Vector2.new(mouseLocation.X - inset.X, mouseLocation.Y - inset.Y)
+	end
+
+	local function getProjectileTargetPart(ent)
+		if not ent or not ent.Character then
+			return nil
+		end
+		local targetPartName = TargetPart.Value
+		if targetPartName == "Head" then
+			return ent.Character:FindFirstChild("Head") or ent.RootPart or ent.Character.PrimaryPart
+		end
+		return ent.RootPart or ent.Character.PrimaryPart or ent.Character:FindFirstChild("HumanoidRootPart")
+	end
+
+	local function getProjectileAngle(originPos, position)
+		local delta = position - originPos
+		if delta.Magnitude <= 0.001 then
+			return 180
+		end
+		return math.deg(math.acos(math.clamp(gameCamera.CFrame.LookVector:Dot(delta.Unit), -1, 1)))
+	end
+
+	local function isProjectileTargetValid(ent, originPos)
+		if not (ent and ent.Targetable and ent.Character and ent.RootPart and ent.Humanoid and ent.Health > 0) then
+			return false
+		end
+		local targetPart = getProjectileTargetPart(ent)
+		if not targetPart then
+			return false
+		end
+		if originPos and (targetPart.Position - originPos).Magnitude > Range.Value then
+			return false
+		end
+		if Targets.Walls.Enabled then
+			wallRayCheck.FilterDescendantsInstances = {lplr.Character, ent.Character, gameCamera}
+			local result = workspace:Raycast(originPos, targetPart.Position - originPos, wallRayCheck)
+			if result and not result.Instance:IsDescendantOf(ent.Character) then
+				return false
+			end
+		end
+		return true
+	end
+
+	local function getEntityFromInstance(instance)
+		local model = instance and instance:FindFirstAncestorOfClass("Model")
+		if not model then
+			return nil
+		end
+		local player = Players:GetPlayerFromCharacter(model)
+		if player then
+			return entitylib.getEntity(player)
+		end
+		for _, ent in entitylib.List do
+			if ent.Character == model then
+				return ent
+			end
+		end
+		return nil
+	end
+
+	local function setSelectedTarget(target)
+		if target and selectedTarget == target then
+			clearSelectedTarget()
+			return
+		end
+		selectedTarget = target
+		updateOutline(selectedTarget)
+	end
+
+	local function getProjectileScreenScore(ent, originPos, screenPos)
+		if not isProjectileTargetValid(ent, originPos) then
+			return nil
+		end
+		local targetPart = getProjectileTargetPart(ent)
+		local viewportPos, onScreen = gameCamera:WorldToViewportPoint(targetPart.Position)
+		if not onScreen then
+			return nil
+		end
+		local cursorDistance = (Vector2.new(viewportPos.X, viewportPos.Y) - screenPos).Magnitude
+		if cursorDistance > FOV.Value then
+			return nil
+		end
+		local worldDistance = (targetPart.Position - originPos).Magnitude
+		local angle = getProjectileAngle(originPos, targetPart.Position)
+		return cursorDistance + (worldDistance * 0.15) + (angle * 6)
+	end
+
+	local function getBestProjectileTarget(originPos)
+		local bestTarget, bestScore
+		local screenPos = gameCamera.ViewportSize / 2
+		for _, ent in entitylib.List do
+			if ent.Player and not Targets.Players.Enabled then
+				continue
+			end
+			if ent.NPC and not Targets.NPCs.Enabled then
+				continue
+			end
+			local score = getProjectileScreenScore(ent, originPos, screenPos)
+			if score and (not bestScore or score < bestScore) then
+				bestTarget = ent
+				bestScore = score
+			end
+		end
+		return bestTarget
+	end
+
+	local function getNearestTargetToScreenPosition(screenPos)
+		local bestTarget, bestDistance
+		local originPos = entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position
+		if not originPos then
+			return nil
+		end
+		for _, ent in entitylib.List do
+			if ent.Player and not Targets.Players.Enabled then
+				continue
+			end
+			if ent.NPC and not Targets.NPCs.Enabled then
+				continue
+			end
+			if isProjectileTargetValid(ent, originPos) then
+				local targetPart = getProjectileTargetPart(ent)
+				local viewportPos, onScreen = gameCamera:WorldToViewportPoint(targetPart.Position)
+				if onScreen then
+					local distance = (Vector2.new(viewportPos.X, viewportPos.Y) - screenPos).Magnitude
+					if distance <= 90 and (not bestDistance or distance < bestDistance) then
+						bestTarget = ent
+						bestDistance = distance
 					end
 				end
 			end
 		end
+		return bestTarget
+	end
 
-		local con
-		if isMobile then
-			con = UserInputService.TouchTapInWorld:Connect(function(input, gameProcessed)
-				if gameProcessed or not hovering then
-					updateOutline(nil)
-					return
-				end
-				if not ProjectileAimbot.Enabled then
-					pcall(function() con:Disconnect() end)
-					updateOutline(nil)
-					return
-				end
-				local touchPos = tostring(typeof(input)) == "Vector2" and input or input.Position
-				local ray = workspace.CurrentCamera:ScreenPointToRay(touchPos.X, touchPos.Y)
-				local result = workspace:Raycast(ray.Origin, ray.Direction * 1000)
-				if result and result.Instance then
-					selectTarget(result.Instance)
-				end
-			end)
-			table.insert(CoreConnections, con)
+	local function selectProjectileTargetFromPosition(screenPos)
+		if not ProjectileAimbot.Enabled then
+			return
 		end
+		local ray = gameCamera:ViewportPointToRay(screenPos.X, screenPos.Y)
+		local result = workspace:Raycast(ray.Origin, ray.Direction * 1500)
+		local target = result and getEntityFromInstance(result.Instance) or nil
+		if not target then
+			target = getNearestTargetToScreenPosition(screenPos)
+		end
+		if target then
+			setSelectedTarget(target)
+		end
+	end
+
+	local function handlePlayerSelection()
+		disconnectProjectileConnections()
+		table.insert(CoreConnections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed or not ProjectileAimbot.Enabled then
+				return
+			end
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				selectProjectileTargetFromPosition(getProjectileCursorPosition())
+			end
+		end))
+		table.insert(CoreConnections, UserInputService.TouchTapInWorld:Connect(function(_, gameProcessed)
+			if gameProcessed or not ProjectileAimbot.Enabled then
+				return
+			end
+			local touchPositions = UserInputService:GetTouches()
+			if touchPositions[1] then
+				local inset = GuiService:GetGuiInset()
+				local touchPos = touchPositions[1].Position
+				selectProjectileTargetFromPosition(Vector2.new(touchPos.X - inset.X, touchPos.Y - inset.Y))
+			end
+		end))
 	end
 
 	ProjectileAimbot = vape.Categories.World:CreateModule({
@@ -16597,30 +16962,22 @@ run(function()
 					pcall(function()
 						setthreadidentity(8)
 					end)
-					hovering = true
 					local self, projmeta, worldmeta, origin, shootpos = ...
-					local originPos = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
+					local originPos = shootpos or (entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position) or Vector3.zero
 
-					local plr
-					if selectedTarget and selectedTarget.Character and (selectedTarget.Character.PrimaryPart.Position - originPos).Magnitude <= Range.Value then
-						plr = selectedTarget
-					else
-						plr = entitylib.EntityMouse({
-							Part = 'RootPart',
-							Range = FOV.Value,
-							Players = Targets.Players.Enabled,
-							NPCs = Targets.NPCs.Enabled,
-							Wallcheck = Targets.Walls.Enabled,
-							Origin = originPos
-						})
+					if selectedTarget and not isProjectileTargetValid(selectedTarget, originPos) then
+						clearSelectedTarget()
 					end
+
+					local plr = selectedTarget or getBestProjectileTarget(originPos)
 					updateOutline(plr)
 
-
-					if plr and plr.Character and plr.Character.PrimaryPart and (plr.Character.PrimaryPart.Position - originPos).Magnitude <= Range.Value then
-						local humanoid = plr.Character:FindFirstChild("Humanoid")
-						if not humanoid then return old(...) end
-						plr.HipHeight = humanoid.HipHeight or 2
+					if plr and plr.Character and plr.RootPart and isProjectileTargetValid(plr, originPos) then
+						local humanoid = plr.Humanoid or plr.Character:FindFirstChildWhichIsA("Humanoid")
+						if not humanoid then
+							return old(...)
+						end
+						local hipHeight = humanoid.HipHeight or plr.HipHeight or 2
 						local isJumping = humanoid.Jump
 						pcall(function()
 							setthreadidentity(8)
@@ -16646,20 +17003,16 @@ run(function()
 							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
 						end
 
-						if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+						if plr.RootPart:FindFirstChild('rbxassetid://8200754399') then
 							playerGravity = 6
 						end
 
-						local targetPartName = TargetPart.Value
-						local target_obj
-						if targetPartName == "RootPart" then
-							target_obj = plr.Character.PrimaryPart
-						else
-							target_obj = plr.Character:FindFirstChild(targetPartName)
+						local target_obj = getProjectileTargetPart(plr)
+						if not target_obj then
+							return old(...)
 						end
-						if not target_obj then return old(...) end
 						local targetPos = target_obj.Position
-						local targetVel = (projmeta.projectile == 'telepearl' and Vector3.zero or target_obj.Velocity)
+						local targetVel = (projmeta.projectile == 'telepearl' and Vector3.zero or target_obj.AssemblyLinearVelocity or target_obj.Velocity)
 
 						if store.hand and store.hand.tool and store.hand.tool.Name:find("spellbook") then
 							local selfPos = lplr.Character.PrimaryPart.Position
@@ -16684,19 +17037,16 @@ run(function()
 								drawDurationSeconds = 5
 							}
 						end
-						local relOffset = Vector3.new(0, 0, 0)
+						local relOffset = Vector3.zero
 						if bedwars.BowConstantsTable then
 							relOffset = Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ)
 						end
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or relOffset)
-						local calc = prediction.SolveTrajectory(newlook.Position, projSpeed, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, isJumping and 42.6 or nil, rayCheck)
+						local calc = prediction.SolveTrajectory(newlook.Position, projSpeed, gravity, targetPos, targetVel, playerGravity, hipHeight, isJumping and 42.6 or nil, rayCheck)
 						if calc then
 							targetinfo.Targets = targetinfo.Targets or {}
 							targetinfo.Targets[plr] = tick() + 1
-							local drawDuration = 5
-							if projmeta.drawDurationSeconds then
-								drawDuration = projmeta.drawDurationSeconds
-							end
+							local drawDuration = projmeta.drawDurationSeconds or 5
 							return {
 								initialVelocity = (calc - newlook.Position).Unit * projSpeed,
 								positionFrom = offsetpos,
@@ -16707,7 +17057,6 @@ run(function()
 						end
 					end
 
-					hovering = false
 					pcall(function()
 						setthreadidentity(8)
 					end)
@@ -16715,18 +17064,12 @@ run(function()
 				end
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = old
-				if targetOutline then
-					targetOutline:Destroy()
-					targetOutline = nil
-				end
-				selectedTarget = nil
-				for i,v in pairs(CoreConnections) do
-					pcall(function() v:Disconnect() end)
-				end
-				table.clear(CoreConnections)
+				old = nil
+				clearSelectedTarget()
+				disconnectProjectileConnections()
 			end
 		end,
-		Tooltip = 'Silently adjusts your aim towards the enemy. Click a player to lock onto them (red outline).'
+		Tooltip = 'Silently adjusts your aim towards the enemy. Click or tap a player to lock onto them.'
 	})
 
 	Targets = ProjectileAimbot:CreateTargets({
@@ -16750,7 +17093,23 @@ run(function()
 		Default = 100,
 		Tooltip = 'Maximum distance for target locking'
 	})
-	TargetVisualiser = ProjectileAimbot:CreateToggle({Name = "Target Visualiser", Default = true})
+	TargetVisualiser = ProjectileAimbot:CreateToggle({
+		Name = "Target Visualiser",
+		Default = true,
+		Function = function(callback)
+			if callback then
+				updateOutline(selectedTarget)
+			else
+				updateOutline(nil)
+			end
+		end
+	})
+	ClearTargetButton = ProjectileAimbot:CreateButton({
+		Name = 'Clear Lock',
+		Function = function()
+			clearSelectedTarget()
+		end
+	})
 	OtherProjectiles = ProjectileAimbot:CreateToggle({
 		Name = 'Other Projectiles',
 		Default = true
@@ -22209,7 +22568,7 @@ run(function()
 		breakingBlockPosition = Vector3.zero
 	}
 
-	local breakBlock = function(pos, effects, normal, bypass, anim)
+	local breakBlock = function(pos, effects, normal, bypass, anim, tool, respectHand)
 		if vape.Modules.InfiniteFly and vape.Modules.InfiniteFly.Enabled then
 			return
 		end
@@ -22227,8 +22586,14 @@ run(function()
 			local blockdmg = 0
 			if block and block.Parent ~= nil then
 				if ((entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) - (blockpos * 3)).magnitude > 30 then return end
+				if not tool then return end
+				if respectHand then
+					local handItem = lplr.Character and lplr.Character:FindFirstChild("HandInvItem")
+					if not handItem or handItem.Value ~= tool then return end
+				else
+					switchItem(tool)
+				end
 				store.blockPlace = tick() + 0.1
-				switchToAndUseTool(block)
 				blockhealthbarpos = {
 					blockPosition = blockpos
 				}
@@ -22340,7 +22705,68 @@ run(function()
 	local nukerbeds = {Enabled = false}
 	local nukerclosestblock = {Enabled = false}
 	local nukercustom = {RefreshValues = function() end, ObjectList = {}}
-	local luckyblocktable = {}
+	local trackedNukerBlocks = {}
+
+	local function isTrackedOreBlock(block)
+		local name = string.lower(tostring(block and block.Name or ''))
+		return name:find('ore', 1, true) ~= nil
+	end
+
+	local function isTrackedNukerBlock(block)
+		if not block then return false end
+		local lowerName = string.lower(tostring(block.Name))
+		return table.find(nukercustom.ObjectList, block.Name) or (nukerluckyblock.Enabled and lowerName:find('lucky', 1, true) ~= nil) or (nukerironore.Enabled and isTrackedOreBlock(block))
+	end
+
+	local function refreshTrackedNukerBlocks()
+		table.clear(trackedNukerBlocks)
+		for _, block in pairs(store.blocks) do
+			if isTrackedNukerBlock(block) then
+				trackedNukerBlocks[block] = true
+			end
+		end
+	end
+
+	local function resolveNukerTool(block)
+		if not block then return nil, false end
+		local blockMeta = bedwars.ItemTable[block.Name]
+		local breakType = blockMeta and blockMeta.block and blockMeta.block.breakType
+		if not breakType then return nil, nukerlegit.Enabled end
+
+		if nukerlegit.Enabled then
+			local handTool = store.localHand and store.localHand.tool
+			local handMeta = handTool and bedwars.ItemTable[handTool.Name]
+			if handMeta and handMeta.breakBlock and handMeta.breakBlock[breakType] then
+				return handTool, true
+			end
+			return nil, true
+		end
+
+		local bestTool = getBestTool(block.Name)
+		local resolvedTool = bestTool and bestTool.tool or (store.localHand and store.localHand.tool)
+		local toolMeta = resolvedTool and bedwars.ItemTable[resolvedTool.Name]
+		if toolMeta and toolMeta.breakBlock and toolMeta.breakBlock[breakType] then
+			return resolvedTool, false
+		end
+		return nil, false
+	end
+
+	local function findNearestTrackedNukerBlock(playerPos)
+		local closestBlock, closestDistance
+		for block in pairs(trackedNukerBlocks) do
+			if block and block.Parent ~= nil then
+				if (nukerown.Enabled or block:GetAttribute("PlacedByUserId") ~= lplr.UserId) then
+					local distance = (playerPos - block.Position).Magnitude
+					if distance <= nukerrange.Value and (not closestDistance or distance < closestDistance) then
+						closestBlock, closestDistance = block, distance
+					end
+				end
+			else
+				trackedNukerBlocks[block] = nil
+			end
+		end
+		return closestBlock
+	end
 
 	local nearbed = false
 
@@ -22349,27 +22775,22 @@ run(function()
 		Function = function(callback)
 			if callback then
 				bedwars.ItemTable = bedwars.ItemTable or bedwars.ItemMeta
-				for i,v in pairs(store.blocks) do
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
-					end
-				end
+				refreshTrackedNukerBlocks()
 				table.insert(Nuker.Connections, collectionService:GetInstanceAddedSignal("block"):Connect(function(v)
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
+					if isTrackedNukerBlock(v) then
+						trackedNukerBlocks[v] = true
 					end
 				end))
 				table.insert(Nuker.Connections, collectionService:GetInstanceRemovedSignal("block"):Connect(function(v)
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.remove(luckyblocktable, table.find(luckyblocktable, v))
-					end
+					trackedNukerBlocks[v] = nil
 				end))
 				task.spawn(function()
 					repeat
 						nearbed = false
+						nearestBed = nil
 						if (not nukernofly.Enabled or not vape.Modules.Fly.Enabled) then
 							local broke = not entityLibrary.isAlive
-							local tool = (not nukerlegit.Enabled) and {Name = "wood_axe"} or store.localHand.tool
+							local playerPos = entityLibrary.isAlive and (entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) or nil
 							if nukerbeds.Enabled then
 								for i, obj in pairs(collectionService:GetTagged("bed")) do
 									if broke then break end
@@ -22378,15 +22799,15 @@ run(function()
 										if obj:GetAttribute("BedShieldEndTime") then
 											if obj:GetAttribute("BedShieldEndTime") > game.Workspace:GetServerTimeNow() then continue end
 										end
-										if ((entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) - obj.Position).magnitude <= nukerrange.Value then
-											if tool and bedwars.ItemTable[tool.Name].breakBlock and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
+										if playerPos and (playerPos - obj.Position).magnitude <= nukerrange.Value then
+											local tool, respectHand = resolveNukerTool(obj)
+											if tool and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
 												nearbed = true
 												if nukerclosestblock.Enabled then
-                                                    local playerPos = entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position
                                                     local closestBlock, closestPos, closestNormal = findClosestBreakableBlock(obj.Position, playerPos)
                                                     if closestBlock and closestPos then
                                                         broke = true
-                                                        breakBlock(closestPos, nukereffects.Enabled, closestNormal, false, nukeranimation.Enabled)
+                                                        breakBlock(closestPos, nukereffects.Enabled, closestNormal, false, nukeranimation.Enabled, tool, respectHand)
                                                         task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
                                                         break
                                                     end
@@ -22394,7 +22815,7 @@ run(function()
                                                     local res, amount = getBestBreakSide(obj.Position)
                                                     local res2, amount2 = getBestBreakSide(obj.Position + Vector3.new(0, 0, 3))
                                                     broke = true
-                                                    breakBlock((amount < amount2 and obj.Position or obj.Position + Vector3.new(0, 0, 3)), nukereffects.Enabled, (amount < amount2 and res or res2), false, nukeranimation.Enabled)
+                                                    breakBlock((amount < amount2 and obj.Position or obj.Position + Vector3.new(0, 0, 3)), nukereffects.Enabled, (amount < amount2 and res or res2), false, nukeranimation.Enabled, tool, respectHand)
                                                     task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
                                                     break
                                                 end
@@ -22404,18 +22825,13 @@ run(function()
 								end
 							end
 							broke = broke and not entityLibrary.isAlive
-							for i, obj in pairs(luckyblocktable) do
-								if broke then break end
-								if nearbed then break end
-								if entityLibrary.isAlive then
-									if obj and obj.Parent ~= nil then
-										if ((entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) - obj.Position).magnitude <= nukerrange.Value and (nukerown.Enabled or obj:GetAttribute("PlacedByUserId") ~= lplr.UserId) then
-											if tool and bedwars.ItemTable[tool.Name].breakBlock and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
-												breakBlock(obj.Position, nukereffects.Enabled, getBestBreakSide(obj.Position), true, nukeranimation.Enabled)
-												task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
-												break
-											end
-										end
+							if not broke and not nearbed and playerPos then
+								local obj = findNearestTrackedNukerBlock(playerPos)
+								if obj and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
+									local tool, respectHand = resolveNukerTool(obj)
+									if tool then
+										breakBlock(obj.Position, nukereffects.Enabled, getBestBreakSide(obj.Position), true, nukeranimation.Enabled, tool, respectHand)
+										task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
 									end
 								end
 							end
@@ -22424,10 +22840,10 @@ run(function()
 					until (not Nuker.Enabled)
 				end)
 			else
-				luckyblocktable = {}
+				table.clear(trackedNukerBlocks)
 			end
 		end,
-		Tooltip = "Automatically destroys beds & luckyblocks around you."
+		Tooltip = "Automatically destroys beds, ores, and tracked blocks around you."
 	})
 	nukerslowmode = Nuker:CreateSlider({
 		Name = "Break Slowmode",
@@ -22482,44 +22898,21 @@ run(function()
 	nukerluckyblock = Nuker:CreateToggle({
 		Name = "Break LuckyBlocks",
 		Function = function(callback)
-			if callback then
-				luckyblocktable = {}
-				for i,v in pairs(store.blocks) do
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
-					end
-				end
-			else
-				luckyblocktable = {}
-			end
+			refreshTrackedNukerBlocks()
 		 end,
 		Default = true
 	})
 	nukerironore = Nuker:CreateToggle({
-		Name = "Break IronOre",
+		Name = "Break Ores",
 		Function = function(callback)
-			if callback then
-				luckyblocktable = {}
-				for i,v in pairs(store.blocks) do
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
-					end
-				end
-			else
-				luckyblocktable = {}
-			end
+			refreshTrackedNukerBlocks()
 		end
 	})
 	nukercustom = Nuker:CreateTextList({
 		Name = "NukerList",
 		TempText = "block (tesla_trap)",
 		AddFunction = function()
-			luckyblocktable = {}
-			for i,v in pairs(store.blocks) do
-				if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) then
-					table.insert(luckyblocktable, v)
-				end
-			end
+			refreshTrackedNukerBlocks()
 		end
 	})
 end)
@@ -23153,44 +23546,325 @@ run(function()
 end)
 
 run(function()
-	local SoundChanger
-	local List
+	local HttpService = game:GetService("HttpService")
+	local HitSoundChanger
+	local SelectedPreset
+	local PresetName
+	local PatternInputs = {}
 	local soundlist = {}
 	local old
+	local soundResolver
+	local activePreset = 'Default'
+	local presetFile = 'vape/Libraries/HitSoundPresets.json'
+	local hitSoundKeys = {'DAMAGE_1', 'DAMAGE_2', 'DAMAGE_3'}
+	local builtinPresets = {
+		Default = {
+			DAMAGE_1 = 'default',
+			DAMAGE_2 = 'default',
+			DAMAGE_3 = 'default'
+		},
+		Sharp = {
+			DAMAGE_1 = '@DAMAGE_1',
+			DAMAGE_2 = '@DAMAGE_1',
+			DAMAGE_3 = '@DAMAGE_1'
+		},
+		Pop = {
+			DAMAGE_1 = '@DAMAGE_2',
+			DAMAGE_2 = '@DAMAGE_2',
+			DAMAGE_3 = '@DAMAGE_2'
+		},
+		Heavy = {
+			DAMAGE_1 = '@DAMAGE_3',
+			DAMAGE_2 = '@DAMAGE_3',
+			DAMAGE_3 = '@DAMAGE_3'
+		},
+		Silent = {
+			DAMAGE_1 = 'mute',
+			DAMAGE_2 = 'mute',
+			DAMAGE_3 = 'mute'
+		}
+	}
+	local customPresets = {}
 
-	SoundChanger = vape.Legit:CreateModule({
-		Name = 'SoundChanger',
-		Function = function(callback)
-			if callback then
+	local function trim(text)
+		return tostring(text or ''):match('^%s*(.-)%s*$')
+	end
+
+	local function sanitizePresetConfig(config)
+		local sanitized = {}
+		config = type(config) == 'table' and config or {}
+		for _, soundName in hitSoundKeys do
+			local value = config[soundName]
+			sanitized[soundName] = trim(type(value) == 'string' and value or 'default')
+			if sanitized[soundName] == '' then
+				sanitized[soundName] = 'default'
+			end
+		end
+		return sanitized
+	end
+
+	local function resolveSoundValue(value)
+		value = trim(value)
+		local lowered = value:lower()
+		if value == '' or lowered == 'default' or lowered == 'none' then
+			return nil
+		end
+		if lowered == 'mute' or lowered == 'silent' then
+			return ''
+		end
+		if value:sub(1, 1) == '@' then
+			return bedwars.SoundList[value:sub(2)]
+		end
+		if bedwars.SoundList[value] then
+			return bedwars.SoundList[value]
+		end
+		if value:find('rbxasset') or value:find('http') then
+			return value
+		end
+		return isfile(value) and assetfunction(value) or value
+	end
+
+	local function refreshSoundHook()
+		if soundResolver then
+			if not old then
 				old = bedwars.SoundManager.playSound
 				bedwars.SoundManager.playSound = function(self, id, ...)
-					if soundlist[id] then
-						id = soundlist[id]
-					end
-
-					return old(self, id, ...)
+					local resolvedId = soundResolver(id, ...)
+					return old(self, resolvedId ~= nil and resolvedId or id, ...)
 				end
+			end
+		elseif old then
+			bedwars.SoundManager.playSound = old
+			old = nil
+		end
+	end
+
+	local function readCustomPresets()
+		pcall(makefolder, 'vape')
+		pcall(makefolder, 'vape/Libraries')
+		if not isfile(presetFile) then
+			customPresets = {}
+			return
+		end
+		local suc, data = pcall(function()
+			return HttpService:JSONDecode(readfile(presetFile))
+		end)
+		if not suc or type(data) ~= 'table' then
+			customPresets = {}
+			return
+		end
+		customPresets = {}
+		for name, preset in pairs(data) do
+			customPresets[tostring(name)] = sanitizePresetConfig(preset)
+		end
+	end
+
+	local function writeCustomPresets()
+		pcall(makefolder, 'vape')
+		pcall(makefolder, 'vape/Libraries')
+		writefile(presetFile, HttpService:JSONEncode(customPresets))
+	end
+
+	local function getPresetNames()
+		local names = {}
+		for name in pairs(builtinPresets) do
+			table.insert(names, name)
+		end
+		table.sort(names)
+		local customNames = {}
+		for name in pairs(customPresets) do
+			if not builtinPresets[name] then
+				table.insert(customNames, name)
+			end
+		end
+		table.sort(customNames)
+		for _, name in ipairs(customNames) do
+			table.insert(names, name)
+		end
+		return names
+	end
+
+	local function getPresetConfig(name)
+		return builtinPresets[name] or customPresets[name]
+	end
+
+	local function getCurrentConfig()
+		local config = {}
+		for soundName, box in pairs(PatternInputs) do
+			config[soundName] = box.Value
+		end
+		return sanitizePresetConfig(config)
+	end
+
+	local function rebuildSoundList()
+		table.clear(soundlist)
+		for soundName, replacement in pairs(getCurrentConfig()) do
+			local soundId = bedwars.SoundList[soundName]
+			local resolved = resolveSoundValue(replacement)
+			if soundId and resolved ~= nil then
+				soundlist[soundId] = resolved
+			end
+		end
+		if HitSoundChanger.Enabled then
+			soundResolver = function(soundId)
+				return soundlist[soundId]
+			end
+			refreshSoundHook()
+		end
+	end
+
+	local function refreshPresetDropdown(selected)
+		if not SelectedPreset then return end
+		SelectedPreset.List = getPresetNames()
+		if selected and SelectedPreset.SetValue then
+			pcall(function()
+				SelectedPreset:SetValue(selected)
+			end)
+		end
+	end
+
+	local function applyPreset(name)
+		local preset = getPresetConfig(name)
+		if not preset then
+			warningNotification('HitSoundChanger', 'Preset not found.', 3)
+			return
+		end
+		preset = sanitizePresetConfig(preset)
+		for soundName, value in pairs(preset) do
+			local input = PatternInputs[soundName]
+			if input and input.SetValue then
+				pcall(function()
+					input:SetValue(value)
+				end)
+			end
+		end
+		activePreset = name
+		if PresetName and PresetName.SetValue then
+			pcall(function()
+				PresetName:SetValue(name)
+			end)
+		end
+		refreshPresetDropdown(name)
+		rebuildSoundList()
+	end
+
+	local function getPresetTargetName()
+		local name = trim(PresetName and PresetName.Value or activePreset)
+		return name ~= '' and name or activePreset
+	end
+
+	readCustomPresets()
+
+	HitSoundChanger = vape.Legit:CreateModule({
+		Name = 'HitSoundChanger',
+		Function = function(callback)
+			if callback then
+				soundResolver = function(soundId)
+					return soundlist[soundId]
+				end
+				refreshSoundHook()
 			else
-				bedwars.SoundManager.playSound = old
-				old = nil
+				soundResolver = nil
+				refreshSoundHook()
 			end
 		end,
-		Tooltip = 'Change ingame sounds to custom ones.'
+		Tooltip = 'Changes the local hit sounds for damage hits with savable presets.'
 	})
-	List = SoundChanger:CreateTextList({
-		Name = 'Sounds',
-		Placeholder = '(DAMAGE_1/ben.mp3)',
-		Function = function()
-			table.clear(soundlist)
-			for _, entry in List.ListEnabled do
-				local split = entry:split('/')
-				local id = bedwars.SoundList[split[1]]
-				if id and #split > 1 then
-					soundlist[id] = split[2]:find('rbxasset') and split[2] or isfile(split[2]) and assetfunction(split[2]) or ''
-				end
+	SelectedPreset = HitSoundChanger:CreateDropdown({
+		Name = 'Preset',
+		List = getPresetNames(),
+		Function = function(val)
+			activePreset = val
+			if PresetName and PresetName.SetValue then
+				pcall(function()
+					PresetName:SetValue(val)
+				end)
 			end
 		end
 	})
+	PresetName = HitSoundChanger:CreateTextBox({
+		Name = 'Preset Name',
+		Default = activePreset
+	})
+	for _, soundName in ipairs(hitSoundKeys) do
+		PatternInputs[soundName] = HitSoundChanger:CreateTextBox({
+			Name = soundName,
+			Default = 'default',
+			Placeholder = 'default / mute / @DAMAGE_2 / rbxassetid://...',
+			Function = function()
+				rebuildSoundList()
+			end,
+			Darker = true
+		})
+	end
+	HitSoundChanger:CreateButton({
+		Name = 'Load Preset',
+		Function = function()
+			applyPreset(SelectedPreset.Value or activePreset)
+			notif('HitSoundChanger', 'Loaded preset '..tostring(SelectedPreset.Value or activePreset), 3)
+		end
+	})
+	HitSoundChanger:CreateButton({
+		Name = 'Save Preset',
+		Function = function()
+			local name = getPresetTargetName()
+			if builtinPresets[name] then
+				warningNotification('HitSoundChanger', 'Choose a new name for custom presets.', 3)
+				return
+			end
+			customPresets[name] = getCurrentConfig()
+			writeCustomPresets()
+			activePreset = name
+			refreshPresetDropdown(name)
+			notif('HitSoundChanger', 'Saved preset '..name, 3)
+		end
+	})
+	HitSoundChanger:CreateButton({
+		Name = 'Rename Preset',
+		Function = function()
+			local selected = SelectedPreset.Value or activePreset
+			local targetName = getPresetTargetName()
+			if builtinPresets[targetName] then
+				warningNotification('HitSoundChanger', 'Built-in preset names are reserved.', 3)
+				return
+			end
+			if builtinPresets[selected] then
+				customPresets[targetName] = getCurrentConfig()
+			elseif customPresets[selected] then
+				customPresets[targetName] = customPresets[selected]
+				if targetName ~= selected then
+					customPresets[selected] = nil
+				end
+			else
+				customPresets[targetName] = getCurrentConfig()
+			end
+			writeCustomPresets()
+			activePreset = targetName
+			refreshPresetDropdown(targetName)
+			notif('HitSoundChanger', 'Renamed preset to '..targetName, 3)
+		end
+	})
+	HitSoundChanger:CreateButton({
+		Name = 'Delete Preset',
+		Function = function()
+			local selected = SelectedPreset.Value or activePreset
+			if builtinPresets[selected] then
+				warningNotification('HitSoundChanger', 'Built-in presets cannot be deleted.', 3)
+				return
+			end
+			if not customPresets[selected] then
+				warningNotification('HitSoundChanger', 'Preset not found.', 3)
+				return
+			end
+			customPresets[selected] = nil
+			writeCustomPresets()
+			activePreset = 'Default'
+			refreshPresetDropdown(activePreset)
+			applyPreset(activePreset)
+			notif('HitSoundChanger', 'Deleted preset '..selected, 3)
+		end
+	})
+	applyPreset(activePreset)
 end)
 
 
@@ -24737,12 +25411,12 @@ end
 bedwars.SoundManager = {}
 function bedwars.SoundManager:playSound(soundId)
 	local sound = Instance.new("Sound")
-    sound.SoundId = soundId
-    sound.Parent = game.Workspace
-    sound:Play()
-    sound.Ended:Connect(function()
-        sound:Destroy()
-    end)
+	sound.SoundId = soundId
+	sound.Parent = game.Workspace
+	sound:Play()
+	sound.Ended:Connect(function()
+		sound:Destroy()
+	end)
 end
 bedwars.QueryUtil = {
 	queryIgnored = {},
@@ -26422,54 +27096,149 @@ run(function()
 	local ClickAim
 	local ShopCheck
 	local FirstPersonCheck
+	local renderStepName = "PealzwareAimAssist_Render"
+	local mouseHeld = false
+
+	local function clearAimAssistTarget()
+		pcall(function()
+			vapeTargetInfo.Targets.AimAssist = nil
+		end)
+	end
+
+	local function getAimAssistHand()
+		local hand = store.localHand or store.hand or {}
+		hand.Type = hand.Type or hand.toolType
+		hand.toolType = hand.toolType or hand.Type
+		return hand
+	end
+
+	local function isAimAssistEntityValid(ent)
+		return ent and ent.Targetable and ent.Character and ent.RootPart and ent.Humanoid and ent.Health > 0
+	end
+
+	local function getAimAssistPosition(ent)
+		local root = ent and ent.RootPart
+		if not root then
+			return nil
+		end
+		local hipHeight = math.clamp(ent.HipHeight or 2, 1, 5)
+		return root.Position + Vector3.new(0, hipHeight * 0.33, 0)
+	end
+
+	local function getAimAssistAngle(position)
+		local delta = position - gameCamera.CFrame.Position
+		if delta.Magnitude <= 0.001 then
+			return 180
+		end
+		return math.deg(math.acos(math.clamp(gameCamera.CFrame.LookVector:Dot(delta.Unit), -1, 1)))
+	end
+
+	local function canAimAtEntity(ent)
+		if not isAimAssistEntityValid(ent) then
+			return false
+		end
+		if Targets.Walls.Enabled and not Wallcheck(lplr.Character, ent.Character) then
+			return false
+		end
+		local aimPosition = getAimAssistPosition(ent)
+		return aimPosition and getAimAssistAngle(aimPosition) <= (AngleSlider.Value / 2) or false
+	end
+
+	local function getAimAssistTarget()
+		local preferred = KillauraTarget.Enabled and store.KillauraTarget or nil
+		if preferred and canAimAtEntity(preferred) then
+			local preferredDistance = (entitylib.character.RootPart.Position - preferred.RootPart.Position).Magnitude
+			if preferredDistance <= Distance.Value then
+				return preferred
+			end
+		end
+
+		local ent = entitylib.EntityPosition({
+			Range = Distance.Value,
+			Part = 'RootPart',
+			Players = Targets.Players.Enabled,
+			NPCs = Targets.NPCs.Enabled,
+			Wallcheck = Targets.Walls.Enabled,
+			Sort = sortmethods[Sort.Value]
+		})
+
+		return canAimAtEntity(ent) and ent or nil
+	end
 
 	AimAssist = vape.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
 		Function = function(callback)
 			if callback then
-				AimAssist:Clean(runService.Heartbeat:Connect(function(dt)
-					if entitylib.isAlive and store.localHand.Type == 'sword' and ((not ClickAim.Enabled) or (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) < 0.4) then
-						local ent = entitylib.EntityPosition({
-							Range = Distance.Value,
-							Part = 'RootPart',
-							Players = Targets.Players.Enabled,
-							NPCs = Targets.NPCs.Enabled,
-							Sort = sortmethods[Sort.Value]
-						})
-
-						if ent then
-							if FirstPersonCheck.Enabled then
-								if not isFirstPerson() then return end
-							end
-							if ShopCheck.Enabled then
-								local isShop = lplr:FindFirstChild("PlayerGui") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("ItemShop") or nil
-								if isShop then return end
-							end
-							if Targets.Walls.Enabled then
-								if not Wallcheck(lplr.Character, ent.Character) then return end
-							end
-							pcall(function()
-								local plr = ent
-								vapeTargetInfo.Targets.AimAssist = {
-									Humanoid = {
-										Health = (plr.Character:GetAttribute("Health") or plr.Humanoid.Health) + getShieldAttribute(plr.Character),
-										MaxHealth = plr.Character:GetAttribute("MaxHealth") or plr.Humanoid.MaxHealth
-									},
-									Player = plr.Player
-								}
-							end)
-							local delta = (ent.RootPart.Position - entitylib.character.RootPart.Position)
-							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-							local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
-							if angle >= (math.rad(AngleSlider.Value) / 2) then return end
-							pcall(function()
-								targetinfo.Targets[ent] = tick() + 1
-							end)
-							gameCamera.CFrame = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.p, ent.RootPart.Position), (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)) * dt)
-						end
+				mouseHeld = false
+				pcall(function()
+					runService:UnbindFromRenderStep(renderStepName)
+				end)
+				AimAssist:Clean(inputService.InputBegan:Connect(function(input, gameProcessed)
+					if gameProcessed then return end
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						mouseHeld = true
 					end
 				end))
-			else pcall(function() vapeTargetInfo.Targets.AimAssist = nil end) end
+				AimAssist:Clean(inputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						mouseHeld = false
+					end
+				end))
+				runService:BindToRenderStep(renderStepName, Enum.RenderPriority.Camera.Value + 1, function(dt)
+					local hand = getAimAssistHand()
+					local recentAttack = (workspace:GetServerTimeNow() - (bedwars.SwordController.lastAttack or 0)) < 0.35
+					if not entitylib.isAlive or hand.Type ~= 'sword' or (ClickAim.Enabled and not (mouseHeld or recentAttack)) then
+						clearAimAssistTarget()
+						return
+					end
+					if FirstPersonCheck.Enabled and not isFirstPerson() then
+						clearAimAssistTarget()
+						return
+					end
+					if ShopCheck.Enabled then
+						local isShop = lplr:FindFirstChild("PlayerGui") and lplr.PlayerGui:FindFirstChild("ItemShop") or nil
+						if isShop then
+							clearAimAssistTarget()
+							return
+						end
+					end
+
+					local ent = getAimAssistTarget()
+					if not ent then
+						clearAimAssistTarget()
+						return
+					end
+
+					pcall(function()
+						vapeTargetInfo.Targets.AimAssist = {
+							Humanoid = {
+								Health = (ent.Character:GetAttribute("Health") or ent.Humanoid.Health) + getShieldAttribute(ent.Character),
+								MaxHealth = ent.Character:GetAttribute("MaxHealth") or ent.Humanoid.MaxHealth
+							},
+							Player = ent.Player
+						}
+					end)
+					pcall(function()
+						targetinfo.Targets[ent] = tick() + 1
+					end)
+
+					local targetPosition = getAimAssistPosition(ent)
+					if not targetPosition then
+						clearAimAssistTarget()
+						return
+					end
+
+					local speedBoost = StrafeIncrease.Enabled and ((inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 4 or 0) or 0
+					local lerpAlpha = math.clamp((AimSpeed.Value + speedBoost) * dt * 0.9, 0, 1)
+					gameCamera.CFrame = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.Position, targetPosition), lerpAlpha)
+				end)
+			else
+				mouseHeld = false
+				clearAimAssistTarget()
+				pcall(function()
+					runService:UnbindFromRenderStep(renderStepName)
+				end)
+			end
 		end,
 		Tooltip = 'Smoothly aims to closest valid target with sword'
 	})
@@ -27508,9 +28277,136 @@ run(function()
 	local Limit
 	local LegitAura
 	local Sync
+	local DynamicHitbox
+	local DynamicExpand
 	local Particles, Boxes = {}, {}
 	local anims, AnimDelay, AnimTween, armC0 = vape.Libraries.auraanims, tick()
 	local AttackRemote = {FireServer = function() end}
+
+	local lastSwingServerTime = 0
+	local lastSwingServerTimeDelta = 0
+	local nextAttackTick = 0
+
+	local OneTapCooldown = {Value = 5}
+
+	local function isDynamicHitboxEnabled()
+		return DynamicHitbox and DynamicHitbox.Enabled
+	end
+
+	local function getDynamicExpandValue()
+		return DynamicExpand and DynamicExpand.Value or 0
+	end
+
+	local function getEntityRootPart(ent)
+		return type(ent) == 'table' and (ent.RootPart or (ent.Character and (ent.Character.PrimaryPart or ent.Character:FindFirstChild('HumanoidRootPart')))) or nil
+	end
+
+	local function getEntityBounds(ent)
+		local root = getEntityRootPart(ent)
+		local character = type(ent) == 'table' and ent.Character or nil
+		if character then
+			local suc, cf, size = pcall(function()
+				return character:GetBoundingBox()
+			end)
+			if suc and cf and size then
+				return cf, size, root
+			end
+		end
+		if root then
+			return root.CFrame, root.Size, root
+		end
+	end
+
+	local function getClosestPointOnBox(worldPosition, boxCFrame, boxSize)
+		local half = boxSize * 0.5
+		local localPoint = boxCFrame:PointToObjectSpace(worldPosition)
+		return boxCFrame:PointToWorldSpace(Vector3.new(
+			math.clamp(localPoint.X, -half.X, half.X),
+			math.clamp(localPoint.Y, -half.Y, half.Y),
+			math.clamp(localPoint.Z, -half.Z, half.Z)
+		))
+	end
+
+	local function getAuraTargetPoint(ent, origin)
+		local boundsCFrame, boundsSize, root = getEntityBounds(ent)
+		if not root then return nil, nil, nil end
+		if boundsCFrame and boundsSize then
+			local padding = Vector3.zero
+			if isDynamicHitboxEnabled() then
+				local expand = getDynamicExpandValue()
+				local horizontal = math.max(boundsSize.X, boundsSize.Z)
+				local widthBonus = math.min(expand, (horizontal * 0.25) + 0.35)
+				local heightBonus = math.min(expand * 0.75, (boundsSize.Y * 0.12) + 0.25)
+				padding = Vector3.new(widthBonus, heightBonus, widthBonus)
+			end
+			local targetSize = boundsSize + (padding * 2)
+			local targetPoint = origin and getClosestPointOnBox(origin, boundsCFrame, targetSize) or boundsCFrame.Position
+			return targetPoint, root, targetSize
+		end
+		return root.Position, root, root.Size
+	end
+
+	local function getAuraAttackDelay(meta)
+		local base = (meta.sword and meta.sword.respectAttackSpeedForEffects and meta.sword.attackSpeed) or ((Sync and Sync.Enabled) and 0.24 or 0.14)
+		return math.max(base * 0.75, 1 / math.max((UpdateRate and UpdateRate.Value or 10), 10))
+	end
+
+	local function getAuraTargets(selfpos, localfacing)
+		local result, seen = {}, {}
+
+		local function addTarget(ent, preferred)
+			if seen[ent] or type(ent) ~= 'table' or not ent.Character then return end
+			local targetPoint, root, targetSize = getAuraTargetPoint(ent, selfpos)
+			if not (targetPoint and root) then return end
+			if Targets.Walls.Enabled and not Wallcheck(lplr.Character, ent.Character) then return end
+
+			local delta = targetPoint - selfpos
+			local flatDelta = delta * Vector3.new(1, 0, 1)
+			local maxDistance = Range.Value
+			if isDynamicHitboxEnabled() and targetSize then
+				maxDistance = maxDistance + math.min(getDynamicExpandValue(), math.max(targetSize.X, targetSize.Z) * 0.35)
+			end
+			if delta.Magnitude > maxDistance then return end
+
+			if flatDelta.Magnitude > 0.01 and localfacing.Magnitude > 0 then
+				local angle = math.acos(math.clamp(localfacing.Unit:Dot(flatDelta.Unit), -1, 1))
+				if angle > (math.rad(AngleSlider.Value) / 2) then return end
+			end
+
+			seen[ent] = true
+			result[#result + 1] = {
+				Entity = ent,
+				Root = root,
+				AimPoint = targetPoint,
+				Distance = delta.Magnitude,
+				Preferred = preferred
+			}
+		end
+
+		addTarget(store.KillauraTarget, true)
+		local candidates = entitylib.AllPosition({
+			Range = Range.Value + getDynamicExpandValue(),
+			Part = 'RootPart',
+			Players = Targets.Players.Enabled,
+			NPCs = Targets.NPCs.Enabled,
+			Limit = math.max(MaxTargets.Value * 3, MaxTargets.Value),
+			Sort = sortmethods[Sort.Value]
+		})
+		if #candidates < 1 then
+			local fallback = EntityNearPosition(Range.Value + getDynamicExpandValue(), Targets.NPCs.Enabled)
+			if fallback then
+				addTarget(fallback, false)
+			end
+		end
+		for _, ent in candidates do
+			addTarget(ent, false)
+		end
+		for i = #result, MaxTargets.Value + 1, -1 do
+			result[i] = nil
+		end
+		return result
+	end
+
 	task.spawn(function()
 		AttackRemote = bedwars.Client:Get(bedwars.AttackRemote)
 		local Reach = Reach or {Enabled = false}
@@ -27520,13 +28416,36 @@ run(function()
 				return playersService:GetPlayerFromCharacter(attackTable.entityInstance)
 			end)
 
-			local selfpos = attackTable.validate.selfPosition.value
-			local targetpos = attackTable.validate.targetPosition.value
+			local validate = attackTable.validate or {}
+			validate.raycast = validate.raycast or {}
+			validate.selfPosition = validate.selfPosition or {value = entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position or Vector3.zero}
+			validate.targetPosition = validate.targetPosition or {value = validate.selfPosition.value}
+			attackTable.validate = validate
+
+			local selfpos = validate.selfPosition.value
+			local targetpos = validate.targetPosition.value
+			local dynamicHitboxActive = ((Killaura and Killaura.Enabled) and isDynamicHitboxEnabled()) or (HitBoxes and HitBoxes.Enabled)
+			if dynamicHitboxActive and attackTable.entityInstance then
+				local dynamicTarget = select(1, getAuraTargetPoint({
+					Character = attackTable.entityInstance,
+					RootPart = attackTable.entityInstance.PrimaryPart or attackTable.entityInstance:FindFirstChild('HumanoidRootPart')
+				}, selfpos))
+				if dynamicTarget then
+					targetpos = dynamicTarget
+					validate.targetPosition.value = dynamicTarget
+				end
+			end
+
 			store.attackReach = ((selfpos - targetpos).Magnitude * 100) // 1 / 100
 			store.attackReachUpdate = tick() + 1
-			if Reach.Enabled or HitBoxes.Enabled then
-				attackTable.validate.raycast = attackTable.validate.raycast or {}
-				attackTable.validate.selfPosition.value += CFrame.lookAt(selfpos, targetpos).LookVector * math.max((selfpos - targetpos).Magnitude - 14.399, 0)
+			if Reach.Enabled or HitBoxes.Enabled or dynamicHitboxActive then
+				local direction = targetpos - selfpos
+				if direction.Magnitude > 0 then
+					validate.selfPosition.value += direction.Unit * math.max(direction.Magnitude - 14.399, 0)
+					if validate.raycast.cameraPosition then
+						validate.raycast.cameraPosition.value = validate.selfPosition.value
+					end
+				end
 			end
 
 			if suc and plr then
@@ -27536,11 +28455,6 @@ run(function()
 			return self:SendToServer(attackTable, ...)
 		end
 	end)
-
-	local lastSwingServerTime = 0
-	local lastSwingServerTimeDelta = 0
-
-	local OneTapCooldown = {Value = 5}
 
 	local function createRangeCircle()
 		local suc, err = pcall(function()
@@ -27570,16 +28484,18 @@ run(function()
 	end
 
 	local function getAttackData()
+		if not entitylib.isAlive or not (entitylib.character and entitylib.character.RootPart) then return false end
 		if Mouse.Enabled then
 			if not inputService:IsMouseButtonPressed(0) then return false end
 		end
+		if GUI.Enabled and not canClick() then return false end
 
 		local sword = Limit.Enabled and store.localHand or getSword()
 		if not sword or not sword.tool then return false end
 
 		local meta = bedwars.ItemTable[sword.tool.Name]
 		if Limit.Enabled then
-			if store.localHand.Type ~= 'sword' or bedwars.DaoController.chargingMaid then return false end
+			if not store.localHand or store.localHand.Type ~= 'sword' or bedwars.DaoController.chargingMaid then return false end
 		end
 
 		if LegitAura.Enabled then
@@ -27598,6 +28514,7 @@ run(function()
 			if callback then
 				lastSwingServerTime = Workspace:GetServerTimeNow()
                 lastSwingServerTimeDelta = 0
+				nextAttackTick = 0
 
 				if RangeCircle.Enabled then
 					createRangeCircle()
@@ -27666,120 +28583,110 @@ run(function()
 				end
 
 				repeat
-					pcall(function()
-						if entitylib.isAlive and entitylib.character.HumanoidRootPart then
-							TweenService:Create(RangeCirclePart, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Position = entitylib.character.HumanoidRootPart.Position - Vector3.new(0, entitylib.character.Humanoid.HipHeight, 0)}):Play()
-						end
-					end)
+					if RangeCirclePart and entitylib.isAlive and entitylib.character.HumanoidRootPart then
+						RangeCirclePart.Position = entitylib.character.HumanoidRootPart.Position - Vector3.new(0, entitylib.character.Humanoid.HipHeight, 0)
+					end
 					local attacked, sword, meta = {}, getAttackData()
 					Attacking = false
 					killauraNearPlayer = Attacking
 					store.KillauraTarget = nil
 					pcall(function() vapeTargetInfo.Targets.Killaura = nil end)
 					if sword and meta then
-						if sigridcheck and entitylib.isAlive and lplr.Character:FindFirstChild("elk") then return end
-						local isClaw = string.find(string.lower(tostring(sword and sword.itemType or "")), "summoner_claw")
-						local plrs = entitylib.AllPosition({
-							Range = Range.Value,
-							Part = 'RootPart',
-							Players = Targets.Players.Enabled,
-							NPCs = Targets.NPCs.Enabled,
-							Limit = MaxTargets.Value,
-							Sort = sortmethods[Sort.Value]
-						})
-						if #plrs < 1 then
-							plrs = {EntityNearPosition(Range.Value, Targets.NPCs.Enabled)}
+						if sigridcheck and entitylib.isAlive and lplr.Character:FindFirstChild("elk") then
+							task.wait(1 / UpdateRate.Value)
+							continue
 						end
-						if #plrs > 0 then
-							--switchItem(sword.tool, 0)
-							if store.equippedKit == "ember" and shared.EmberAutoKit and sword.itemType == "infernal_saber" then
-								bedwars.EmberController:BladeRelease(sword)
+
+						local selfpos = entitylib.character.RootPart.Position
+						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+						local targets = getAuraTargets(selfpos, localfacing)
+						if #targets > 0 then
+							local primaryTarget = targets[1].Entity
+							local isClaw = string.find(string.lower(tostring(sword and sword.itemType or "")), "summoner_claw")
+							Attacking = true
+							killauraNearPlayer = true
+							store.KillauraTarget = primaryTarget
+							for _, targetData in targets do
+								table.insert(attacked, targetData.Entity)
 							end
-							local selfpos = entitylib.character.RootPart.Position
-							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+							pcall(function()
+								local plr = primaryTarget
+								vapeTargetInfo.Targets.Killaura = {
+									Humanoid = {
+										Health = (plr.Character:GetAttribute("Health") or plr.Humanoid.Health) + getShieldAttribute(plr.Character),
+										MaxHealth = plr.Character:GetAttribute("MaxHealth") or plr.Humanoid.MaxHealth
+									},
+									Player = plr.Player
+								}
+							end)
 
-							for _, v in plrs do
-								--if not ({whitelist:get(v)})[2] then continue end
-								--if workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack < OneTapCooldown.Value/10 then continue end
-								pcall(function()
+							if workspace:GetServerTimeNow() >= nextAttackTick then
+								if store.equippedKit == "ember" and shared.EmberAutoKit and sword.itemType == "infernal_saber" then
+									bedwars.EmberController:BladeRelease(sword)
+								end
+								if not isClaw and not Swing.Enabled and AnimDelay <= tick() then
+									AnimDelay = tick() + (meta.sword.respectAttackSpeedForEffects and meta.sword.attackSpeed or (Sync.Enabled and 0.24 or 0.14))
+									bedwars.SwordController:playSwordEffect(meta, 0)
+									if meta.displayName:find(' Scythe') then
+										bedwars.ScytheController:playLocalAnimation()
+									end
+
+									if vape.ThreadFix then
+										setthreadidentity(8)
+									end
+								end
+
+								local currentTool = nil
+								for _, targetData in targets do
+									local v = targetData.Entity
+									targetinfo.Targets[v] = tick() + 1
+
+									local attackSword = sword
 									if type(v) == "table" and v.Character ~= nil and v.Character:HasTag("Crystal") then
-										local a, b = getPickaxe()
-										if a ~= nil and a.tool ~= nil then
-											sword = a
+										local pickaxe = getPickaxe()
+										if pickaxe and pickaxe.tool then
+											attackSword = pickaxe
 										end
 									end
-									switchItem(sword.tool, 0)
-								end)
-								if Targets.Walls.Enabled then
-									if not Wallcheck(lplr.Character, v.Character) then continue end
-								end
-								local delta = (v.RootPart.Position - selfpos)
-								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
-								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
+									if attackSword and attackSword.tool and currentTool ~= attackSword.tool then
+										switchItem(attackSword.tool, 0)
+										currentTool = attackSword.tool
+									end
 
-								table.insert(attacked, v)
-								targetinfo.Targets[v] = tick() + 1
-								pcall(function()
-									local plr = v
-									vapeTargetInfo.Targets.Killaura = {
-										Humanoid = {
-											Health = (plr.Character:GetAttribute("Health") or plr.Humanoid.Health) + getShieldAttribute(plr.Character),
-											MaxHealth = plr.Character:GetAttribute("MaxHealth") or plr.Humanoid.MaxHealth
-										},
-										Player = plr.Player
-									}
-								end)
-								if not Attacking then
-									Attacking = true
-									killauraNearPlayer = Attacking
-									store.KillauraTarget = v
-									if not isClaw then
-										if not Swing.Enabled and AnimDelay <= tick() then
-											AnimDelay = tick() + (meta.sword.respectAttackSpeedForEffects and meta.sword.attackSpeed or (Sync.Enabled and 0.24 or 0.14))
-											bedwars.SwordController:playSwordEffect(meta, 0)
-											if meta.displayName:find(' Scythe') then
-												bedwars.ScytheController:playLocalAnimation()
-											end
+									local actualRoot = targetData.Root
+									if actualRoot then
+										local direction = targetData.AimPoint - selfpos
+										local dir = direction.Magnitude > 0 and direction.Unit or CFrame.lookAt(selfpos, actualRoot.Position).LookVector
+										local pos = selfpos + dir * math.max(targetData.Distance - 14.399, 0)
+										local now = workspace:GetServerTimeNow()
 
-											if vape.ThreadFix then
-												setthreadidentity(8)
-											end
+										bedwars.SwordController.lastAttack = now
+										bedwars.SwordController.lastSwingServerTime = now
+										lastSwingServerTimeDelta = now - lastSwingServerTime
+										lastSwingServerTime = now
+
+										store.attackReach = (targetData.Distance * 100) // 1 / 100
+										store.attackReachUpdate = tick() + 1
+										if isClaw then
+											bedwars.KaidaController:request(v.Character)
+										else
+											AttackRemote:FireServer({
+												weapon = attackSword.tool,
+												chargedAttack = {chargeRatio = 0},
+												entityInstance = v.Character,
+												validate = {
+													raycast = {
+														cameraPosition = {value = pos},
+														cursorDirection = {value = dir}
+													},
+													targetPosition = {value = targetData.AimPoint},
+													selfPosition = {value = pos}
+												}
+											})
 										end
 									end
 								end
-
-								local actualRoot = v.Character.PrimaryPart
-								if actualRoot then
-									local dir = CFrame.lookAt(selfpos, actualRoot.Position).LookVector
-									local pos = selfpos + dir * math.max(delta.Magnitude - 14.399, 0)
-
-									bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
-                                    bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow()
-
-									lastSwingServerTimeDelta = workspace:GetServerTimeNow() - lastSwingServerTime
-                                    lastSwingServerTime = workspace:GetServerTimeNow()
-
-									store.attackReach = (delta.Magnitude * 100) // 1 / 100
-									store.attackReachUpdate = tick() + 1
-									if isClaw then
-										bedwars.KaidaController:request(v.Character)
-									else
-										AttackRemote:FireServer({
-											weapon = sword.tool,
-											chargedAttack = {chargeRatio = 0},
-											entityInstance = v.Character,
-											validate = {
-												raycast = {
-													cameraPosition = {value = pos},
-													cursorDirection = {value = dir}
-												},
-												targetPosition = {value = actualRoot.Position},
-												selfPosition = {value = pos}
-											},
-                                            --lastSwingServerTimeDelta = lastSwingServerTimeDelta
-										})
-									end
-								end
+								nextAttackTick = workspace:GetServerTimeNow() + getAuraAttackDelay(meta)
 							end
 						end
 					end
@@ -28086,6 +28993,19 @@ run(function()
 	Sync = Killaura:CreateToggle({
 		Name = 'Synced Animation',
 		Tooltip = 'Plays animation with hit attempt'
+	})
+	DynamicHitbox = Killaura:CreateToggle({
+		Name = 'Dynamic hitbox',
+		Default = true,
+		Tooltip = 'Scales target point and range padding to the target model size'
+	})
+	DynamicExpand = Killaura:CreateSlider({
+		Name = 'Hitbox bonus',
+		Min = 0,
+		Max = 4,
+		Default = 1.5,
+		Decimal = 10,
+		Darker = true
 	})
 	Killaura:CreateToggle({
 		Name = "Sigrid Check",
@@ -32924,7 +33844,7 @@ run(function()
 
 	local nearestBed
 
-	local breakBlock = function(pos, effects, normal, bypass, anim)
+	local breakBlock = function(pos, effects, normal, bypass, anim, tool, respectHand)
 		if vape.Modules.InfiniteFly and vape.Modules.InfiniteFly.Enabled then
 			return
 		end
@@ -32941,8 +33861,14 @@ run(function()
 			local blockdmg = 0
 			if block and block.Parent ~= nil then
 				if ((entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) - (blockpos * 3)).magnitude > 30 then return end
+				if not tool then return end
+				if respectHand then
+					local handItem = lplr.Character and lplr.Character:FindFirstChild("HandInvItem")
+					if not handItem or handItem.Value ~= tool then return end
+				else
+					switchItem(tool)
+				end
 				store.blockPlace = tick() + 0.1
-				switchToAndUseTool(block)
 				blockhealthbarpos = {
 					blockPosition = blockpos
 				}
@@ -33058,7 +33984,68 @@ run(function()
 	local nukerbeds = {Enabled = false}
 	local nukerclosestblock = {Enabled = false}
 	local nukercustom = {RefreshValues = function() end, ObjectList = {}}
-	local luckyblocktable = {}
+	local trackedNukerBlocks = {}
+
+	local function isTrackedOreBlock(block)
+		local name = string.lower(tostring(block and block.Name or ''))
+		return name:find('ore', 1, true) ~= nil
+	end
+
+	local function isTrackedNukerBlock(block)
+		if not block then return false end
+		local lowerName = string.lower(tostring(block.Name))
+		return table.find(nukercustom.ObjectList, block.Name) or (nukerluckyblock.Enabled and lowerName:find('lucky', 1, true) ~= nil) or (nukerironore.Enabled and isTrackedOreBlock(block))
+	end
+
+	local function refreshTrackedNukerBlocks()
+		table.clear(trackedNukerBlocks)
+		for _, block in pairs(store.blocks) do
+			if isTrackedNukerBlock(block) then
+				trackedNukerBlocks[block] = true
+			end
+		end
+	end
+
+	local function resolveNukerTool(block)
+		if not block then return nil, false end
+		local blockMeta = bedwars.ItemTable[block.Name]
+		local breakType = blockMeta and blockMeta.block and blockMeta.block.breakType
+		if not breakType then return nil, nukerlegit.Enabled end
+
+		if nukerlegit.Enabled then
+			local handTool = store.localHand and store.localHand.tool
+			local handMeta = handTool and bedwars.ItemTable[handTool.Name]
+			if handMeta and handMeta.breakBlock and handMeta.breakBlock[breakType] then
+				return handTool, true
+			end
+			return nil, true
+		end
+
+		local bestTool = getBestTool(block.Name)
+		local resolvedTool = bestTool and bestTool.tool or (store.localHand and store.localHand.tool)
+		local toolMeta = resolvedTool and bedwars.ItemTable[resolvedTool.Name]
+		if toolMeta and toolMeta.breakBlock and toolMeta.breakBlock[breakType] then
+			return resolvedTool, false
+		end
+		return nil, false
+	end
+
+	local function findNearestTrackedNukerBlock(playerPos)
+		local closestBlock, closestDistance
+		for block in pairs(trackedNukerBlocks) do
+			if block and block.Parent ~= nil then
+				if (nukerown.Enabled or block:GetAttribute("PlacedByUserId") ~= lplr.UserId) then
+					local distance = (playerPos - block.Position).Magnitude
+					if distance <= nukerrange.Value and (not closestDistance or distance < closestDistance) then
+						closestBlock, closestDistance = block, distance
+					end
+				end
+			else
+				trackedNukerBlocks[block] = nil
+			end
+		end
+		return closestBlock
+	end
 
 	local nearbed = false
 
@@ -33067,27 +34054,22 @@ run(function()
 		Function = function(callback)
 			if callback then
 				bedwars.ItemTable = bedwars.ItemTable or bedwars.ItemMeta
-				for i,v in pairs(store.blocks) do
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
-					end
-				end
+				refreshTrackedNukerBlocks()
 				table.insert(Nuker.Connections, collectionService:GetInstanceAddedSignal("block"):Connect(function(v)
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
+					if isTrackedNukerBlock(v) then
+						trackedNukerBlocks[v] = true
 					end
 				end))
 				table.insert(Nuker.Connections, collectionService:GetInstanceRemovedSignal("block"):Connect(function(v)
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.remove(luckyblocktable, table.find(luckyblocktable, v))
-					end
+					trackedNukerBlocks[v] = nil
 				end))
 				task.spawn(function()
 					repeat
 						nearbed = false
+						nearestBed = nil
 						if (not nukernofly.Enabled or not vape.Modules.Fly.Enabled) then
 							local broke = not entityLibrary.isAlive
-							local tool = (not nukerlegit.Enabled) and {Name = "wood_axe"} or store.localHand.tool
+							local playerPos = entityLibrary.isAlive and (entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) or nil
 							if nukerbeds.Enabled then
 								for i, obj in pairs(collectionService:GetTagged("bed")) do
 									if broke then break end
@@ -33096,16 +34078,16 @@ run(function()
 										if obj:GetAttribute("BedShieldEndTime") then
 											if obj:GetAttribute("BedShieldEndTime") > game.Workspace:GetServerTimeNow() then continue end
 										end
-										if ((entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) - obj.Position).magnitude <= nukerrange.Value then
-											if tool and bedwars.ItemTable[tool.Name].breakBlock and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
+										if playerPos and (playerPos - obj.Position).magnitude <= nukerrange.Value then
+											local tool, respectHand = resolveNukerTool(obj)
+											if tool and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
 												nearbed = true
 												nearestBed = obj
 												if nukerclosestblock.Enabled then
-                                                    local playerPos = entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position
                                                     local closestBlock, closestPos, closestNormal = findClosestBreakableBlock(obj.Position, playerPos)
                                                     if closestBlock and closestPos then
                                                         broke = true
-                                                        breakBlock(closestPos, nukereffects.Enabled, closestNormal, false, nukeranimation.Enabled)
+                                                        breakBlock(closestPos, nukereffects.Enabled, closestNormal, false, nukeranimation.Enabled, tool, respectHand)
                                                         task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
                                                         break
                                                     end
@@ -33113,7 +34095,7 @@ run(function()
                                                     local res, amount = getBestBreakSide(obj.Position)
                                                     local res2, amount2 = getBestBreakSide(obj.Position + Vector3.new(0, 0, 3))
                                                     broke = true
-                                                    breakBlock((amount < amount2 and obj.Position or obj.Position + Vector3.new(0, 0, 3)), nukereffects.Enabled, (amount < amount2 and res or res2), false, nukeranimation.Enabled)
+                                                    breakBlock((amount < amount2 and obj.Position or obj.Position + Vector3.new(0, 0, 3)), nukereffects.Enabled, (amount < amount2 and res or res2), false, nukeranimation.Enabled, tool, respectHand)
                                                     task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
                                                     break
                                                 end
@@ -33123,18 +34105,13 @@ run(function()
 								end
 							end
 							broke = broke and not entityLibrary.isAlive
-							for i, obj in pairs(luckyblocktable) do
-								if broke then break end
-								if nearbed then break end
-								if entityLibrary.isAlive then
-									if obj and obj.Parent ~= nil then
-										if ((entityLibrary.LocalPosition or entityLibrary.character.HumanoidRootPart.Position) - obj.Position).magnitude <= nukerrange.Value and (nukerown.Enabled or obj:GetAttribute("PlacedByUserId") ~= lplr.UserId) then
-											if tool and bedwars.ItemTable[tool.Name].breakBlock and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
-												breakBlock(obj.Position, nukereffects.Enabled, getBestBreakSide(obj.Position), true, nukeranimation.Enabled)
-												task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
-												break
-											end
-										end
+							if not broke and not nearbed and playerPos then
+								local obj = findNearestTrackedNukerBlock(playerPos)
+								if obj and bedwars.BlockController:isBlockBreakable({blockPosition = obj.Position / 3}, lplr) then
+									local tool, respectHand = resolveNukerTool(obj)
+									if tool then
+										breakBlock(obj.Position, nukereffects.Enabled, getBestBreakSide(obj.Position), true, nukeranimation.Enabled, tool, respectHand)
+										task.wait(nukerslowmode.Value ~= 0 and nukerslowmode.Value/10 or 0)
 									end
 								end
 							end
@@ -33143,10 +34120,10 @@ run(function()
 					until (not Nuker.Enabled)
 				end)
 			else
-				luckyblocktable = {}
+				table.clear(trackedNukerBlocks)
 			end
 		end,
-		Tooltip = "Automatically destroys beds & luckyblocks around you."
+		Tooltip = "Automatically destroys beds, ores, and tracked blocks around you."
 	})
 	nukerslowmode = Nuker:CreateSlider({
 		Name = "Break Slowmode",
@@ -33201,44 +34178,21 @@ run(function()
 	nukerluckyblock = Nuker:CreateToggle({
 		Name = "Break LuckyBlocks",
 		Function = function(callback)
-			if callback then
-				luckyblocktable = {}
-				for i,v in pairs(store.blocks) do
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
-					end
-				end
-			else
-				luckyblocktable = {}
-			end
+			refreshTrackedNukerBlocks()
 		 end,
 		Default = true
 	})
 	nukerironore = Nuker:CreateToggle({
-		Name = "Break IronOre",
+		Name = "Break Ores",
 		Function = function(callback)
-			if callback then
-				luckyblocktable = {}
-				for i,v in pairs(store.blocks) do
-					if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) or (nukerironore.Enabled and v.Name == "iron_ore") then
-						table.insert(luckyblocktable, v)
-					end
-				end
-			else
-				luckyblocktable = {}
-			end
+			refreshTrackedNukerBlocks()
 		end
 	})
 	nukercustom = Nuker:CreateTextList({
 		Name = "NukerList",
 		TempText = "block (tesla_trap)",
 		AddFunction = function()
-			luckyblocktable = {}
-			for i,v in pairs(store.blocks) do
-				if table.find(nukercustom.ObjectList, v.Name) or (nukerluckyblock.Enabled and v.Name:find("lucky")) then
-					table.insert(luckyblocktable, v)
-				end
-			end
+			refreshTrackedNukerBlocks()
 		end
 	})
 end)
