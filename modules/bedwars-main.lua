@@ -41246,11 +41246,13 @@ run(function()
 	end)
 end)
 
-for _, v in vape.Modules do
+for name, v in vape.Modules do
 	if v.Category == 'Combat' or v.Category == 'Minigames' then
-		vape:Remove(i)
+		vape:Remove(name)
 	end
 end
+
+vape:Remove('Inventory')
 
 run(function()
 	local Sprint

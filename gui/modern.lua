@@ -4575,7 +4575,180 @@ function mainapi:CreateCategoryList(categorysettings)
 	categorysettings.Function = categorysettings.Function or function() end
 	categorysettings.Function = function() return pcall(function() categorysettings.Function() end) end
 
+	local profileContextMenu = nil
+
+	local function closeProfileMenu()
+		if profileContextMenu then
+			profileContextMenu:Destroy()
+			profileContextMenu = nil
+		end
+	end
+
+	local function showProfileMenu(profileName, anchorObject)
+		closeProfileMenu()
+
+		local menu = Instance.new('Frame')
+		menu.Name = 'ProfileContextMenu'
+		menu.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+		menu.BorderSizePixel = 0
+		menu.ZIndex = 10
+		menu.Parent = clickgui
+		addCorner(menu)
+		local menuStroke = Instance.new('UIStroke')
+		menuStroke.Color = color.Light(uipallet.Main, 0.12)
+		menuStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		menuStroke.Parent = menu
+		local menuPad = Instance.new('UIPadding')
+		menuPad.PaddingTop = UDim.new(0, 3)
+		menuPad.PaddingBottom = UDim.new(0, 3)
+		menuPad.Parent = menu
+		local menuLayout = Instance.new('UIListLayout')
+		menuLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		menuLayout.Parent = menu
+
+		local function addMenuBtn(text, order, callback)
+			local btn = Instance.new('TextButton')
+			btn.Size = UDim2.fromOffset(140, 24)
+			btn.BackgroundTransparency = 1
+			btn.AutoButtonColor = false
+			btn.Text = '  '..text
+			btn.TextXAlignment = Enum.TextXAlignment.Left
+			btn.TextColor3 = color.Dark(uipallet.Text, 0.2)
+			btn.TextSize = 13
+			btn.FontFace = uipallet.Font
+			btn.LayoutOrder = order
+			btn.ZIndex = 11
+			btn.Parent = menu
+			btn.MouseEnter:Connect(function()
+				btn.BackgroundTransparency = 0.92
+				btn.BackgroundColor3 = Color3.new(1, 1, 1)
+				btn.TextColor3 = uipallet.Text
+			end)
+			btn.MouseLeave:Connect(function()
+				btn.BackgroundTransparency = 1
+				btn.TextColor3 = color.Dark(uipallet.Text, 0.2)
+			end)
+			btn.MouseButton1Click:Connect(function()
+				closeProfileMenu()
+				callback()
+			end)
+		end
+
+		addMenuBtn('Copy Config', 1, function()
+			local moduleProfileFile = resolveModuleProfileFile(profileName, mainapi.Place)
+			local path = profilePath(moduleProfileFile)
+			if isfile(path) then
+				local ok = pcall(function()
+					setclipboard(readfile(path))
+				end)
+				if ok then
+					mainapi:CreateNotification('Profiles', profileName..' config copied to clipboard.', 3)
+				else
+					mainapi:CreateNotification('Profiles', 'Clipboard not supported by your executor.', 3, 'alert')
+				end
+			else
+				mainapi:CreateNotification('Profiles', 'No saved data for '..profileName..'. Switch to it first.', 3, 'alert')
+			end
+		end)
+
+		addMenuBtn('Load from Clipboard', 2, function()
+			local ok, data = pcall(function()
+				local raw = (getclipboard or function() return nil end)()
+				if not raw or raw == '' then return nil end
+				return httpService:JSONDecode(raw)
+			end)
+			if ok and data and type(data) == 'table' then
+				local moduleProfileFile = resolveCanonicalModuleProfileFile(profileName, mainapi.Place)
+				local path = profilePath(moduleProfileFile)
+				writefile(path, httpService:JSONEncode(data))
+				mainapi:CreateNotification('Profiles', 'Config imported to '..profileName..'. Switching now...', 3)
+				task.wait(0.5)
+				mainapi:Save(profileName)
+				mainapi:Load(true)
+			else
+				mainapi:CreateNotification('Profiles', 'No valid config found in clipboard.', 3, 'alert')
+			end
+		end)
+
+		if profileName ~= 'default' then
+			addMenuBtn('Rename', 3, function()
+				local ind = categoryapi:GetValue(profileName)
+				if not ind then return end
+				local entry = mainapi.Profiles[ind]
+				local oldName = entry.Name
+
+				local renameFrame = Instance.new('Frame')
+				renameFrame.Name = 'RenamePopup'
+				renameFrame.Size = UDim2.fromOffset(200, 34)
+				renameFrame.Position = UDim2.fromOffset(
+					anchorObject.AbsolutePosition.X / scale.Scale,
+					anchorObject.AbsolutePosition.Y / scale.Scale
+				)
+				renameFrame.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+				renameFrame.ZIndex = 10
+				renameFrame.Parent = clickgui
+				addCorner(renameFrame)
+				local renameStroke = Instance.new('UIStroke')
+				renameStroke.Color = color.Light(uipallet.Main, 0.12)
+				renameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+				renameStroke.Parent = renameFrame
+				local renameBox = Instance.new('TextBox')
+				renameBox.Size = UDim2.new(1, -16, 1, 0)
+				renameBox.Position = UDim2.fromOffset(8, 0)
+				renameBox.BackgroundTransparency = 1
+				renameBox.Text = oldName
+				renameBox.TextColor3 = uipallet.Text
+				renameBox.TextSize = 14
+				renameBox.FontFace = uipallet.Font
+				renameBox.ClearTextOnFocus = false
+				renameBox.ZIndex = 11
+				renameBox.Parent = renameFrame
+				renameBox:CaptureFocus()
+				renameBox.FocusLost:Connect(function(enterPressed)
+					local newName = renameBox.Text:gsub('%s+', '')
+					renameFrame:Destroy()
+					if not enterPressed or newName == '' or newName == oldName then return end
+					if categoryapi:GetValue(newName) then
+						mainapi:CreateNotification('Profiles', 'A profile named '..newName..' already exists.', 3, 'alert')
+						return
+					end
+					local oldFile = resolveModuleProfileFile(oldName, mainapi.Place)
+					local newFile = resolveCanonicalModuleProfileFile(newName, mainapi.Place)
+					if isfile(profilePath(oldFile)) then
+						writefile(profilePath(newFile), readfile(profilePath(oldFile)))
+						deleteModuleProfileFiles(oldName, mainapi.Place)
+					end
+					entry.Name = newName
+					if mainapi.Profile == oldName then
+						mainapi.Profile = newName
+					end
+					categoryapi:ChangeValue()
+				end)
+			end)
+		end
+
+		if profileName ~= 'default' and profileName ~= mainapi.Profile then
+			addMenuBtn('Delete', 4, function()
+				categoryapi:ChangeValue(profileName)
+			end)
+		end
+
+		task.defer(function()
+			local totalHeight = menuLayout.AbsoluteContentSize.Y + 6
+			menu.Size = UDim2.fromOffset(140, totalHeight)
+			local anchorPos = anchorObject.AbsolutePosition
+			local anchorSize = anchorObject.AbsoluteSize
+			menu.Position = UDim2.fromOffset(
+				(anchorPos.X + anchorSize.X - 140) / scale.Scale,
+				(anchorPos.Y + anchorSize.Y + 2) / scale.Scale
+			)
+		end)
+
+		profileContextMenu = menu
+	end
+
 	function categoryapi:ChangeValue(val)
+		closeProfileMenu()
 		if val then
 			if categorysettings.Profiles then
 				local ind = self:GetValue(val)
@@ -4717,21 +4890,16 @@ function mainapi:CreateCategoryList(categorysettings)
 				bindcovertext.Parent = bindcover
 				bind.Parent = object
 				dotsbutton.MouseEnter:Connect(function()
-					if v.Name ~= mainapi.Profile then
-						dots.ImageColor3 = uipallet.Text
-					end
+					dots.ImageColor3 = uipallet.Text
 				end)
 				dotsbutton.MouseLeave:Connect(function()
-					if v.Name ~= mainapi.Profile then
-						dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
-					end
+					dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 				end)
 				dotsbutton.MouseButton1Click:Connect(function()
-					if v.Name ~= mainapi.Profile then
-						categoryapi:ChangeValue(v.Name)
-					end
+					showProfileMenu(v.Name, object)
 				end)
 				object.MouseButton1Click:Connect(function()
+					closeProfileMenu()
 					mainapi:Save(v.Name)
 					mainapi:Load(true)
 				end)
@@ -4881,6 +5049,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	end
 
 	function categoryapi:Expand()
+		closeProfileMenu()
 		self.Expanded = not self.Expanded
 		children.Visible = self.Expanded
 		arrow.Rotation = self.Expanded and 0 or 180
