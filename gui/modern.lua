@@ -2557,6 +2557,12 @@ components = {
 		knob.Position = UDim2.fromOffset(2, 2)
 		knob.BackgroundColor3 = uipallet.Main
 		knob.Parent = knobholder
+		local toggleStroke = Instance.new('UIStroke')
+		toggleStroke.Color = uipallet.Text
+		toggleStroke.Thickness = 0
+		toggleStroke.Transparency = 1
+		toggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		toggleStroke.Parent = toggle
 		local hovered = false
 		local pressed = false
 		optionsettings.Function = optionsettings.Function or function() end
@@ -2597,7 +2603,7 @@ components = {
 			optionapi:Toggle()
 		end
 
-		toggle.MouseEnter:Connect(function()
+		bindHoverGroup({toggle, knobholder, knob}, function()
 			hovered = true
 			if not optionapi.Enabled then
 				tween:Tween(knobholder, uipallet.TweenSmooth, {
@@ -2611,8 +2617,11 @@ components = {
 				Size = UDim2.fromOffset(10, 10),
 				Position = UDim2.fromOffset(optionapi.Enabled and 11 or 1, 1)
 			})
-		end)
-		toggle.MouseLeave:Connect(function()
+			tween:Tween(toggleStroke, uipallet.TweenSmooth, {
+				Thickness = 1.5,
+				Transparency = 0.3
+			})
+		end, function()
 			hovered = false
 			if not optionapi.Enabled then
 				tween:Tween(knobholder, uipallet.TweenSmooth, {
@@ -2625,6 +2634,10 @@ components = {
 			tween:Tween(knob, uipallet.TweenSmooth, {
 				Size = UDim2.fromOffset(8, 8),
 				Position = UDim2.fromOffset(optionapi.Enabled and 12 or 2, 2)
+			})
+			tween:Tween(toggleStroke, uipallet.TweenSmooth, {
+				Thickness = 0,
+				Transparency = 1
 			})
 			pressed = false
 		end)
@@ -6751,6 +6764,9 @@ end))
 
 mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 	mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
+	pcall(function()
+		cloneref(game:GetService('StarterGui')):SetCoreGuiEnabled(Enum.CoreGuiType.Chat, not clickgui.Visible)
+	end)
 	if clickgui.Visible and inputService.MouseEnabled then
 		repeat
 			local visibleCheck = clickgui.Visible

@@ -4740,8 +4740,8 @@ run(function()
 					end
 					continue
 				end
-				if Distance.Enabled then
-					local distance = entitylib.isAlive and entitylib.character.RootPart and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+				if Distance.Enabled and entitylib.isAlive and entitylib.character and entitylib.character.RootPart then
+					local distance = (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						setESPVisible(EntityESP, false)
 						continue
@@ -16707,7 +16707,7 @@ run(function()
     local PredictiveAnalysis = {}
     local MitigationStrategies = {}
     local velocityHistory = {}
-    local maxHistory = 10
+    local maxHistory = 3
 	local tracked = 0
 
     local function recordVelocity()
@@ -16782,6 +16782,9 @@ run(function()
 			tracked = entitylib.character.Humanoid.FloorMaterial == Enum.Material.Air and math.min(tracked, entitylib.character.RootPart.AssemblyLinearVelocity.Y) or 0
 			if tracked < -85 then
 				entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+				local vel = entitylib.character.RootPart.AssemblyLinearVelocity
+				entitylib.character.RootPart.AssemblyLinearVelocity = Vector3.new(vel.X, 0, vel.Z)
+				tracked = 0
 			end
 		end
 	end
@@ -28847,7 +28850,7 @@ run(function()
 		local sword = Limit.Enabled and store.localHand or getSword()
 		if not sword or not sword.tool then return false end
 
-		local meta = bedwars.ItemTable[sword.tool.Name]
+		local meta = (bedwars.ItemMeta or bedwars.ItemTable or {})[sword.itemType or sword.tool.Name]
 		if Limit.Enabled then
 			if not store.localHand or store.localHand.Type ~= 'sword' or bedwars.DaoController.chargingMaid then return false end
 		end
@@ -29700,7 +29703,7 @@ run(function()
     local PredictiveAnalysis = {}
     local MitigationStrategies = {}
     local velocityHistory = {}
-    local maxHistory = 10
+    local maxHistory = 3
 	local tracked = 0
 
     local function recordVelocity()
@@ -29775,6 +29778,9 @@ run(function()
 			tracked = entitylib.character.Humanoid.FloorMaterial == Enum.Material.Air and math.min(tracked, entitylib.character.RootPart.AssemblyLinearVelocity.Y) or 0
 			if tracked < -85 then
 				entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+				local vel = entitylib.character.RootPart.AssemblyLinearVelocity
+				entitylib.character.RootPart.AssemblyLinearVelocity = Vector3.new(vel.X, 0, vel.Z)
+				tracked = 0
 			end
 		end
 	end
