@@ -4545,10 +4545,16 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		bindHoverGroup({modulebutton, bind, favorite, dotsbutton, bindcover}, function()
 			hovered = true
-			tween:Tween(modulebutton, uipallet.TweenSmooth, {
-				TextColor3 = uipallet.Text,
-				BackgroundColor3 = moduleapi.Enabled and color.Light(uipallet.Main, 0.14) or color.Light(uipallet.Main, 0.16)
-			})
+			if moduleapi.Enabled then
+				tween:Tween(modulebutton, uipallet.TweenSmooth, {
+					TextColor3 = uipallet.Text
+				})
+			else
+				tween:Tween(modulebutton, uipallet.TweenSmooth, {
+					TextColor3 = uipallet.Text,
+					BackgroundColor3 = color.Light(uipallet.Main, 0.16)
+				})
+			end
 			tween:Tween(modulestroke, uipallet.TweenSmooth, {
 				Transparency = 0.18,
 				Thickness = 1.35
@@ -4569,6 +4575,10 @@ function mainapi:CreateCategory(categorysettings)
 				tween:Tween(modulebutton, uipallet.TweenSmooth, {
 					TextColor3 = color.Dark(uipallet.Text, 0.16),
 					BackgroundColor3 = uipallet.Main
+				})
+			elseif moduleapi.Enabled then
+				tween:Tween(modulebutton, uipallet.TweenSmooth, {
+					TextColor3 = uipallet.Text
 				})
 			else
 				tween:Tween(modulebutton, uipallet.TweenSmooth, {
@@ -4599,10 +4609,16 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		modulebutton.MouseButton1Down:Connect(function()
 			pressed = true
-			tween:Tween(modulebutton, uipallet.TweenFast, {
-				Size = UDim2.fromOffset(216, 38),
-				BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-			})
+			if moduleapi.Enabled then
+				tween:Tween(modulebutton, uipallet.TweenFast, {
+					Size = UDim2.fromOffset(216, 38)
+				})
+			else
+				tween:Tween(modulebutton, uipallet.TweenFast, {
+					Size = UDim2.fromOffset(216, 38),
+					BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+				})
+			end
 		end)
 		modulebutton.InputEnded:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 and pressed then
