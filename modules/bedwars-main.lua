@@ -15134,9 +15134,10 @@ run(function()
 
 						if FlyAnywayProgressBarFrame then
 							FlyAnywayProgressBarFrame.Visible = Fly.Enabled and flyAllowed <= 0
-							FlyAnywayProgressBarFrame.BackgroundColor3 = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
 							pcall(function()
-								FlyAnywayProgressBarFrame.Frame.BackgroundColor3 = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+								local accentColor = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+								FlyAnywayProgressBarFrame.Frame.BackgroundColor3 = accentColor
+								FlyAnywayProgressBarFrame.UIStroke.Color = accentColor
 							end)
 						end
 
@@ -15147,11 +15148,12 @@ run(function()
 								if (not onground) then
 									groundtime = tick() + (2.6 + (entityLibrary.groundTick - tick()))
 									if FlyAnywayProgressBarFrame then
-										FlyAnywayProgressBarFrame.Frame:TweenSize(UDim2.new(0, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, groundtime - tick(), true)
+										local dur = math.max(groundtime - tick(), 0.05)
+										tweenService:Create(FlyAnywayProgressBarFrame.Frame, TweenInfo.new(dur, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Size = UDim2.new(0, 0, 1, 0)}):Play()
 									end
 								else
 									if FlyAnywayProgressBarFrame then
-										FlyAnywayProgressBarFrame.Frame:TweenSize(UDim2.new(1, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 0, true)
+										tweenService:Create(FlyAnywayProgressBarFrame.Frame, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {Size = UDim2.new(1, 0, 1, 0)}):Play()
 									end
 								end
 							end
@@ -15184,11 +15186,6 @@ run(function()
 							if ray then
 								destination = ((ray.Position + ray.Normal) - root.Position)
 							end
-						end
-
-						if FlyAnywayProgressBarFrame and not flyAllowed then
-							FlyAnywayProgressBarFrame.Visible = true
-							pcall(function() FlyAnywayProgressBarFrame.Frame:TweenSize(UDim2.new(1, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 0, true) end)
 						end
 
 						if not flyAllowed then
@@ -15331,32 +15328,52 @@ run(function()
 		Name = "Progress Bar",
 		Function = function(callback)
 			if callback then
+				-- Outer track frame
 				FlyAnywayProgressBarFrame = Instance.new("Frame")
-				FlyAnywayProgressBarFrame.AnchorPoint = Vector2.new(0.5, 0)
-				FlyAnywayProgressBarFrame.Position = UDim2.new(0.5, 0, 1, -200)
-				FlyAnywayProgressBarFrame.Size = UDim2.new(0.2, 0, 0, 20)
-				FlyAnywayProgressBarFrame.BackgroundTransparency = 0.5
+				FlyAnywayProgressBarFrame.Name = "FlyProgressBar"
+				FlyAnywayProgressBarFrame.AnchorPoint = Vector2.new(0.5, 1)
+				FlyAnywayProgressBarFrame.Position = UDim2.new(0.5, 0, 1, -56)
+				FlyAnywayProgressBarFrame.Size = UDim2.new(0, 220, 0, 16)
+				FlyAnywayProgressBarFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+				FlyAnywayProgressBarFrame.BackgroundTransparency = 0
 				FlyAnywayProgressBarFrame.BorderSizePixel = 0
-				FlyAnywayProgressBarFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-				FlyAnywayProgressBarFrame.Visible = Fly.Enabled
+				FlyAnywayProgressBarFrame.Visible = false
 				FlyAnywayProgressBarFrame.Parent = vape.gui
-				local FlyAnywayProgressBarFrame2 = FlyAnywayProgressBarFrame:Clone()
-				FlyAnywayProgressBarFrame2.AnchorPoint = Vector2.new(0, 0)
-				FlyAnywayProgressBarFrame2.Position = UDim2.new(0, 0, 0, 0)
-				FlyAnywayProgressBarFrame2.Size = UDim2.new(1, 0, 0, 20)
-				FlyAnywayProgressBarFrame2.BackgroundTransparency = 0
-				FlyAnywayProgressBarFrame2.Visible = true
-				FlyAnywayProgressBarFrame2.Parent = FlyAnywayProgressBarFrame
-				local FlyAnywayProgressBartext = Instance.new("TextLabel")
-				FlyAnywayProgressBartext.Text = "2s"
-				FlyAnywayProgressBartext.Font = Enum.Font.Gotham
-				FlyAnywayProgressBartext.TextStrokeTransparency = 0
-				FlyAnywayProgressBartext.TextColor3 =  Color3.new(0.9, 0.9, 0.9)
-				FlyAnywayProgressBartext.TextSize = 20
-				FlyAnywayProgressBartext.Size = UDim2.new(1, 0, 1, 0)
-				FlyAnywayProgressBartext.BackgroundTransparency = 1
-				FlyAnywayProgressBartext.Position = UDim2.new(0, 0, -1, 0)
-				FlyAnywayProgressBartext.Parent = FlyAnywayProgressBarFrame
+				local trackCorner = Instance.new("UICorner")
+				trackCorner.CornerRadius = UDim.new(0, 4)
+				trackCorner.Parent = FlyAnywayProgressBarFrame
+				local trackStroke = Instance.new("UIStroke")
+				trackStroke.Name = "UIStroke"
+				trackStroke.Color = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+				trackStroke.Thickness = 1
+				trackStroke.Transparency = 0.35
+				trackStroke.Parent = FlyAnywayProgressBarFrame
+				-- Inner fill bar (named "Frame" to match existing heartbeat references)
+				local fill = Instance.new("Frame")
+				fill.Name = "Frame"
+				fill.AnchorPoint = Vector2.new(0, 0)
+				fill.Position = UDim2.new(0, 0, 0, 0)
+				fill.Size = UDim2.new(1, 0, 1, 0)
+				fill.BackgroundColor3 = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+				fill.BackgroundTransparency = 0
+				fill.BorderSizePixel = 0
+				fill.Parent = FlyAnywayProgressBarFrame
+				local fillCorner = Instance.new("UICorner")
+				fillCorner.CornerRadius = UDim.new(0, 4)
+				fillCorner.Parent = fill
+				-- Timer label (named "TextLabel" to match existing heartbeat references)
+				local lbl = Instance.new("TextLabel")
+				lbl.Name = "TextLabel"
+				lbl.Size = UDim2.new(1, 0, 1, 0)
+				lbl.Position = UDim2.new(0, 0, 0, 0)
+				lbl.BackgroundTransparency = 1
+				lbl.Text = "2.5s"
+				lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+				lbl.TextSize = 11
+				lbl.Font = Enum.Font.GothamBold
+				lbl.TextStrokeTransparency = 0.5
+				lbl.ZIndex = 2
+				lbl.Parent = FlyAnywayProgressBarFrame
 			else
 				if FlyAnywayProgressBarFrame then FlyAnywayProgressBarFrame:Destroy() FlyAnywayProgressBarFrame = nil end
 			end
@@ -16556,7 +16573,7 @@ run(function()
 					end
 				end))
 
-				if store.hand and LongJumpMethods[store.hand.tool.Name] then
+				if store.hand and store.hand.tool and LongJumpMethods[store.hand.tool.Name] then
 					task.spawn(LongJumpMethods[store.hand.tool.Name], getItem(store.hand.tool.Name), start, (CameraDir.Enabled and gameCamera or entitylib.character.RootPart).CFrame.LookVector)
 					return
 				end
@@ -26571,7 +26588,9 @@ local function getSword()
 		if store.equippedKit == "summoner" then
 			return getClaw()
 		end
-		local swordMeta = bedwars.ItemTable[item.itemType].sword
+		local itemMeta = bedwars.ItemTable[item.itemType]
+		if not itemMeta then continue end
+		local swordMeta = itemMeta.sword
 		if swordMeta then
 			local swordDamage = swordMeta.baseDamage or 0
 			if not bestSword or swordDamage > bestSwordDamage then
@@ -28129,7 +28148,7 @@ run(function()
 
 				if FlyAnywayProgressBarFrame and flyAllowed <= 0 and (not balloons) then
 					FlyAnywayProgressBarFrame.Visible = true
-					pcall(function() FlyAnywayProgressBarFrame.Frame:TweenSize(UDim2.new(1, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 0, true) end)
+					pcall(function() tweenService:Create(FlyAnywayProgressBarFrame.Frame, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {Size = UDim2.new(1, 0, 1, 0)}):Play() end)
 				end
 
 				groundtime = tick() + (2.6 + (entityLibrary.groundTick - tick()))
@@ -28167,9 +28186,10 @@ run(function()
 
 						if FlyAnywayProgressBarFrame then
 							FlyAnywayProgressBarFrame.Visible = Fly.Enabled and flyAllowed <= 0
-							FlyAnywayProgressBarFrame.BackgroundColor3 = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
 							pcall(function()
-								FlyAnywayProgressBarFrame.Frame.BackgroundColor3 = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+								local accentColor = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+								FlyAnywayProgressBarFrame.Frame.BackgroundColor3 = accentColor
+								FlyAnywayProgressBarFrame.UIStroke.Color = accentColor
 							end)
 						end
 
@@ -28180,11 +28200,12 @@ run(function()
 								if (not onground) then
 									groundtime = tick() + (2.6 + (entityLibrary.groundTick - tick()))
 									if FlyAnywayProgressBarFrame then
-										FlyAnywayProgressBarFrame.Frame:TweenSize(UDim2.new(0, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, groundtime - tick(), true)
+										local dur = math.max(groundtime - tick(), 0.05)
+										tweenService:Create(FlyAnywayProgressBarFrame.Frame, TweenInfo.new(dur, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {Size = UDim2.new(0, 0, 1, 0)}):Play()
 									end
 								else
 									if FlyAnywayProgressBarFrame then
-										FlyAnywayProgressBarFrame.Frame:TweenSize(UDim2.new(1, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 0, true)
+										tweenService:Create(FlyAnywayProgressBarFrame.Frame, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {Size = UDim2.new(1, 0, 1, 0)}):Play()
 									end
 								end
 							end
@@ -28262,32 +28283,52 @@ run(function()
 		Name = "Progress Bar",
 		Function = function(callback)
 			if callback then
+				-- Outer track frame
 				FlyAnywayProgressBarFrame = Instance.new("Frame")
-				FlyAnywayProgressBarFrame.AnchorPoint = Vector2.new(0.5, 0)
-				FlyAnywayProgressBarFrame.Position = UDim2.new(0.5, 0, 1, -200)
-				FlyAnywayProgressBarFrame.Size = UDim2.new(0.2, 0, 0, 20)
-				FlyAnywayProgressBarFrame.BackgroundTransparency = 0.5
+				FlyAnywayProgressBarFrame.Name = "FlyProgressBar"
+				FlyAnywayProgressBarFrame.AnchorPoint = Vector2.new(0.5, 1)
+				FlyAnywayProgressBarFrame.Position = UDim2.new(0.5, 0, 1, -56)
+				FlyAnywayProgressBarFrame.Size = UDim2.new(0, 220, 0, 16)
+				FlyAnywayProgressBarFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+				FlyAnywayProgressBarFrame.BackgroundTransparency = 0
 				FlyAnywayProgressBarFrame.BorderSizePixel = 0
-				FlyAnywayProgressBarFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-				FlyAnywayProgressBarFrame.Visible = Fly.Enabled
+				FlyAnywayProgressBarFrame.Visible = false
 				FlyAnywayProgressBarFrame.Parent = vape.gui
-				local FlyAnywayProgressBarFrame2 = FlyAnywayProgressBarFrame:Clone()
-				FlyAnywayProgressBarFrame2.AnchorPoint = Vector2.new(0, 0)
-				FlyAnywayProgressBarFrame2.Position = UDim2.new(0, 0, 0, 0)
-				FlyAnywayProgressBarFrame2.Size = UDim2.new(1, 0, 0, 20)
-				FlyAnywayProgressBarFrame2.BackgroundTransparency = 0
-				FlyAnywayProgressBarFrame2.Visible = true
-				FlyAnywayProgressBarFrame2.Parent = FlyAnywayProgressBarFrame
-				local FlyAnywayProgressBartext = Instance.new("TextLabel")
-				FlyAnywayProgressBartext.Text = "2s"
-				FlyAnywayProgressBartext.Font = Enum.Font.Gotham
-				FlyAnywayProgressBartext.TextStrokeTransparency = 0
-				FlyAnywayProgressBartext.TextColor3 =  Color3.new(0.9, 0.9, 0.9)
-				FlyAnywayProgressBartext.TextSize = 20
-				FlyAnywayProgressBartext.Size = UDim2.new(1, 0, 1, 0)
-				FlyAnywayProgressBartext.BackgroundTransparency = 1
-				FlyAnywayProgressBartext.Position = UDim2.new(0, 0, -1, 0)
-				FlyAnywayProgressBartext.Parent = FlyAnywayProgressBarFrame
+				local trackCorner = Instance.new("UICorner")
+				trackCorner.CornerRadius = UDim.new(0, 4)
+				trackCorner.Parent = FlyAnywayProgressBarFrame
+				local trackStroke = Instance.new("UIStroke")
+				trackStroke.Name = "UIStroke"
+				trackStroke.Color = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+				trackStroke.Thickness = 1
+				trackStroke.Transparency = 0.35
+				trackStroke.Parent = FlyAnywayProgressBarFrame
+				-- Inner fill bar (named "Frame" to match existing heartbeat references)
+				local fill = Instance.new("Frame")
+				fill.Name = "Frame"
+				fill.AnchorPoint = Vector2.new(0, 0)
+				fill.Position = UDim2.new(0, 0, 0, 0)
+				fill.Size = UDim2.new(1, 0, 1, 0)
+				fill.BackgroundColor3 = Color3.fromHSV(vape.GUIColor.Hue, vape.GUIColor.Sat, vape.GUIColor.Value)
+				fill.BackgroundTransparency = 0
+				fill.BorderSizePixel = 0
+				fill.Parent = FlyAnywayProgressBarFrame
+				local fillCorner = Instance.new("UICorner")
+				fillCorner.CornerRadius = UDim.new(0, 4)
+				fillCorner.Parent = fill
+				-- Timer label (named "TextLabel" to match existing heartbeat references)
+				local lbl = Instance.new("TextLabel")
+				lbl.Name = "TextLabel"
+				lbl.Size = UDim2.new(1, 0, 1, 0)
+				lbl.Position = UDim2.new(0, 0, 0, 0)
+				lbl.BackgroundTransparency = 1
+				lbl.Text = "2.5s"
+				lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+				lbl.TextSize = 11
+				lbl.Font = Enum.Font.GothamBold
+				lbl.TextStrokeTransparency = 0.5
+				lbl.ZIndex = 2
+				lbl.Parent = FlyAnywayProgressBarFrame
 			else
 				if FlyAnywayProgressBarFrame then FlyAnywayProgressBarFrame:Destroy() FlyAnywayProgressBarFrame = nil end
 			end
@@ -31752,11 +31793,14 @@ run(function()
 		Name = "AntiAFK",
 		Function = function(callback)
 			if callback then
+				-- Disconnect any built-in idle handlers to prevent AFK kick
+				for _, v in getconnections(lplr.Idled) do
+					pcall(function() v:Disconnect() end)
+				end
+				local afkRemote = bedwars.Client:Get("AfkInfo")
 				repeat
 					pcall(function()
-						bedwars.Client:Get("AfkInfo"):FireServer({
-							afk = false
-						})
+						afkRemote:FireServer({afk = false})
 					end)
 					task.wait(30)
 				until not AntiAFK.Enabled

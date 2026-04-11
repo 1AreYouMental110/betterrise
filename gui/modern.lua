@@ -611,7 +611,7 @@ do
 			tab[obj]:Cancel()
 		end
 
-		if obj.Parent and obj.Visible then
+		if obj.Parent then
 			tab[obj] = tweenService:Create(obj, tweeninfo, goal)
 			tab[obj].Completed:Once(function()
 				if tab then
