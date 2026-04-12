@@ -157,20 +157,11 @@ end
 if shared.CheatEngineMode then
 	InfoNotification("Pealzware | CheatEngineMode", "Due to your executor not supporting some functions \n some modules might be missing!", 5)
 end
-local bedwarsID = {
-	game = {6872274481, 8444591321, 8560631822},
-	lobby = {6872265039}
-}
+-- Routing is handled by loader.lua — main.lua always loads BedWars
 if not shared.VapeIndependent then
-	local isGame = table.find(bedwarsID.game, game.PlaceId)
-	local isLobby = table.find(bedwarsID.lobby, game.PlaceId)
-	if not isGame and not isLobby then
-		vape:CreateNotification('Pealzware', 'This build only includes BedWars.', 10, 'alert')
-		finishLoading()
-		return
-	end
-	if isGame then
-		if game.PlaceId ~= 6872274481 then vape.Place = 6872274481 end
+	-- Normalise sub-place IDs to the canonical BedWars PlaceId for server checks
+	if game.PlaceId ~= 6872274481 and table.find({8444591321, 8560631822}, game.PlaceId) then
+		vape.Place = 6872274481
 	end
 	pload('modules/bedwars-main.lua')
 	finishLoading()

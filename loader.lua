@@ -192,5 +192,26 @@ end
 shared.pload = pload
 getgenv().pload = pload
 
--- Load the main script
-return pload('main.lua', true)
+-- Game routing: load the correct module based on PlaceId
+local BEDWARS_IDS = {6872274481, 8444591321, 8560631822, 6872265039}
+local TCO_IDS     = {11137575513, 12943245078, 12943247001, 108097274488844}
+
+local function idInList(list, id)
+    for _, v in ipairs(list) do
+        if v == id then return true end
+    end
+    return false
+end
+
+if idInList(BEDWARS_IDS, game.PlaceId) then
+    return pload('main.lua', true)
+elseif idInList(TCO_IDS, game.PlaceId) then
+    return pload('modules/tco-main.lua', true)
+else
+    warn('[pealzware] Unsupported game PlaceId: ' .. tostring(game.PlaceId))
+    game:GetService('StarterGui'):SetCore('SendNotification', {
+        Title = 'pealzware',
+        Text = 'Game not supported (PlaceId ' .. tostring(game.PlaceId) .. ')',
+        Duration = 10,
+    })
+end
