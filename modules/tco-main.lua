@@ -723,14 +723,22 @@ do
     }
 
     -- ── Asset resolution ──────────────────────────────────────────
+    -- modern.lua exposes its dict-based getcustomasset (rbxassetid:// URLs)
+    -- via Library.Libraries.getcustomasset. Use that as primary source so
+    -- icons work even when executor local files aren't present.
     Library.Assets = {
         Get = function(name)
             local n = tostring(name or '')
-            local ok, res
-            ok, res = pcall(getcustomasset, 'pealzware/assets/new/'..n..'.png')
-            if ok and res ~= '' then return res end
-            ok, res = pcall(getcustomasset, 'pealzware/assets/'..n..'.png')
-            if ok and res ~= '' then return res end
+            local path = 'pealzware/assets/new/'..n..'.png'
+            -- Primary: modern.lua's bundled asset dict (always works, no local files needed)
+            local libGet = Library.Libraries and Library.Libraries.getcustomasset
+            if type(libGet) == 'function' then
+                local ok, res = pcall(libGet, path)
+                if ok and res and res ~= '' then return res end
+            end
+            -- Fallback: executor getcustomasset (works when files are on disk)
+            local ok, res = pcall(getcustomasset, path)
+            if ok and res and res ~= '' then return res end
             return 'rbxassetid://0'
         end
     }
@@ -932,11 +940,95 @@ do
                                 if nm == 'Dropdown' and ctrl.Change and not ctrl.Refresh then
                                     ctrl.Refresh = ctrl.Change
                                 end
+                                -- Toggle: expose .Value (= .Enabled) and :SetValue(bool)
+                                -- so scripts can read toggle state without using .Enabled.
+                                if nm == 'Toggle' then
+                                    ctrl.Value = ctrl.Enabled or false
+                                    if not ctrl.SetValue then
+                                        function ctrl:SetValue(v)
+                                            if not self then return end
+                                            local want = v and true or false
+                                            if want ~= self.Enabled then
+                                                self:Toggle()
+                                            end
+                                            self.Value = self.Enabled
+                                        end
+                                    end
+                                    -- Keep Value in sync when Toggle fires
+                                    local _prevOF = opts.Function
+                                    opts.Function = function(...)
+                                        ctrl.Value = ctrl.Enabled
+                                        if type(_prevOF) == 'function' then pcall(_prevOF, ...) end
+                                    end
+                                end
                             end
                             return ctrl
                         end
                     end
                 end
+
+                -- CreateLabel: modern.lua has no Label component so it's never generated
+                -- by the Create* loop. Provide it manually using mod.Children.
+                mod.CreateLabel = function(self3, s)
+                    local _lbl_api = { Value = '' }
+                    pcall(function()
+                        local _mc = mod.Children
+                        if not _mc then return end
+                        s = type(s) == 'table' and s or { Text = tostring(s or '') }
+                        local _lbl = Instance.new('TextLabel')
+                        _lbl.Size = UDim2.new(1, -8, 0, 18)
+                        _lbl.BackgroundTransparency = 1
+                        _lbl.Text = s.Text or ''
+                        _lbl.TextColor3 = _pal.Text
+                        _lbl.TextSize = 11
+                        _lbl.FontFace = _pal.Font
+                        _lbl.TextXAlignment = Enum.TextXAlignment.Left
+                        _lbl.TextWrapped = true
+                        _lbl.Parent = _mc
+                        _lbl_api.Object = _lbl
+                        _lbl_api.Value  = _lbl.Text
+                        function _lbl_api:SetText(t)
+                            _lbl.Text = tostring(t or '')
+                            self.Value = _lbl.Text
+                        end
+                    end)
+                    return _lbl_api
+                end
+
+                -- Fix CreateDivider: its component signature is Divider(children, text)
+                -- but the generic Create* loop generates function(_, opts) → v(opts, modulechildren).
+                -- This swaps children/text, causing Frame:upper() crash when text = modulechildren.
+                -- modern.lua stores modulechildren as mod.Children (line 4353), so we can call
+                -- the Divider function correctly ourselves.
+                mod.CreateDivider = function(self3, text)
+                    pcall(function()
+                        local _mc = mod.Children
+                        if not _mc then return end
+                        local d = Instance.new('Frame')
+                        d.Name = 'Divider'
+                        d.Size = UDim2.new(1, 0, 0, 1)
+                        d.BackgroundColor3 = Color3.fromRGB(255,255,255)
+                        d.BackgroundTransparency = 0.9
+                        d.BorderSizePixel = 0
+                        if text and type(text) == 'string' and #text > 0 then
+                            local lbl = Instance.new('TextLabel')
+                            lbl.Name = 'DividerLabel'
+                            lbl.Size = UDim2.fromOffset(218, 27)
+                            lbl.BackgroundTransparency = 1
+                            lbl.Text = '          '..text:upper()
+                            lbl.TextXAlignment = Enum.TextXAlignment.Left
+                            lbl.TextColor3 = Color3.fromRGB(255,255,255)
+                            lbl.TextTransparency = 0.43
+                            lbl.TextSize = 9
+                            lbl.Parent = _mc
+                            d.Position = UDim2.fromOffset(0, 26)
+                            d.Parent = lbl
+                        else
+                            d.Parent = _mc
+                        end
+                    end)
+                end
+
                 return mod
             end
         end
