@@ -840,18 +840,22 @@ do
     local _svcSnd
     pcall(function() _svcSnd = game:GetService('SoundService') end)
     local function _playUiSound(nm)
-        local id = _uiSoundIds[nm]
-        if not id then return end
-        local s = _uiSounds[id]
-        if not s or not s.Parent then
-            s = Instance.new('Sound')
-            s.SoundId = id
-            s.Volume  = 0.22
-            s.RollOffMaxDistance = 0
-            pcall(function() s.Parent = _svcSnd or workspace end)
-            _uiSounds[id] = s
-        end
-        pcall(function() s:Play() end)
+        pcall(function()
+            local id = _uiSoundIds[nm]
+            if not id then return end
+            local s = _uiSounds[id]
+            if not s or not s.Parent then
+                local ok, inst = pcall(Instance.new, 'Sound')
+                if not ok or not inst then return end
+                s = inst
+                s.SoundId = id
+                s.Volume  = 0.22
+                s.RollOffMaxDistance = 0
+                pcall(function() s.Parent = _svcSnd or workspace end)
+                _uiSounds[id] = s
+            end
+            pcall(function() s:Play() end)
+        end)
     end
     Library._playUiSound = _playUiSound   -- expose for raw button helpers below
 
@@ -906,19 +910,23 @@ do
                     local _origFn = mod['Create'..nm]
                     if type(_origFn) == 'function' then
                         mod['Create'..nm] = function(self3, opts)
-                            -- Pre-wire sound into opts.Function before component creation
-                            -- so modern.lua's hookCF captures the sound-aware version.
-                            if opts and _uiSoundIds[nm] then
-                                local _userFn = opts.Function
-                                opts.Function = function(...)
-                                    _playUiSound(nm)
-                                    if type(_userFn) == 'function' then
-                                        pcall(_userFn, ...)
-                                    end
-                                end
-                            end
+                            -- Create the component first so modern.lua's init
+                            -- (including any Dropdown default-value call) runs
+                            -- WITHOUT the sound wrapper, avoiding premature firing.
                             local ctrl = _origFn(self3, opts)
                             if ctrl then
+                                -- Wire sound AFTER creation via opts.Function replacement.
+                                -- modern.lua reads opts.Function at fire-time (table lookup),
+                                -- so this post-creation replacement is safe and effective.
+                                if opts and _uiSoundIds[nm] then
+                                    local _userFn = opts.Function
+                                    opts.Function = function(...)
+                                        pcall(_playUiSound, nm)
+                                        if type(_userFn) == 'function' then
+                                            pcall(_userFn, ...)
+                                        end
+                                    end
+                                end
                                 _addOnChanged(ctrl, opts)
                                 -- :Refresh() alias — modern.lua uses :Change(), script uses :Refresh()
                                 if nm == 'Dropdown' and ctrl.Change and not ctrl.Refresh then
