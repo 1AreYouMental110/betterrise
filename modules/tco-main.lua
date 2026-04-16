@@ -679,7 +679,9 @@ do
         OutlineColor    = _col.Dark(_pal.Main, 0.15),
         BackgroundColor = _col.Dark(_pal.Main, 0.05),
     }
-    Library.FontColor = Library.Palette.Text
+    Library.FontColor       = Library.Palette.Text
+    Library.BackgroundColor = Library.Palette.BackgroundColor  -- shortcut used in card builders
+    Library.OutlineColor    = Library.Palette.OutlineColor     -- shortcut used in card stroke
 
     -- ── Colour helpers ────────────────────────────────────────────
     Library.Color = _col
@@ -792,7 +794,7 @@ do
     function Library:CreateToggleButton(opts)
         opts = opts or {}
         local _btn = Instance.new('TextButton')
-        _btn.Size = UDim2.fromOffset(70, 24); _btn.Position = UDim2.new(1, -80, 0, 4)
+        _btn.Size = UDim2.fromOffset(70, 24); _btn.Position = UDim2.fromOffset(8, 8)
         _btn.BackgroundColor3 = Library.Palette.AccentColor
         _btn.Text = opts.Text or 'Menu'; _btn.TextColor3 = Library.Palette.Text
         _btn.TextSize = 11; _btn.FontFace = Library.Palette.Font; _btn.ZIndex = 10
@@ -2649,6 +2651,7 @@ _mainFrame = Library.ClickGui
     Server      = Library:CreateCategory({Name = 'Server',   Icon = Library.Assets.Get('rendericon'),     Size = UDim2.fromOffset(16, 16)}),
     Parts       = Library:CreateCategory({Name = 'Parts',    Icon = Library.Assets.Get('combaticon'),     Size = UDim2.fromOffset(16, 16)}),
     Chat        = Library:CreateCategory({Name = 'Utility',  Icon = Library.Assets.Get('rendericon'),     Size = UDim2.fromOffset(16, 16)}),
+    AutoCmds    = Library:CreateCategory({Name = 'Punish',   Icon = Library.Assets.Get('combaticon'),     Size = UDim2.fromOffset(16, 16)}),
     Settings    = Library:CreateCategory({Name = 'Settings', Icon = Library.Assets.Get('guisettings'),    Size = UDim2.fromOffset(16, 16)}),
 }
 
@@ -10568,8 +10571,8 @@ end
 -- failure here does NOT crash main() and leave Stash / Parts / Utility / Settings empty.
 local rtool = nil  -- hoisted so createrotool() can reference it after pcall
 local m = (1/3)/1.5
-local gs = pcall(function() return game:GetService("GeometryService") end)
-    and game:GetService("GeometryService") or nil
+local gs = nil
+pcall(function() gs = game:GetService("GeometryService") end)
 
 function crep(offset,size)
     if typeof(offset) == "Vector3" then
@@ -13953,6 +13956,47 @@ CharacterGroup:CreateButton({
 
 end -- /══ Character Control ══
 
+do -- ══ Stash Settings ══
+local StashSettingsGroup = Tabs.StashSystem:CreateModule({Name = 'Stash Settings'})
+local StashXLabel = StashSettingsGroup:CreateLabel({Text = 'X: ' .. math.floor(stashPosition and stashPosition.X or 0)})
+local StashYLabel = StashSettingsGroup:CreateLabel({Text = 'Y: ' .. math.floor(stashPosition and stashPosition.Y or 0)})
+local StashZLabel = StashSettingsGroup:CreateLabel({Text = 'Z: ' .. math.floor(stashPosition and stashPosition.Z or 0)})
+
+local function _updateStashLabels()
+    if not stashPosition then return end
+    pcall(function() StashXLabel:SetText('X: ' .. math.floor(stashPosition.X)) end)
+    pcall(function() StashYLabel:SetText('Y: ' .. math.floor(stashPosition.Y)) end)
+    pcall(function() StashZLabel:SetText('Z: ' .. math.floor(stashPosition.Z)) end)
+end
+
+StashSettingsGroup:CreateButton({
+    Name = 'Reroll Stash Position',
+    Function = function()
+        stashPosition = Vector3.new(
+            math.random(5000, 10000) * (math.random(2) == 1 and 1 or -1),
+            math.random(1000, 3000),
+            math.random(5000, 10000) * (math.random(2) == 1 and 1 or -1)
+        )
+        getgenv().stashposition = stashPosition
+        if stashPlatform then
+            pcall(function() stashPlatform.CFrame = CFrame.new(stashPosition - Vector3.new(0, 10, 0)) end)
+        end
+        _updateStashLabels()
+        Library:Notify('Stash position rerolled', 3)
+    end
+})
+
+StashSettingsGroup:CreateButton({
+    Name = 'Copy Stash Coords',
+    Function = function()
+        if setclipboard and stashPosition then
+            setclipboard(tostring(math.floor(stashPosition.X)) .. ', ' .. tostring(math.floor(stashPosition.Y)) .. ', ' .. tostring(math.floor(stashPosition.Z)))
+            Library:Notify('Stash coords copied to clipboard', 3)
+        end
+    end
+})
+end -- /══ Stash Settings ══
+
 do -- ══ Chat Utility & Spy ══
  ChatGroup = Tabs.Chat:CreateModule({Name = 'Chat Utility'})
 
@@ -15959,6 +16003,516 @@ end
 end)
 
 end -- /══ Antis Setup ══
+
+do -- ══ Auto Commands (Punish Tab) ══
+-- ─── State ────────────────────────────────────────────────────────────
+local blacklistEnabled       = false
+local blacklistJoinDelay     = 2
+local blacklistCmdDelay      = 0.4
+local blacklistedPlayers     = {}
+local autoSelfJoinEnabled    = false
+local autoSelfJoinCmds       = {}
+local autoOnPlayerJoinEnabled  = false
+local autoOnPlayerJoinCmds   = {}
+local autoOnPlayerLeaveEnabled = false
+local autoOnPlayerLeaveCmds  = {}
+local autoCmdConnections     = {}
+
+local BlacklistCountLabel    = nil
+local BlacklistViewDropdown  = nil
+local AutoSelfCmdCountLabel  = nil
+local AutoJoinCmdCountLabel  = nil
+local AutoLeaveCmdCountLabel = nil
+local BlacklistPlayerNameInput = nil
+local BlacklistActionSelect  = nil
+local BlacklistExtraInput    = nil
+local BlacklistJoinDelaySlider = nil
+local BlacklistRepeatSlider  = nil
+local AutoJoinCmdTextInput   = nil
+local AutoJoinPresetDropdown = nil
+local AutoSelfCmdTextInput   = nil
+local AutoSelfDelaySlider    = nil
+local AutoSelfPresetDropdown = nil
+local AutoLeaveCmdTextInput  = nil
+local AutoLeavePresetDropdown = nil
+local QuickBlacklistNameInput = nil
+
+local allAutoActions = {
+    "jail","freeze","glitch","fling","kill","blind",
+    "toxify","vampire","drag","mute","invisible",
+    "bring","reset","speed 1","jumppower 0","anchor",
+    "clone","explode","shrink","noclip","god","ungod",
+    "kick","seizure","fly"
+}
+
+-- ─── Core helpers ─────────────────────────────────────────────────────
+local function autoCmdSend(cmd)
+    pcall(function()
+        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";" .. cmd)
+    end)
+end
+local function autoCmdSendTarget(cmd, targetName)
+    autoCmdSend(cmd .. " " .. targetName)
+end
+
+-- ─── Blacklist execution ──────────────────────────────────────────────
+local function runBlacklistOnPlayer(player)
+    if not blacklistEnabled then return end
+    local bld = blacklistedPlayers[player.Name:lower()]
+    if not bld or not bld.enabled then return end
+    task.spawn(function()
+        task.wait(bld.joinDelay or blacklistJoinDelay)
+        Library:Notify("BLACKLIST: " .. player.Name .. " joined! Executing actions...", 6)
+        for rep = 1, (bld.repeatCount or 1) do
+            if rep > 1 then task.wait(bld.repeatDelay or 5) end
+            for _, act in ipairs(bld.actions) do
+                if blacklistEnabled and bld.enabled then
+                    pcall(function() autoCmdSendTarget(act, player.Name) end)
+                    task.wait(blacklistCmdDelay)
+                end
+            end
+        end
+    end)
+end
+
+-- ─── Auto self-join ───────────────────────────────────────────────────
+local function runAutoSelfJoinCmds()
+    if not autoSelfJoinEnabled then return end
+    task.spawn(function()
+        task.wait(3)
+        for _, cd in ipairs(autoSelfJoinCmds) do
+            if cd.enabled then
+                task.wait(cd.delay or 0.5)
+                autoCmdSend(cd.cmd)
+            end
+        end
+    end)
+end
+
+-- ─── Auto on-player-join ──────────────────────────────────────────────
+local function runAutoOnPlayerJoinCmds(player)
+    if not autoOnPlayerJoinEnabled then return end
+    if player == plr then return end
+    task.spawn(function()
+        task.wait(2)
+        for _, cd in ipairs(autoOnPlayerJoinCmds) do
+            if cd.enabled then
+                autoCmdSendTarget(cd.cmd, player.Name)
+                task.wait(0.5)
+            end
+        end
+    end)
+end
+
+-- ─── Auto on-player-leave ─────────────────────────────────────────────
+local function runAutoOnPlayerLeaveCmds(player)
+    if not autoOnPlayerLeaveEnabled then return end
+    task.spawn(function()
+        for _, cd in ipairs(autoOnPlayerLeaveCmds) do
+            if cd.enabled then
+                autoCmdSendTarget(cd.cmd, player.Name)
+                task.wait(0.5)
+            end
+        end
+    end)
+end
+
+-- ─── UI refresh helpers ───────────────────────────────────────────────
+local function refreshBlacklistUI()
+    local blcnt, blnames = 0, {}
+    for _, bld in pairs(blacklistedPlayers) do
+        blcnt = blcnt + 1; table.insert(blnames, bld.name)
+    end
+    table.sort(blnames, function(a, b) return a:lower() < b:lower() end)
+    if blcnt == 0 then table.insert(blnames, "(empty)") end
+    if BlacklistCountLabel  then BlacklistCountLabel:SetText("Blacklisted: " .. blcnt .. " player(s)") end
+    if BlacklistViewDropdown then pcall(function() BlacklistViewDropdown:Refresh(blnames) end) end
+end
+
+local function refreshAutoSelfLabel()
+    if not AutoSelfCmdCountLabel then return end
+    local n = 0
+    for _, c in ipairs(autoSelfJoinCmds) do if c.enabled then n = n + 1 end end
+    AutoSelfCmdCountLabel:SetText(n .. " enabled")
+end
+local function refreshAutoJoinLabel()
+    if not AutoJoinCmdCountLabel then return end
+    local n = 0
+    for _, c in ipairs(autoOnPlayerJoinCmds) do if c.enabled then n = n + 1 end end
+    AutoJoinCmdCountLabel:SetText("Join commands: " .. #autoOnPlayerJoinCmds .. " total, " .. n .. " enabled")
+end
+local function refreshAutoLeaveLabel()
+    if not AutoLeaveCmdCountLabel then return end
+    local n = 0
+    for _, c in ipairs(autoOnPlayerLeaveCmds) do if c.enabled then n = n + 1 end end
+    AutoLeaveCmdCountLabel:SetText("Leave commands: " .. #autoOnPlayerLeaveCmds .. " total, " .. n .. " enabled")
+end
+
+-- ─── System init ──────────────────────────────────────────────────────
+local function initAutoCmdSystem()
+    for _, c in ipairs(autoCmdConnections) do pcall(function() c:Disconnect() end) end
+    autoCmdConnections = {}
+    table.insert(autoCmdConnections, Players.PlayerAdded:Connect(function(player)
+        runBlacklistOnPlayer(player)
+        runAutoOnPlayerJoinCmds(player)
+    end))
+    table.insert(autoCmdConnections, Players.PlayerRemoving:Connect(function(player)
+        runAutoOnPlayerLeaveCmds(player)
+    end))
+end
+initAutoCmdSystem()
+runAutoSelfJoinCmds()
+
+-- ─── UI ──────────────────────────────────────────────────────────────
+local AutoCmdBlacklistGroup = Tabs.AutoCmds:CreateModule({Name = 'Blacklist Manager'})
+
+AutoCmdBlacklistGroup:CreateToggle({
+    Name = 'Enable Blacklist',
+    Default = false,
+    Tooltip = 'Auto-execute actions on blacklisted players when they join'
+}):OnChanged(function(val)
+    blacklistEnabled = val
+    Library:Notify(val and "Blacklist ACTIVE" or "Blacklist disabled", 2)
+end)
+
+BlacklistPlayerNameInput = AutoCmdBlacklistGroup:CreateInput({
+    Name = 'Add Username',
+    Default = '',
+    Placeholder = 'Enter player username',
+    Tooltip = 'Username to add to blacklist'
+})
+
+BlacklistActionSelect = AutoCmdBlacklistGroup:CreateDropdown({
+    Name = 'Action Preset',
+    Options = allAutoActions,
+    Default = 'jail',
+    Tooltip = 'Primary action to run on this player'
+})
+
+BlacklistExtraInput = AutoCmdBlacklistGroup:CreateInput({
+    Name = 'Extra Commands',
+    Default = '',
+    Placeholder = 'Comma-separated extra cmds',
+    Tooltip = 'Additional commands (comma-separated, e.g. freeze,blind)'
+})
+
+BlacklistJoinDelaySlider = AutoCmdBlacklistGroup:CreateSlider({
+    Name = 'Join Delay (s)',
+    Default = 2, Min = 0, Max = 15, Increment = 1,
+    Tooltip = 'Seconds to wait after the player joins before acting'
+})
+BlacklistJoinDelaySlider:OnChanged(function(val) blacklistJoinDelay = val end)
+
+BlacklistRepeatSlider = AutoCmdBlacklistGroup:CreateSlider({
+    Name = 'Repeat Count',
+    Default = 1, Min = 1, Max = 5, Increment = 1,
+    Tooltip = 'How many times to loop through all actions (5s gap)'
+})
+
+AutoCmdBlacklistGroup:CreateButton({
+    Name = 'Add to Blacklist',
+    Function = function()
+        local name = BlacklistPlayerNameInput and BlacklistPlayerNameInput.Value or ''
+        if name == "" then Library:Notify("Enter a username first", 3); return end
+        local acts = {BlacklistActionSelect and BlacklistActionSelect.Value or 'jail'}
+        local extra = BlacklistExtraInput and BlacklistExtraInput.Value or ''
+        if extra ~= "" then
+            for _, ec in ipairs(string.split(extra, ",")) do
+                local t = ec:gsub("^%s+",""):gsub("%s+$","")
+                if t ~= "" then table.insert(acts, t) end
+            end
+        end
+        blacklistedPlayers[name:lower()] = {
+            name = name, enabled = true, actions = acts,
+            joinDelay   = BlacklistJoinDelaySlider and BlacklistJoinDelaySlider.Value or 2,
+            repeatCount = BlacklistRepeatSlider    and BlacklistRepeatSlider.Value    or 1,
+            repeatDelay = 5
+        }
+        Library:Notify("Blacklisted: " .. name, 4)
+        refreshBlacklistUI()
+    end
+})
+
+AutoCmdBlacklistGroup:CreateButton({
+    Name = 'Run on Selected',
+    Function = function()
+        local name = BlacklistViewDropdown and BlacklistViewDropdown.Value or ''
+        if name == "" or name == "(empty)" then Library:Notify("Nothing selected", 2); return end
+        for _, onlinePlr in ipairs(Players:GetPlayers()) do
+            if onlinePlr.Name:lower() == name:lower() then
+                runBlacklistOnPlayer(onlinePlr)
+                Library:Notify("Triggered blacklist on " .. onlinePlr.Name, 3); return
+            end
+        end
+        Library:Notify(name .. " is not in this server", 3)
+    end
+})
+
+AutoCmdBlacklistGroup:CreateButton({
+    Name = 'Toggle Selected',
+    Function = function()
+        local name = BlacklistViewDropdown and BlacklistViewDropdown.Value or ''
+        if name == "" or name == "(empty)" then Library:Notify("Nothing selected", 2); return end
+        local k = name:lower()
+        if blacklistedPlayers[k] then
+            blacklistedPlayers[k].enabled = not blacklistedPlayers[k].enabled
+            Library:Notify(name .. " -> " .. (blacklistedPlayers[k].enabled and "ENABLED" or "DISABLED"), 3)
+        end
+    end
+})
+
+AutoCmdBlacklistGroup:CreateButton({
+    Name = 'Remove Selected',
+    Function = function()
+        local name = BlacklistViewDropdown and BlacklistViewDropdown.Value or ''
+        if name == "" or name == "(empty)" then Library:Notify("Nothing selected", 2); return end
+        blacklistedPlayers[name:lower()] = nil
+        Library:Notify("Removed " .. name .. " from blacklist", 3)
+        refreshBlacklistUI()
+    end
+})
+
+AutoCmdBlacklistGroup:CreateButton({
+    Name = 'Clear Blacklist',
+    Function = function()
+        blacklistedPlayers = {}
+        Library:Notify("Blacklist cleared", 3)
+        refreshBlacklistUI()
+    end
+})
+
+BlacklistCountLabel = AutoCmdBlacklistGroup:CreateLabel({Text = 'Blacklisted: 0 player(s)'})
+
+BlacklistViewDropdown = AutoCmdBlacklistGroup:CreateDropdown({
+    Name = 'Blacklisted Players',
+    Options = {"(empty)"},
+    Default = '(empty)',
+    Tooltip = 'Select a player to manage'
+})
+
+-- Player Join Commands
+local AutoOnJoinGroup = Tabs.AutoCmds:CreateModule({Name = 'Player Join'})
+
+AutoOnJoinGroup:CreateToggle({
+    Name = 'Enable Join Commands',
+    Default = false,
+    Tooltip = 'Execute commands on every player that joins'
+}):OnChanged(function(val)
+    autoOnPlayerJoinEnabled = val
+    Library:Notify(val and "On-Join commands active" or "On-Join commands disabled", 2)
+end)
+
+AutoJoinCmdTextInput = AutoOnJoinGroup:CreateInput({
+    Name = 'Command',
+    Default = '',
+    Placeholder = 'Enter command (no semicolon)',
+    Tooltip = 'Command to run on joining player'
+})
+
+AutoJoinPresetDropdown = AutoOnJoinGroup:CreateDropdown({
+    Name = 'Preset',
+    Options = allAutoActions,
+    Default = 'jail',
+    Tooltip = 'Used if command input is empty'
+})
+
+AutoOnJoinGroup:CreateButton({
+    Name = 'Add Command',
+    Function = function()
+        local cmd = (AutoJoinCmdTextInput and AutoJoinCmdTextInput.Value ~= "") and AutoJoinCmdTextInput.Value or (AutoJoinPresetDropdown and AutoJoinPresetDropdown.Value or 'jail')
+        if cmd == "" then Library:Notify("Enter a command first", 3); return end
+        table.insert(autoOnPlayerJoinCmds, {cmd = cmd, enabled = true})
+        Library:Notify("Join command added: ;" .. cmd, 3)
+        refreshAutoJoinLabel()
+    end
+})
+
+AutoOnJoinGroup:CreateButton({
+    Name = 'Run on All Players',
+    Function = function()
+        if #autoOnPlayerJoinCmds == 0 then Library:Notify("No join commands set", 3); return end
+        task.spawn(function()
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= plr then
+                    for _, cd in ipairs(autoOnPlayerJoinCmds) do
+                        if cd.enabled then autoCmdSendTarget(cd.cmd, player.Name); task.wait(0.5) end
+                    end
+                end
+            end
+            Library:Notify("Ran join commands on all players", 3)
+        end)
+    end
+})
+
+AutoOnJoinGroup:CreateButton({
+    Name = 'Clear All',
+    Function = function()
+        autoOnPlayerJoinCmds = {}
+        Library:Notify("Join commands cleared", 3)
+        refreshAutoJoinLabel()
+    end
+})
+
+AutoJoinCmdCountLabel = AutoOnJoinGroup:CreateLabel({Text = 'Join commands: 0 total, 0 enabled'})
+
+-- Self Commands (run on own join)
+local AutoSelfGroup = Tabs.AutoCmds:CreateModule({Name = 'Self Commands'})
+
+AutoSelfGroup:CreateToggle({
+    Name = 'Enable Self Commands',
+    Default = false,
+    Tooltip = 'Auto-run commands on yourself when you join a server'
+}):OnChanged(function(val)
+    autoSelfJoinEnabled = val
+    Library:Notify(val and "Self commands active" or "Self commands disabled", 2)
+end)
+
+AutoSelfCmdTextInput = AutoSelfGroup:CreateInput({
+    Name = 'Command',
+    Default = '',
+    Placeholder = 'Enter command (no semicolon)',
+    Tooltip = 'Command to run on yourself when joining'
+})
+
+AutoSelfPresetDropdown = AutoSelfGroup:CreateDropdown({
+    Name = 'Preset',
+    Options = allAutoActions,
+    Default = 'fly',
+    Tooltip = 'Used if command input is empty'
+})
+
+AutoSelfDelaySlider = AutoSelfGroup:CreateSlider({
+    Name = 'Command Delay (s)',
+    Default = 1, Min = 0, Max = 10, Increment = 1,
+    Tooltip = 'Delay between self commands'
+})
+
+AutoSelfGroup:CreateButton({
+    Name = 'Add Self Command',
+    Function = function()
+        local cmd = (AutoSelfCmdTextInput and AutoSelfCmdTextInput.Value ~= "") and AutoSelfCmdTextInput.Value or (AutoSelfPresetDropdown and AutoSelfPresetDropdown.Value or 'fly')
+        if cmd == "" then Library:Notify("Enter a command first", 3); return end
+        local delay = AutoSelfDelaySlider and AutoSelfDelaySlider.Value or 0.5
+        table.insert(autoSelfJoinCmds, {cmd = cmd, enabled = true, delay = delay})
+        Library:Notify("Self command added: ;" .. cmd, 3)
+        refreshAutoSelfLabel()
+    end
+})
+
+AutoSelfGroup:CreateButton({
+    Name = 'Run Now',
+    Function = function()
+        task.spawn(function()
+            for _, cd in ipairs(autoSelfJoinCmds) do
+                if cd.enabled then autoCmdSend(cd.cmd); task.wait(cd.delay or 0.5) end
+            end
+        end)
+    end
+})
+
+AutoSelfGroup:CreateButton({
+    Name = 'Clear Self Commands',
+    Function = function()
+        autoSelfJoinCmds = {}
+        Library:Notify("Self commands cleared", 3)
+        refreshAutoSelfLabel()
+    end
+})
+
+AutoSelfCmdCountLabel = AutoSelfGroup:CreateLabel({Text = '0 enabled'})
+
+-- Player Leave Commands
+local AutoOnLeaveGroup = Tabs.AutoCmds:CreateModule({Name = 'Player Leave'})
+
+AutoOnLeaveGroup:CreateToggle({
+    Name = 'Enable Leave Commands',
+    Default = false,
+    Tooltip = 'Execute commands when a player leaves'
+}):OnChanged(function(val)
+    autoOnPlayerLeaveEnabled = val
+    Library:Notify(val and "On-Leave commands active" or "On-Leave commands disabled", 2)
+end)
+
+AutoLeaveCmdTextInput = AutoOnLeaveGroup:CreateInput({
+    Name = 'Command',
+    Default = '',
+    Placeholder = 'Enter command (no semicolon)',
+    Tooltip = 'Command to run on leaving player'
+})
+
+AutoLeavePresetDropdown = AutoOnLeaveGroup:CreateDropdown({
+    Name = 'Preset',
+    Options = allAutoActions,
+    Default = 'kill',
+    Tooltip = 'Used if command input is empty'
+})
+
+AutoOnLeaveGroup:CreateButton({
+    Name = 'Add Command',
+    Function = function()
+        local cmd = (AutoLeaveCmdTextInput and AutoLeaveCmdTextInput.Value ~= "") and AutoLeaveCmdTextInput.Value or (AutoLeavePresetDropdown and AutoLeavePresetDropdown.Value or 'kill')
+        if cmd == "" then Library:Notify("Enter a command first", 3); return end
+        table.insert(autoOnPlayerLeaveCmds, {cmd = cmd, enabled = true})
+        Library:Notify("Leave command added: ;" .. cmd, 3)
+        refreshAutoLeaveLabel()
+    end
+})
+
+AutoOnLeaveGroup:CreateButton({
+    Name = 'Clear All Leave Commands',
+    Function = function()
+        autoOnPlayerLeaveCmds = {}
+        Library:Notify("Leave commands cleared", 3)
+        refreshAutoLeaveLabel()
+    end
+})
+
+AutoLeaveCmdCountLabel = AutoOnLeaveGroup:CreateLabel({Text = 'Leave commands: 0 total, 0 enabled'})
+
+-- Quick Blacklist Presets
+local QuickBlacklistGroup = Tabs.AutoCmds:CreateModule({Name = 'Blacklist Presets'})
+
+QuickBlacklistNameInput = QuickBlacklistGroup:CreateInput({
+    Name = 'Username',
+    Default = '',
+    Placeholder = 'Enter player username',
+    Tooltip = 'Player to quick-blacklist'
+})
+
+local function quickBlacklist(actions, repeatCount, label)
+    local name = QuickBlacklistNameInput and QuickBlacklistNameInput.Value or ''
+    if name == "" then Library:Notify("Enter a username first", 3); return end
+    blacklistedPlayers[name:lower()] = {
+        name = name, enabled = true, actions = actions,
+        joinDelay = blacklistJoinDelay, repeatCount = repeatCount or 1, repeatDelay = 5
+    }
+    Library:Notify("Blacklisted: " .. name .. "  |  " .. label, 4)
+    refreshBlacklistUI()
+end
+
+QuickBlacklistGroup:CreateButton({
+    Name = 'Grief  (Jail + Freeze + Glitch)',
+    Function = function() quickBlacklist({"jail","freeze","glitch"}, 1, "Grief Pack x1") end
+})
+QuickBlacklistGroup:CreateButton({
+    Name = 'Fling  (Kill + Fling + Glitch)',
+    Function = function() quickBlacklist({"kill","fling","glitch"}, 2, "Fling Pack x2") end
+})
+QuickBlacklistGroup:CreateButton({
+    Name = 'Silence  (Mute + Jail + Blind)',
+    Function = function() quickBlacklist({"mute","jail","blind"}, 1, "Silence Pack x1") end
+})
+QuickBlacklistGroup:CreateButton({
+    Name = 'Full Grief  (All actions x3)',
+    Function = function() quickBlacklist({"jail","freeze","glitch","blind","toxify","mute","fling"}, 3, "Full Grief x3") end
+})
+
+-- Cleanup on unload
+Library:OnUnload(function()
+    for _, c in ipairs(autoCmdConnections) do pcall(function() c:Disconnect() end) end
+    autoCmdConnections = {}
+end)
+end -- /══ Auto Commands (Punish Tab) ══
 
 do -- ══ Menu Settings ══
  MenuGroup = Tabs.Settings:CreateModule({Name = 'Menu'})
