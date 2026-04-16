@@ -1,17 +1,18 @@
 {
-    "_comment": "Default config for pealzware TCO. Edit toggles/values here and they will auto-apply when any user loads the script. Set 'enabled' to true for any feature you want on by default.",
+    "_comment": "Default config for pealzware TCO. Edit toggles/values here and they will auto-apply when any user loads the script.",
 
     "toggles": {
         "Auto Rejoin on Kick": false,
         "Show Credits on Join": true,
         "Auto Ping Optimization": true,
         "Mute Boomboxes": false,
-        "Anti-AFK": false,
+        "Anti-AFK": true,
         "Chat Spy": false,
         "Fly": false,
         "Anchor Aura": false,
         "Block Aura": false,
-        "Rainbow Aura": false
+        "Rainbow Aura": false,
+        "Leaderboard Fix (PealzFat)": true
     },
 
     "sliders": {
@@ -23,13 +24,14 @@
     },
 
     "dropdowns": {
-        "Aura Side": "Top"
+        "Aura Side": "Top",
+        "ESP Color": "Blue"
     },
 
     "gui": {
-        "accentHue": 0.46,
-        "accentSat": 0.96,
-        "accentVal": 0.52,
+        "accentHue": 0.60,
+        "accentSat": 0.88,
+        "accentVal": 0.96,
         "rainbowEnabled": false,
         "rainbowSpeed": 1
     }

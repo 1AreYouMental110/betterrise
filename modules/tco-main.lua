@@ -2946,6 +2946,14 @@ espBuildHighlights = {}
 espBuildLabels = {}
 espMaxDistance = 9999
 espUpdateConnection = nil
+-- Drawing-based ESP options (new)
+espHighlightEnabled = false   -- Roblox Highlight instance (off by default)
+esp2DBoxEnabled     = true    -- 2D screen-space box
+esp3DBoxEnabled     = false   -- 3D corner-box
+espSkeletonEnabled  = false   -- bone lines
+espHitboxEnabled    = false   -- hitbox box
+espDrawObjects      = {}      -- [player] = {box2d={lines}, box3d={lines}, skeleton={lines}, hitbox=line}
+espDrawConnection   = nil     -- fast Heartbeat loop for Drawing updates
 antiVoidEnabled = false
 antiVoidConnection = nil
 antiGravityConnection = nil
@@ -4275,24 +4283,130 @@ end
     return player.Name:lower():find(espTrackedPlayer:lower()) ~= nil
 end
 
+-- Helper: create a Drawing line (returns nil on executors without Drawing support)
+local _drawingSupported = nil
+local function _tryNewDrawing(type)
+    if _drawingSupported == false then return nil end
+    local ok, obj = pcall(function() return Drawing.new(type) end)
+    if not ok or not obj then _drawingSupported = false; return nil end
+    _drawingSupported = true
+    return obj
+end
+
+-- Create all Drawing objects for one player and store in espDrawObjects[player]
+local function CreateDrawESP(player)
+    local char = player.Character
+    if not char then return end
+    local existing = espDrawObjects[player]
+    if existing then return end  -- already created, update loop handles it
+
+    local col = getCurrentESPColor()
+    local drawEntry = {}
+
+    -- 2D box: 4 lines (top, bottom, left, right)
+    if esp2DBoxEnabled then
+        local lines = {}
+        for i = 1, 4 do
+            local ln = _tryNewDrawing("Line")
+            if ln then
+                ln.Color     = col
+                ln.Thickness = 1.5
+                ln.Transparency = 0
+                ln.Visible   = false
+                table.insert(lines, ln)
+            end
+        end
+        if #lines == 4 then drawEntry.box2d = lines end
+    end
+
+    -- 3D box: 12 corner lines
+    if esp3DBoxEnabled then
+        local lines = {}
+        for i = 1, 12 do
+            local ln = _tryNewDrawing("Line")
+            if ln then
+                ln.Color     = col
+                ln.Thickness = 1
+                ln.Transparency = 0
+                ln.Visible   = false
+                table.insert(lines, ln)
+            end
+        end
+        if #lines == 12 then drawEntry.box3d = lines end
+    end
+
+    -- Skeleton: 8 bone lines
+    if espSkeletonEnabled then
+        local lines = {}
+        for i = 1, 8 do
+            local ln = _tryNewDrawing("Line")
+            if ln then
+                ln.Color     = col
+                ln.Thickness = 1
+                ln.Transparency = 0.2
+                ln.Visible   = false
+                table.insert(lines, ln)
+            end
+        end
+        if #lines == 8 then drawEntry.skeleton = lines end
+    end
+
+    -- Hitbox: 4 lines (square around HRP)
+    if espHitboxEnabled then
+        local lines = {}
+        for i = 1, 4 do
+            local ln = _tryNewDrawing("Line")
+            if ln then
+                ln.Color     = Color3.fromRGB(255, 80, 80)
+                ln.Thickness = 1
+                ln.Transparency = 0
+                ln.Visible   = false
+                table.insert(lines, ln)
+            end
+        end
+        if #lines == 4 then drawEntry.hitbox = lines end
+    end
+
+    espDrawObjects[player] = drawEntry
+end
+
+-- Remove all Drawing objects for a player
+local function RemoveDrawESP(player)
+    local entry = espDrawObjects[player]
+    if not entry then return end
+    for _, group in pairs(entry) do
+        for _, ln in ipairs(group) do
+            pcall(function() ln:Remove() end)
+        end
+    end
+    espDrawObjects[player] = nil
+end
+
 function CreateESP(player)
     RemoveESP(player)
-     character = player.Character
+    local character = player.Character
     if not character then return end
 
-     color = getCurrentESPColor()
-     transp = getESPTransparency()
+    -- Roblox Highlight (only when enabled)
+    if espHighlightEnabled then
+        local color  = getCurrentESPColor()
+        local transp = getESPTransparency()
+        local hl = Instance.new("Highlight")
+        hl.Name                = "RomazESP"
+        hl.Adornee             = character
+        hl.FillTransparency    = transp
+        hl.OutlineTransparency = 0
+        hl.OutlineColor        = color
+        hl.FillColor           = color
+        hl.DepthMode           = espXrayEnabled
+            and Enum.HighlightDepthMode.AlwaysOnTop
+            or  Enum.HighlightDepthMode.Occluded
+        hl.Parent = playerGui
+        espObjects[player] = hl
+    end
 
-     hl = Instance.new("Highlight")
-    hl.Name = "RomazESP"
-    hl.Adornee = character
-    hl.FillTransparency = transp
-    hl.OutlineTransparency = 0
-    hl.OutlineColor = color
-    hl.FillColor = color
-    hl.DepthMode = espXrayEnabled and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
-    hl.Parent = playerGui
-    espObjects[player] = hl
+    -- Drawing-based visuals
+    CreateDrawESP(player)
 
     if espNametags then
         CreateESPNametag(player)
@@ -4526,9 +4640,10 @@ end
 
 function RemoveESP(player)
     if espObjects[player] then
-        espObjects[player]:Destroy()
+        pcall(function() espObjects[player]:Destroy() end)
         espObjects[player] = nil
     end
+    RemoveDrawESP(player)
     RemoveESPNametag(player)
 end
 
@@ -4783,6 +4898,203 @@ function StopESPUpdateLoop()
         espUpdateConnection:Disconnect()
         espUpdateConnection = nil
     end
+    if espDrawConnection then
+        espDrawConnection:Disconnect()
+        espDrawConnection = nil
+    end
+end
+
+-- ── Fast Drawing ESP update loop (runs every frame via Heartbeat) ─────────────
+-- Projects player character bounds to screen and updates line positions.
+-- Kept separate from the 0.25s Highlight loop so boxes are always smooth.
+local function _worldToScreen(pos)
+    local cam = workspace.CurrentCamera
+    if not cam then return nil, nil, false end
+    local vp, inView = cam:WorldToViewportPoint(pos)
+    return Vector2.new(vp.X, vp.Y), vp.Z, inView and vp.Z > 0
+end
+
+local function _getCharBounds(char)
+    -- Returns min/max of all BaseParts in the character for a tight 2D box
+    local cam  = workspace.CurrentCamera
+    if not cam then return nil end
+    local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+    local anyOnScreen = false
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local s, d, vis = _worldToScreen(part.Position)
+            if vis then
+                anyOnScreen = true
+                if s.X < minX then minX = s.X end
+                if s.Y < minY then minY = s.Y end
+                if s.X > maxX then maxX = s.X end
+                if s.Y > maxY then maxY = s.Y end
+            end
+        end
+    end
+    if not anyOnScreen then return nil end
+    -- Add padding
+    local pad = 4
+    return minX - pad, minY - pad, maxX + pad, maxY + pad
+end
+
+local _BONES = {
+    {"Head",              "UpperTorso"},
+    {"UpperTorso",        "LowerTorso"},
+    {"LowerTorso",        "LeftUpperLeg"},
+    {"LowerTorso",        "RightUpperLeg"},
+    {"LeftUpperLeg",      "LeftLowerLeg"},
+    {"RightUpperLeg",     "RightLowerLeg"},
+    {"UpperTorso",        "LeftUpperArm"},
+    {"UpperTorso",        "RightUpperArm"},
+}
+local _BONES_R6 = {
+    {"Head",   "Torso"},
+    {"Torso",  "Left Arm"},
+    {"Torso",  "Right Arm"},
+    {"Torso",  "Left Leg"},
+    {"Torso",  "Right Leg"},
+    {"Head",   "Torso"},
+    {"Torso",  "Left Arm"},
+    {"Torso",  "Right Arm"},
+}
+
+local function _setLine(ln, p1, p2, col)
+    ln.From    = p1
+    ln.To      = p2
+    ln.Color   = col
+    ln.Visible = true
+end
+
+local function _hideLines(tbl)
+    for _, ln in ipairs(tbl) do ln.Visible = false end
+end
+
+function StartDrawESPLoop()
+    if espDrawConnection then espDrawConnection:Disconnect() end
+    espDrawConnection = RunService.Heartbeat:Connect(function()
+        if not PlayersESPToggle.Value then
+            -- Hide all drawing objects when ESP is off
+            for _, entry in pairs(espDrawObjects) do
+                for _, group in pairs(entry) do _hideLines(group) end
+            end
+            return
+        end
+
+        local col = getCurrentESPColor()
+
+        for player, entry in pairs(espDrawObjects) do
+            local char = player and player.Character
+            if not char or not player.Parent then
+                -- Player gone — clean up next slow-loop cycle
+                for _, group in pairs(entry) do _hideLines(group) end
+            else
+                -- 2D box
+                if entry.box2d and esp2DBoxEnabled then
+                    local x1, y1, x2, y2 = _getCharBounds(char)
+                    if x1 then
+                        -- top, bottom, left, right
+                        _setLine(entry.box2d[1], Vector2.new(x1,y1), Vector2.new(x2,y1), col)
+                        _setLine(entry.box2d[2], Vector2.new(x1,y2), Vector2.new(x2,y2), col)
+                        _setLine(entry.box2d[3], Vector2.new(x1,y1), Vector2.new(x1,y2), col)
+                        _setLine(entry.box2d[4], Vector2.new(x2,y1), Vector2.new(x2,y2), col)
+                    else
+                        _hideLines(entry.box2d)
+                    end
+                elseif entry.box2d then
+                    _hideLines(entry.box2d)
+                end
+
+                -- 3D box (8 corners of HRP bounding box, 12 edges)
+                if entry.box3d and esp3DBoxEnabled then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local sz = hrp.Size * 0.5
+                        local cf = hrp.CFrame
+                        local corners = {
+                            cf * Vector3.new( sz.X,  sz.Y,  sz.Z),
+                            cf * Vector3.new(-sz.X,  sz.Y,  sz.Z),
+                            cf * Vector3.new(-sz.X,  sz.Y, -sz.Z),
+                            cf * Vector3.new( sz.X,  sz.Y, -sz.Z),
+                            cf * Vector3.new( sz.X, -sz.Y,  sz.Z),
+                            cf * Vector3.new(-sz.X, -sz.Y,  sz.Z),
+                            cf * Vector3.new(-sz.X, -sz.Y, -sz.Z),
+                            cf * Vector3.new( sz.X, -sz.Y, -sz.Z),
+                        }
+                        local sc = {}
+                        local allVis = true
+                        for i, wc in ipairs(corners) do
+                            local s, _, vis = _worldToScreen(wc)
+                            sc[i] = s
+                            if not vis then allVis = false end
+                        end
+                        if allVis then
+                            -- top face (0-1-2-3), bottom face (4-5-6-7), verticals
+                            local edges = {{1,2},{2,3},{3,4},{4,1},{5,6},{6,7},{7,8},{8,5},{1,5},{2,6},{3,7},{4,8}}
+                            for i, e in ipairs(edges) do
+                                _setLine(entry.box3d[i], sc[e[1]], sc[e[2]], col)
+                            end
+                        else
+                            _hideLines(entry.box3d)
+                        end
+                    else
+                        _hideLines(entry.box3d)
+                    end
+                elseif entry.box3d then
+                    _hideLines(entry.box3d)
+                end
+
+                -- Skeleton
+                if entry.skeleton and espSkeletonEnabled then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    local isR6 = hum and hum.RigType == Enum.HumanoidRigType.R6
+                    local bones = isR6 and _BONES_R6 or _BONES
+                    local anyVis = false
+                    for i, bone in ipairs(bones) do
+                        if entry.skeleton[i] then
+                            local p0 = char:FindFirstChild(bone[1])
+                            local p1 = char:FindFirstChild(bone[2])
+                            if p0 and p1 then
+                                local s0, _, v0 = _worldToScreen(p0.Position)
+                                local s1, _, v1 = _worldToScreen(p1.Position)
+                                if v0 and v1 then
+                                    _setLine(entry.skeleton[i], s0, s1, col)
+                                    anyVis = true
+                                else
+                                    entry.skeleton[i].Visible = false
+                                end
+                            else
+                                entry.skeleton[i].Visible = false
+                            end
+                        end
+                    end
+                elseif entry.skeleton then
+                    _hideLines(entry.skeleton)
+                end
+
+                -- Hitbox
+                if entry.hitbox and espHitboxEnabled then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local x1, y1, x2, y2 = _getCharBounds(char)
+                        if x1 then
+                            local hcol = Color3.fromRGB(255, 80, 80)
+                            _setLine(entry.hitbox[1], Vector2.new(x1,y1), Vector2.new(x2,y1), hcol)
+                            _setLine(entry.hitbox[2], Vector2.new(x1,y2), Vector2.new(x2,y2), hcol)
+                            _setLine(entry.hitbox[3], Vector2.new(x1,y1), Vector2.new(x1,y2), hcol)
+                            _setLine(entry.hitbox[4], Vector2.new(x2,y1), Vector2.new(x2,y2), hcol)
+                        else
+                            _hideLines(entry.hitbox)
+                        end
+                    else
+                        _hideLines(entry.hitbox)
+                    end
+                elseif entry.hitbox then
+                    _hideLines(entry.hitbox)
+                end
+            end
+        end
+    end)
 end
 
 local function tintColor(col, delta)
@@ -4810,237 +5122,90 @@ function createStyledBillboard(player, config)
     if not head then return end
 
     local existing = head:FindFirstChild(config.bbName)
-    if existing then
-        existing:Destroy()
-    end
+    if existing then existing:Destroy() end
 
     local palette = (Library and Library.Palette) or {}
-    local accentColor = config.accentColor or palette.AccentColor or Color3.fromRGB(0, 170, 255)
-    local cardColor = darkenColor(palette.Main or Color3.fromRGB(19, 25, 34), 0.02)
-    local textColor = palette.Text or Color3.fromRGB(240, 244, 255)
-    local subTextColor = darkenColor(textColor, 0.26)
-    local mutedTextColor = darkenColor(textColor, 0.4)
-    local edgeColor = lightenColor(accentColor, 0.07)
-    local accentSoft = darkenColor(accentColor, 0.08)
+    local accent  = config.accentColor or (palette.AccentColor) or Color3.fromRGB(0, 170, 255)
+    local bg      = Color3.fromRGB(14, 14, 20)
+    local txt     = Color3.fromRGB(238, 238, 248)
+    local muted   = Color3.fromRGB(140, 140, 165)
 
+    -- BillboardGui
     local bb = Instance.new("BillboardGui")
-    bb.Name = config.bbName
-    bb.Size = UDim2.fromOffset(196, 94)
-    bb.StudsOffset = Vector3.new(0, 3.45, 0)
-    bb.AlwaysOnTop = true
-    bb.ResetOnSpawn = false
-    bb.MaxDistance = 0
+    bb.Name           = config.bbName
+    bb.Size           = UDim2.fromOffset(174, 58)
+    bb.StudsOffset    = Vector3.new(0, 3.2, 0)
+    bb.AlwaysOnTop    = true
+    bb.ResetOnSpawn   = false
+    bb.MaxDistance    = 0
     bb.ClipsDescendants = false
-    bb.Parent = head
-    pcall(function()
-        bb.LightInfluence = 0
-    end)
+    bb.Parent         = head
+    pcall(function() bb.LightInfluence = 0 end)
 
-    local shadow = Instance.new("Frame")
-    shadow.Name = "Shadow"
-    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.BackgroundTransparency = 0.58
-    shadow.BorderSizePixel = 0
-    shadow.Position = UDim2.fromOffset(8, 8)
-    shadow.Size = UDim2.new(1, -12, 1, -14)
-    shadow.ZIndex = 0
-    shadow.Parent = bb
-    Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 14)
-
+    -- Card background
     local card = Instance.new("Frame")
-    card.Name = "Card"
-    card.BackgroundColor3 = cardColor
-    card.BackgroundTransparency = 0.04
-    card.BorderSizePixel = 0
-    card.Position = UDim2.fromOffset(4, 0)
-    card.Size = UDim2.new(1, -8, 1, -10)
-    card.ZIndex = 1
-    card.Parent = bb
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 12)
+    card.BackgroundColor3       = bg
+    card.BackgroundTransparency = 0.08
+    card.BorderSizePixel        = 0
+    card.Size                   = UDim2.fromScale(1, 1)
+    card.Parent                 = bb
+    local cardCorner = Instance.new("UICorner")
+    cardCorner.CornerRadius = UDim.new(0, 8)
+    cardCorner.Parent = card
+    local cardStroke = Instance.new("UIStroke")
+    cardStroke.Color        = accent
+    cardStroke.Thickness    = 1
+    cardStroke.Transparency = 0.55
+    cardStroke.Parent       = card
 
-    local cardGradient = Instance.new("UIGradient")
-    cardGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, lightenColor(cardColor, 0.03)),
-        ColorSequenceKeypoint.new(1, darkenColor(cardColor, 0.05)),
-    })
-    cardGradient.Rotation = 90
-    cardGradient.Parent = card
+    -- Left accent bar
+    local bar = Instance.new("Frame")
+    bar.BackgroundColor3 = accent
+    bar.BorderSizePixel  = 0
+    bar.Position         = UDim2.fromOffset(0, 8)
+    bar.Size             = UDim2.new(0, 3, 1, -16)
+    bar.Parent           = card
+    local barCorner = Instance.new("UICorner")
+    barCorner.CornerRadius = UDim.new(1, 0)
+    barCorner.Parent = bar
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = edgeColor
-    stroke.Thickness = 1.2
-    stroke.Transparency = 0.3
-    stroke.Parent = card
+    -- Role label (e.g. "Owner", "Premium", "User")
+    local roleLabel = Instance.new("TextLabel")
+    roleLabel.BackgroundTransparency = 1
+    roleLabel.Position  = UDim2.fromOffset(12, 6)
+    roleLabel.Size      = UDim2.new(1, -16, 0, 16)
+    roleLabel.Font      = Enum.Font.GothamBold
+    roleLabel.TextSize  = 11
+    roleLabel.TextColor3 = accent
+    roleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    roleLabel.Text      = config.roleText or "User"
+    roleLabel.Parent    = card
 
-    local innerStroke = Instance.new("UIStroke")
-    innerStroke.Name = "InnerGlow"
-    innerStroke.Color = lightenColor(cardColor, 0.08)
-    innerStroke.Thickness = 1
-    innerStroke.Transparency = 0.78
-    innerStroke.Parent = card
+    -- Display name
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Position  = UDim2.fromOffset(12, 24)
+    nameLabel.Size      = UDim2.new(1, -16, 0, 18)
+    nameLabel.Font      = Enum.Font.GothamSemibold
+    nameLabel.TextSize  = 13
+    nameLabel.TextColor3 = txt
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    nameLabel.Text      = player.DisplayName
+    nameLabel.Parent    = card
 
-    local sheen = Instance.new("Frame")
-    sheen.Name = "Sheen"
-    sheen.AnchorPoint = Vector2.new(1, 0)
-    sheen.Position = UDim2.new(1, 12, 0, -22)
-    sheen.Size = UDim2.fromOffset(84, 72)
-    sheen.BackgroundColor3 = accentColor
-    sheen.BackgroundTransparency = 0.88
-    sheen.BorderSizePixel = 0
-    sheen.Rotation = 14
-    sheen.ZIndex = 1
-    sheen.Parent = card
-    Instance.new("UICorner", sheen).CornerRadius = UDim.new(1, 0)
-
-    local accentLine = Instance.new("Frame")
-    accentLine.Name = "Accent"
-    accentLine.BackgroundColor3 = accentColor
-    accentLine.BackgroundTransparency = 0.1
-    accentLine.BorderSizePixel = 0
-    accentLine.Position = UDim2.new(0.12, 0, 0, 0)
-    accentLine.Size = UDim2.new(0.76, 0, 0, 3)
-    accentLine.ZIndex = 2
-    accentLine.Parent = card
-    Instance.new("UICorner", accentLine).CornerRadius = UDim.new(1, 0)
-
-    local accentLineGradient = Instance.new("UIGradient")
-    accentLineGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, accentSoft),
-        ColorSequenceKeypoint.new(0.5, accentColor),
-        ColorSequenceKeypoint.new(1, accentSoft),
-    })
-    accentLineGradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.2, 0.2),
-        NumberSequenceKeypoint.new(0.8, 0.2),
-        NumberSequenceKeypoint.new(1, 1),
-    })
-    accentLineGradient.Parent = accentLine
-
-    local badge = Instance.new("Frame")
-    badge.Name = "Badge"
-    badge.Position = UDim2.fromOffset(12, 10)
-    badge.Size = UDim2.fromOffset(104, 22)
-    badge.BackgroundColor3 = darkenColor(accentColor, 0.22)
-    badge.BackgroundTransparency = 0.1
-    badge.BorderSizePixel = 0
-    badge.ZIndex = 3
-    badge.Parent = card
-    Instance.new("UICorner", badge).CornerRadius = UDim.new(1, 0)
-
-    local badgeStroke = Instance.new("UIStroke")
-    badgeStroke.Color = edgeColor
-    badgeStroke.Thickness = 1
-    badgeStroke.Transparency = 0.45
-    badgeStroke.Parent = badge
-
-    local badgeGlow = Instance.new("UIGradient")
-    badgeGlow.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, darkenColor(accentColor, 0.14)),
-        ColorSequenceKeypoint.new(1, accentColor),
-    })
-    badgeGlow.Rotation = 15
-    badgeGlow.Parent = badge
-
-    local badgeDot = Instance.new("Frame")
-    badgeDot.Size = UDim2.fromOffset(8, 8)
-    badgeDot.Position = UDim2.fromOffset(10, 7)
-    badgeDot.BackgroundColor3 = lightenColor(accentColor, 0.12)
-    badgeDot.BorderSizePixel = 0
-    badgeDot.ZIndex = 4
-    badgeDot.Parent = badge
-    Instance.new("UICorner", badgeDot).CornerRadius = UDim.new(1, 0)
-
-    local badgeLabel = Instance.new("TextLabel")
-    badgeLabel.BackgroundTransparency = 1
-    badgeLabel.Position = UDim2.fromOffset(24, 0)
-    badgeLabel.Size = UDim2.new(1, -30, 1, 0)
-    badgeLabel.Font = Enum.Font.GothamBold
-    badgeLabel.TextSize = 11
-    badgeLabel.TextXAlignment = Enum.TextXAlignment.Left
-    badgeLabel.TextColor3 = textColor
-    badgeLabel.Text = config.roleText
-    badgeLabel.ZIndex = 4
-    badgeLabel.Parent = badge
-
-    local displayLabel = Instance.new("TextLabel")
-    displayLabel.BackgroundTransparency = 1
-    displayLabel.Position = UDim2.fromOffset(12, 34)
-    displayLabel.Size = UDim2.new(1, -24, 0, 18)
-    displayLabel.Font = Enum.Font.GothamBold
-    displayLabel.TextSize = 15
-    displayLabel.TextXAlignment = Enum.TextXAlignment.Left
-    displayLabel.TextColor3 = textColor
-    displayLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    displayLabel.Text = player.DisplayName
-    displayLabel.ZIndex = 3
-    displayLabel.Parent = card
-
-    local infoLabel = Instance.new("TextLabel")
-    infoLabel.Name = "InfoLabel"
-    infoLabel.BackgroundTransparency = 1
-    infoLabel.Position = UDim2.fromOffset(12, 52)
-    infoLabel.Size = UDim2.new(1, -24, 0, 14)
-    infoLabel.Font = Enum.Font.GothamMedium
-    infoLabel.TextSize = 11
-    infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-    infoLabel.TextColor3 = subTextColor
-    infoLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    infoLabel.Text = "@" .. player.Name .. "  |  " .. player.AccountAge .. "d"
-    infoLabel.ZIndex = 3
-    infoLabel.Parent = card
-
-    local footer = Instance.new("Frame")
-    footer.Name = "Footer"
-    footer.BackgroundColor3 = darkenColor(cardColor, 0.03)
-    footer.BackgroundTransparency = 0.16
-    footer.BorderSizePixel = 0
-    footer.Position = UDim2.new(0, 12, 1, -18)
-    footer.Size = UDim2.new(1, -24, 0, 16)
-    footer.ZIndex = 3
-    footer.Parent = card
-    Instance.new("UICorner", footer).CornerRadius = UDim.new(1, 0)
-
-    local footerStroke = Instance.new("UIStroke")
-    footerStroke.Color = lightenColor(cardColor, 0.08)
-    footerStroke.Thickness = 1
-    footerStroke.Transparency = 0.72
-    footerStroke.Parent = footer
-
-    local brandChip = Instance.new("Frame")
-    brandChip.Name = "BrandChip"
-    brandChip.BackgroundColor3 = accentColor
-    brandChip.BackgroundTransparency = 0.14
-    brandChip.BorderSizePixel = 0
-    brandChip.Size = UDim2.fromOffset(74, 16)
-    brandChip.Position = UDim2.fromOffset(0, 0)
-    brandChip.ZIndex = 4
-    brandChip.Parent = footer
-    Instance.new("UICorner", brandChip).CornerRadius = UDim.new(1, 0)
-
-    local brandText = Instance.new("TextLabel")
-    brandText.BackgroundTransparency = 1
-    brandText.Size = UDim2.fromScale(1, 1)
-    brandText.Font = Enum.Font.GothamBold
-    brandText.TextSize = 10
-    brandText.TextColor3 = textColor
-    brandText.Text = config.brandText or "pealzware"
-    brandText.ZIndex = 5
-    brandText.Parent = brandChip
-
-    local extraLabel = Instance.new("TextLabel")
-    extraLabel.Name = "ExtraLabel"
-    extraLabel.BackgroundTransparency = 1
-    extraLabel.Position = UDim2.fromOffset(82, 0)
-    extraLabel.Size = UDim2.new(1, -88, 1, 0)
-    extraLabel.Font = Enum.Font.GothamMedium
-    extraLabel.TextSize = 10
-    extraLabel.TextXAlignment = Enum.TextXAlignment.Left
-    extraLabel.TextColor3 = mutedTextColor
-    extraLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    extraLabel.Text = config.extraText or ""
-    extraLabel.ZIndex = 4
-    extraLabel.Parent = footer
+    -- @username sub-text
+    local subLabel = Instance.new("TextLabel")
+    subLabel.BackgroundTransparency = 1
+    subLabel.Position  = UDim2.fromOffset(12, 40)
+    subLabel.Size      = UDim2.new(1, -16, 0, 12)
+    subLabel.Font      = Enum.Font.Gotham
+    subLabel.TextSize  = 10
+    subLabel.TextColor3 = muted
+    subLabel.TextXAlignment = Enum.TextXAlignment.Left
+    subLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    subLabel.Text      = "@" .. player.Name
+    subLabel.Parent    = card
 end
 
 local PEALZWARE_ROLE_BILLBOARD_NAMES = {
@@ -10099,7 +10264,7 @@ do -- ══ ESP System ══
 
 PlayersESPToggle = ESPGroup:CreateToggle({
     Name = 'Players ESP',
-    Default = true,
+    Default = false,
     Tooltip = 'Show highlight on all players'
 })
 
@@ -10127,6 +10292,53 @@ PlayersESPToggle = ESPGroup:CreateToggle({
     PlaceholderText = 'all',
     Tooltip = 'Filter ESP to specific player name, or use all/others'
 })
+
+ESPGroup:CreateDivider()
+ESPGroup:CreateLabel({Text = 'Visual Style'})
+
+local ESP2DBoxToggle = ESPGroup:CreateToggle({
+    Name = '2D Box',
+    Default = true,
+    Tooltip = 'Draw a 2D screen-space box around each player'
+})
+
+local ESP3DBoxToggle = ESPGroup:CreateToggle({
+    Name = '3D Box',
+    Default = false,
+    Tooltip = 'Draw 3D corner-box around player character'
+})
+
+local ESPHighlightToggle = ESPGroup:CreateToggle({
+    Name = 'Highlight (fill)',
+    Default = false,
+    Tooltip = 'Apply a Roblox Highlight fill over the character (may look different across executors)'
+})
+
+local ESPSkeletonToggle = ESPGroup:CreateToggle({
+    Name = 'Skeleton',
+    Default = false,
+    Tooltip = 'Draw bone lines between character limbs'
+})
+
+local ESPHitboxToggle = ESPGroup:CreateToggle({
+    Name = 'Hitbox',
+    Default = false,
+    Tooltip = 'Draw the humanoid root part hitbox'
+})
+
+ESP2DBoxToggle:OnChanged(function(v)    esp2DBoxEnabled = v    end)
+ESP3DBoxToggle:OnChanged(function(v)    esp3DBoxEnabled = v    end)
+ESPHighlightToggle:OnChanged(function(v)
+    espHighlightEnabled = v
+    if not v then
+        for p, obj in pairs(espObjects) do
+            if obj and obj.Parent then pcall(function() obj:Destroy() end) end
+            espObjects[p] = nil
+        end
+    end
+end)
+ESPSkeletonToggle:OnChanged(function(v) espSkeletonEnabled = v end)
+ESPHitboxToggle:OnChanged(function(v)   espHitboxEnabled = v   end)
 
  BuildESPGroup = Tabs.Server:CreateModule({Name = 'Build Tracker ESP'})
 
@@ -10530,6 +10742,7 @@ end))
 PlayersESPToggle:OnChanged(function(value)
     if value then
         StartESPUpdateLoop()
+        StartDrawESPLoop()
         for _, player in ipairs(Players:GetPlayers()) do
             if shouldESPPlayer(player) then
                 CreateESP(player)
@@ -10579,6 +10792,7 @@ end)
 task.defer(function()
     if PlayersESPToggle.Value then
         StartESPUpdateLoop()
+        StartDrawESPLoop()
         for _, player in ipairs(Players:GetPlayers()) do
             if shouldESPPlayer(player) then
                 CreateESP(player)
@@ -10912,10 +11126,122 @@ CreditsGroup:CreateButton({
 end -- /══ Settings & Credits ══
 
 do -- ══ Custom Tool Helpers ══
-createToolPanel = function(config) return Library:CreateToolPanel(config) end
-local function createToolInput(parent, yPos, placeholder) return Library:CreateToolInput(parent, yPos, placeholder) end
-createToolButton = function(parent, text, yPos, xPos, width, callback) return Library:CreateToolButton(parent, text, yPos, xPos, width, callback) end
-createToolLabel = function(parent, text, yPos) return Library:CreateToolLabel(parent, text, yPos) end
+
+-- Standalone tool panel / widget helpers (Library has no built-in equivalents).
+-- These create lightweight floating ScreenGuis used by the Rotate, Clone, Giver, etc. tools.
+
+createToolPanel = function(config)
+    local gui = Instance.new("ScreenGui")
+    gui.Name           = config.name or "ToolPanel"
+    gui.IgnoreGuiInset = true
+    gui.ResetOnSpawn   = false
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.Enabled        = false
+    pcall(function() gui.Parent = CoreGui end)
+
+    local bg = Instance.new("Frame")
+    bg.Name                   = "Background"
+    bg.BackgroundColor3       = Color3.fromRGB(18, 18, 24)
+    bg.BackgroundTransparency = 0.05
+    bg.BorderSizePixel        = 0
+    bg.AnchorPoint            = config.anchor   or Vector2.new(0.5, 0)
+    bg.Position               = config.position or UDim2.new(0.5, 0, 0.08, 0)
+    bg.Size                   = config.size     or UDim2.new(0, 210, 0, 200)
+    bg.Parent                 = gui
+    local bgCorner = Instance.new("UICorner"); bgCorner.CornerRadius = UDim.new(0, 7); bgCorner.Parent = bg
+    local bgStroke = Instance.new("UIStroke"); bgStroke.Color = Color3.fromRGB(55, 55, 72); bgStroke.Thickness = 1; bgStroke.Parent = bg
+
+    local titleBar = Instance.new("Frame")
+    titleBar.Name             = "TitleBar"
+    titleBar.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+    titleBar.BorderSizePixel  = 0
+    titleBar.Size             = UDim2.new(1, 0, 0, 28)
+    titleBar.Parent           = bg
+    local tbCorner = Instance.new("UICorner"); tbCorner.CornerRadius = UDim.new(0, 7); tbCorner.Parent = titleBar
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Size     = UDim2.new(1, -10, 1, 0)
+    titleLbl.Position = UDim2.new(0, 8, 0, 0)
+    titleLbl.Font     = Enum.Font.GothamSemibold
+    titleLbl.TextSize = 13
+    titleLbl.TextColor3 = Color3.fromRGB(225, 225, 235)
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Text   = config.title or "Tool"
+    titleLbl.Parent = titleBar
+
+    local statusLbl = Instance.new("TextLabel")
+    statusLbl.Name  = "Status"
+    statusLbl.BackgroundTransparency = 1
+    statusLbl.Size     = UDim2.new(1, -10, 0, 16)
+    statusLbl.Position = UDim2.new(0, 8, 0, 30)
+    statusLbl.Font     = Enum.Font.Gotham
+    statusLbl.TextSize = 11
+    statusLbl.TextColor3 = Color3.fromRGB(140, 140, 158)
+    statusLbl.TextXAlignment = Enum.TextXAlignment.Left
+    statusLbl.Text  = config.statusText or ""
+    statusLbl.Parent = bg
+
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Name               = "Content"
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Size     = UDim2.new(1, 0, 1, -28)
+    contentFrame.Position = UDim2.new(0, 0, 0, 28)
+    contentFrame.Parent   = bg
+
+    return { gui = gui, frame = contentFrame, status = statusLbl }
+end
+
+local function createToolInput(parent, yPos, placeholder)
+    local box = Instance.new("TextBox")
+    box.BackgroundColor3  = Color3.fromRGB(32, 32, 44)
+    box.BorderSizePixel   = 0
+    box.Size              = UDim2.new(0.9, 0, 0, 24)
+    box.Position          = UDim2.new(0.05, 0, yPos, 0)
+    box.Font              = Enum.Font.Gotham
+    box.TextSize          = 12
+    box.TextColor3        = Color3.fromRGB(215, 215, 225)
+    box.PlaceholderColor3 = Color3.fromRGB(95, 95, 112)
+    box.PlaceholderText   = placeholder or ""
+    box.Text              = ""
+    box.ClearTextOnFocus  = false
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = box
+    box.Parent = parent
+    return box
+end
+
+createToolButton = function(parent, text, yPos, xPos, width, callback)
+    local btn = Instance.new("TextButton")
+    btn.BackgroundColor3 = Color3.fromRGB(42, 42, 56)
+    btn.BorderSizePixel  = 0
+    btn.Size             = UDim2.new(width or 0.9, 0, 0, 26)
+    btn.Position         = UDim2.new(xPos  or 0.05, 0, yPos, 0)
+    btn.Font             = Enum.Font.GothamSemibold
+    btn.TextSize         = 12
+    btn.TextColor3       = Color3.fromRGB(215, 215, 228)
+    btn.AutoButtonColor  = false
+    btn.Text             = text or "Button"
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = btn
+    if callback then btn.MouseButton1Click:Connect(callback) end
+    btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(58, 58, 76) end)
+    btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(42, 42, 56) end)
+    btn.Parent = parent
+    return btn
+end
+
+createToolLabel = function(parent, text, yPos)
+    local lbl = Instance.new("TextLabel")
+    lbl.BackgroundTransparency = 1
+    lbl.Size     = UDim2.new(0.9, 0, 0, 14)
+    lbl.Position = UDim2.new(0.05, 0, yPos, 0)
+    lbl.Font     = Enum.Font.Gotham
+    lbl.TextSize = 11
+    lbl.TextColor3 = Color3.fromRGB(185, 185, 200)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Text   = text or ""
+    lbl.Parent = parent
+    return lbl
+end
 
 function getplrcfr(p)
     local c = (p or localplr).Character
@@ -16946,6 +17272,57 @@ if MenuKeybind then
     -- modern.lua reads Library.Keybind (table of key names) to toggle ClickGui visibility
     Library.Keybind = {'End'}
 end
+
+-- ── PealzFat Leaderboard Fix ─────────────────────────────────────────────────
+-- Prevents the Roblox playerlist from breaking when Tab is pressed repeatedly.
+-- Hooks Tab to toggle the list via StarterGui:SetCoreGuiEnabled instead of the
+-- default binding, which would corrupt the leaderboard state on repeated presses.
+local _pealzFatGroup = Tabs.Settings:CreateModule({Name = 'Fixes'})
+local _pealzFatEnabled = true
+
+local _pealzFatToggle = _pealzFatGroup:CreateToggle({
+    Name  = 'Leaderboard Fix (PealzFat)',
+    Default = true,
+    Tooltip = 'Prevents the Tab leaderboard from breaking when opened/closed rapidly'
+})
+
+local _sg  = game:GetService("StarterGui")
+local _uis = game:GetService("UserInputService")
+local _pealzFatConn = nil
+
+local function _connectPealzFat()
+    if _pealzFatConn then return end
+    _pealzFatConn = _uis.InputBegan:Connect(function(input, gameProcessed)
+        if input.KeyCode == Enum.KeyCode.Tab then
+            _pealzFatEnabled = not _pealzFatEnabled
+            local s, err = pcall(function()
+                _sg:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, _pealzFatEnabled)
+            end)
+            if not s then warn("[pealzware] PealzFat error: " .. tostring(err)) end
+        end
+    end)
+end
+
+local function _disconnectPealzFat()
+    if _pealzFatConn then
+        pcall(function() _pealzFatConn:Disconnect() end)
+        _pealzFatConn = nil
+    end
+end
+
+_pealzFatToggle:OnChanged(function(val)
+    if val then
+        _connectPealzFat()
+    else
+        _disconnectPealzFat()
+        pcall(function() _sg:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true) end)
+    end
+end)
+
+-- Enable on load (matches Default = true above)
+_connectPealzFat()
+-- ─────────────────────────────────────────────────────────────────────────────
+
 Library:SetWatermarkVisibility(true)
 
  FrameTimer = tick()
