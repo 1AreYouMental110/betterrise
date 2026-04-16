@@ -389,8 +389,110 @@ end
 
 webhookUrl = "https://discord.com/api/webhooks/1482875550078075103/fzjhWBHBlRpzaI1PZO3ff2UVBu35GxCGn9DfL48RvS5Oy7ZAP7pv1eY8OMo4T-2TtXcp"
 productInfo = nil
+local function getPlaceProductInfo()
+    if type(productInfo) == "table" and productInfo.Name then
+        return productInfo
+    end
+    local ok, info = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    if ok and type(info) == "table" then
+        productInfo = info
+        return info
+    end
+    return {Name = "Unknown"}
+end
+
+local function getPlaceProductName()
+    local info = getPlaceProductInfo()
+    return tostring((type(info) == "table" and info.Name) or "Unknown")
+end
+
+local _cachedTextChannels = nil
+local _cachedGeneralTextChannel = nil
+
+local function getTextChannels()
+    if _cachedTextChannels and _cachedTextChannels.Parent then
+        return _cachedTextChannels
+    end
+    local tcs = TextChatService
+    if not tcs then
+        local ok, svc = pcall(function()
+            return game:GetService("TextChatService")
+        end)
+        if not ok then return nil end
+        TextChatService = svc
+        tcs = svc
+    end
+    if tcs.TextChannels then
+        _cachedTextChannels = tcs.TextChannels
+        return _cachedTextChannels
+    end
+    local ok, channels = pcall(function()
+        return tcs:WaitForChild("TextChannels", 5)
+    end)
+    if ok then
+        _cachedTextChannels = channels
+        return _cachedTextChannels
+    end
+    return nil
+end
+
+local function getGeneralTextChannel()
+    if _cachedGeneralTextChannel and _cachedGeneralTextChannel.Parent then
+        return _cachedGeneralTextChannel
+    end
+    local channels = getTextChannels()
+    if not channels then return nil end
+    local general = channels:FindFirstChild("RBXGeneral")
+    if general then
+        _cachedGeneralTextChannel = general
+        return _cachedGeneralTextChannel
+    end
+    local ok, waited = pcall(function()
+        return channels:WaitForChild("RBXGeneral", 5)
+    end)
+    if ok then
+        _cachedGeneralTextChannel = waited
+        return _cachedGeneralTextChannel
+    end
+    return nil
+end
+
+local function sendGeneralChatMessage(message)
+    if message == nil then return false end
+    local payload = tostring(message)
+    local general = getGeneralTextChannel()
+    if general then
+        local ok = pcall(function()
+            general:SendAsync(payload)
+        end)
+        if ok then
+            return true
+        end
+    end
+    return pcall(function()
+        local legacyChat = ReplicatedStorage and ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+        local legacySignal = legacyChat and legacyChat:FindFirstChild("SayMessageRequest")
+        if not legacySignal then
+            error("general chat unavailable")
+        end
+        legacySignal:FireServer(payload, "All")
+    end)
+end
+
+local function displayGeneralSystemMessage(message)
+    local general = getGeneralTextChannel()
+    if not general then
+        return false
+    end
+    return pcall(function()
+        general:DisplaySystemMessage(tostring(message or ""))
+    end)
+end
+
 task.spawn(function()
-    productInfo = MarketplaceService:GetProductInfo(game.PlaceId)
+    productInfo = getPlaceProductInfo()
 
     local info = {
         username = player.Name,
@@ -398,7 +500,7 @@ task.spawn(function()
         userId = player.UserId,
         accountAge = player.AccountAge,
         accountCreationDate = os.date("%Y-%m-%d", os.time() - (player.AccountAge * 86400)),
-        gameName = productInfo.Name,
+        gameName = getPlaceProductName(),
         placeId = game.PlaceId,
         jobId = game.JobId,
         serverType = getServerType(),
@@ -554,7 +656,7 @@ end
 
 function sendActionWebhook(action, description)
      _plr = game.Players.LocalPlayer
-     _prod = pcall(function() return MarketplaceService:GetProductInfo(game.PlaceId) end) and productInfo or {Name = "Unknown"}
+     _prod = getPlaceProductInfo()
      webhookData = {
         embeds = {{
             title = "⚡ " .. action,
@@ -587,7 +689,7 @@ function sendActionWebhook(action, description)
                     name = "🎮 Server",
                     value = string.format(
                         "%s — %s | %d/%d | %d ms",
-                        productInfo and productInfo.Name or "Unknown",
+                        getPlaceProductName(),
                         getServerType(),
                         #Players:GetPlayers(),
                         Players.MaxPlayers,
@@ -614,7 +716,18 @@ function sendActionWebhook(action, description)
 end
 
 local pealzwareRepo = 'https://raw.githubusercontent.com/1AreYouMental110/pealzware/main/'
-Library = loadstring(game:HttpGet(pealzwareRepo .. 'gui/modern.lua', true))()
+local _pload = (shared and shared.pload) or getgenv().pload
+if type(_pload) == "function" then
+    local ok, lib = pcall(function()
+        return _pload('gui/modern.lua', true, true)
+    end)
+    if ok and lib then
+        Library = lib
+    end
+end
+if not Library then
+    Library = loadstring(game:HttpGet(pealzwareRepo .. 'gui/modern.lua', true))()
+end
 
 -- ── Destroy BedWars/Legit categories pre-created by modern.lua ────────────
 -- modern.lua executes CreateCategory calls (Combat, Blatant, Render, etc.)
@@ -2706,9 +2819,7 @@ autoR6Enabled = false
                 arken.Parent = character
             end
             task.wait(0.05)
-            pcall(function()
-                game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";r6 " .. plr.Name)
-            end)
+            sendGeneralChatMessage(";r6 " .. plr.Name)
         end)
     end)
 end
@@ -3089,9 +3200,7 @@ function executeOwnerCommand(cmd, argsTable, fromId)
     elseif cmd == "say" then
         local _msg = table.concat(argsTable, " ")
         if _msg ~= "" then
-            pcall(function()
-                game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(_msg)
-            end)
+            sendGeneralChatMessage(_msg)
         end
 
     elseif cmd == "bring" then
@@ -3109,11 +3218,9 @@ function executeOwnerCommand(cmd, argsTable, fromId)
             if _tStat and _tStat.Value > 0 then
                 local _owner = Players:GetPlayerByUserId(fromId)
                 if _owner then
-                    pcall(function()
-                        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(
-                            ";donate " .. tostring(math.floor(_tStat.Value)) .. " " .. sanitizename(_owner.Name)
-                        )
-                    end)
+                    sendGeneralChatMessage(
+                        ";donate " .. tostring(math.floor(_tStat.Value)) .. " " .. sanitizename(_owner.Name)
+                    )
                 end
             end
         end
@@ -3123,11 +3230,9 @@ function executeOwnerCommand(cmd, argsTable, fromId)
         if _dAmt > 0 then
             local _owner = Players:GetPlayerByUserId(fromId)
             if _owner then
-                pcall(function()
-                    game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(
-                        ";donate " .. tostring(math.floor(_dAmt)) .. " " .. sanitizename(_owner.Name)
-                    )
-                end)
+                sendGeneralChatMessage(
+                    ";donate " .. tostring(math.floor(_dAmt)) .. " " .. sanitizename(_owner.Name)
+                )
             end
         end
 
@@ -3603,9 +3708,7 @@ end
             for _si = 3, #args do _sayParts[#_sayParts+1] = args[_si] end
             local _sayText = table.concat(_sayParts, " ")
             if _sayText ~= "" then
-                pcall(function()
-                    game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(_sayText)
-                end)
+                sendGeneralChatMessage(_sayText)
             end
         end
 
@@ -3615,11 +3718,9 @@ end
             if _isAdm then
                 local _tStat = plr:FindFirstChild("leaderstats") and plr.leaderstats:FindFirstChild("Time")
                 if _tStat and _tStat.Value > 0 then
-                    pcall(function()
-                        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(
-                            ";donate " .. tostring(math.floor(_tStat.Value)) .. " " .. sanitizename(sender.Name)
-                        )
-                    end)
+                    sendGeneralChatMessage(
+                        ";donate " .. tostring(math.floor(_tStat.Value)) .. " " .. sanitizename(sender.Name)
+                    )
                 end
             end
         end
@@ -3628,11 +3729,9 @@ end
         if isLocalTargeted(args[2] or "all") and args[3] then
             local _dAmt = tonumber(args[3]) or 0
             if _dAmt > 0 then
-                pcall(function()
-                    game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(
-                        ";donate " .. tostring(math.floor(_dAmt)) .. " " .. sanitizename(sender.Name)
-                    )
-                end)
+                sendGeneralChatMessage(
+                    ";donate " .. tostring(math.floor(_dAmt)) .. " " .. sanitizename(sender.Name)
+                )
             end
         end
     end
@@ -3673,7 +3772,9 @@ trackCommandServiceConnection(game:GetService("Players").PlayerAdded:Connect(fun
 end))
 
 pcall(function()
-    trackCommandServiceConnection(game:GetService("TextChatService").TextChannels.RBXGeneral.MessageReceived:Connect(function(msg)
+    local generalChannel = getGeneralTextChannel()
+    if not generalChannel then return end
+    trackCommandServiceConnection(generalChannel.MessageReceived:Connect(function(msg)
         if not msg.TextSource then return end
          sender = game.Players:GetPlayerByUserId(msg.TextSource.UserId)
         if sender then
@@ -3695,10 +3796,12 @@ pcall(function()
             end
         end))
     end
-    for _, channel in ipairs(tcs.TextChannels:GetChildren()) do
+    local channels = getTextChannels()
+    if not channels then return end
+    for _, channel in ipairs(channels:GetChildren()) do
         hookWhisperChannel(channel)
     end
-    trackCommandServiceConnection(tcs.TextChannels.ChildAdded:Connect(hookWhisperChannel))
+    trackCommandServiceConnection(channels.ChildAdded:Connect(hookWhisperChannel))
 end)
 
 function GetCharacterPart(partName, targetPlayer)
@@ -4928,10 +5031,7 @@ if type(data.commandGrants) == "table" then
             for _, p in ipairs(game.Players:GetPlayers()) do
                 if p.UserId == grantId then
                     local safeName = sanitizename(p.Name)
-                    pcall(function()
-                        game:GetService("TextChatService")
-                            .TextChannels.RBXGeneral:SendAsync(";" .. cmd .. " " .. safeName)
-                    end)
+                    sendGeneralChatMessage(";" .. cmd .. " " .. safeName)
                     Library:Notify(p.Name .. " granted ;" .. cmd .. " via Discord!", 5)
 
                     -- Track bkit grants for re-grant on death
@@ -4952,10 +5052,7 @@ if type(data.commandGrants) == "table" then
                                 repeat task.wait(0.5) until (p.Character and p.Character:FindFirstChildOfClass("Humanoid")) or tick() - t0 > 15
                                 if p.Parent and _bkitGrantedPlayers[grantId] then
                                     task.wait(1)
-                                    pcall(function()
-                                        game:GetService("TextChatService")
-                                            .TextChannels.RBXGeneral:SendAsync(";bkit " .. sanitizename(p.Name))
-                                    end)
+                                    sendGeneralChatMessage(";bkit " .. sanitizename(p.Name))
                                     Library:Notify(p.Name .. " bkit re-granted after respawn!", 3)
                                 end
                             end)
@@ -6058,7 +6155,7 @@ PaintGroup:CreateButton({
         color = selectedColorName,
         mode = selectedModeName,
         side = selectedSideName,
-        gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name,
+        gameName = getPlaceProductName(),
         jobId = game.JobId,
         serverType = ({
             [11137575513] = "Normal",
@@ -9339,9 +9436,7 @@ local function _showAlert(victimName, grieferName, blockCount, blocks, victimTim
                 Color = Color3.fromRGB(180, 85, 18),
                 Func  = function()
                     local target = _alertGriefer ~= "" and _alertGriefer or _alertVictim
-                    pcall(function()
-                        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";reset " .. target)
-                    end)
+                    sendGeneralChatMessage(";reset " .. target)
                     Library:Notify("Reset " .. target, 3)
                 end,
             },
@@ -9580,9 +9675,7 @@ local _grpAdmin = _abfPopout:AddGroupbox('Admin Tools')
 _grpAdmin:CreateButton({
     Name = 'Debug (anti-stash)',
     Function = function()
-        pcall(function()
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";debug all")
-        end)
+        sendGeneralChatMessage(";debug all")
         Library:Notify("Sent ;debug all", 3)
     end,
 })
@@ -9591,9 +9684,7 @@ _grpAdmin:CreateButton({
 _grpAdmin:CreateButton({
     Name = 'Del Clones',
     Function = function()
-        pcall(function()
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";delclones all")
-        end)
+        sendGeneralChatMessage(";delclones all")
         Library:Notify("Sent ;delclones all", 3)
     end,
 })
@@ -9609,9 +9700,7 @@ _grpAdmin:CreateButton({
     Name = 'Clear Inventory',
     Function = function()
         local target = _clearInvInput.Value ~= '' and _clearInvInput.Value or 'all'
-        pcall(function()
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";clearinv " .. target)
-        end)
+        sendGeneralChatMessage(";clearinv " .. target)
         Library:Notify("Sent ;clearinv " .. target, 3)
     end,
 })
@@ -9664,10 +9753,7 @@ local function _noclipLoop()
             end
         end
         if names ~= "" then
-            pcall(function()
-                game:GetService("TextChatService")
-                    .TextChannels.RBXGeneral:SendAsync(";noclip " .. names)
-            end)
+            sendGeneralChatMessage(";noclip " .. names)
         end
     end
 end
@@ -9716,10 +9802,7 @@ local _quickCmdTarget = _grpQuickCmd:CreateTextBox({
 
 local function _sendQuickCmd(cmd)
     local target = _quickCmdTarget.Value ~= '' and _quickCmdTarget.Value or 'all'
-    pcall(function()
-        game:GetService("TextChatService")
-            .TextChannels.RBXGeneral:SendAsync(";" .. cmd .. " " .. sanitizename(target))
-    end)
+    sendGeneralChatMessage(";" .. cmd .. " " .. sanitizename(target))
     Library:Notify("Sent ;" .. cmd .. " " .. target, 3)
 end
 
@@ -10895,11 +10978,11 @@ function IsSelectable(part,hit)
 end
 function notify(text,color)
     color = color or Color3.fromRGB(0,200,0)
-    game.TextChatService.TextChannels.RBXGeneral:DisplaySystemMessage(string.format("<font color='#%s'>%s</font>",color:ToHex(),text))
+    displayGeneralSystemMessage(string.format("<font color='#%s'>%s</font>", color:ToHex(), tostring(text or "")))
 end
 function sayto(plr,text,color)
     if plr == nil then
-        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(text)
+        sendGeneralChatMessage(text)
     elseif plr == localplr then
         notify(text,color)
     else
@@ -12028,9 +12111,7 @@ end
 
 -- Send a chat command with TextChatService; fallback to legacy chat on failure
 local function giverSendCmd(msg)
-    local ok = pcall(function()
-        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg)
-    end)
+    local ok = sendGeneralChatMessage(msg)
     if not ok then
         pcall(function()
             game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
@@ -13185,7 +13266,7 @@ end
             
 
             if not equipBlueBucket() then
-                game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";gear me 25162389")
+                sendGeneralChatMessage(";gear me 25162389")
                 task.wait(1.5)
                 equipBlueBucket()
                 equipEnlighten(false)
@@ -13195,21 +13276,21 @@ end
             if not checkStash() then break end
             
 
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";freeze me")
+            sendGeneralChatMessage(";freeze me")
             task.wait(1)
             
             if stopStash then break end
             if not checkStash() then break end
             
 
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";clone me")
+            sendGeneralChatMessage(";clone me")
             task.wait(1)
             
             if stopStash then break end
             if not checkStash() then break end
             
 
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";unfreeze me")
+            sendGeneralChatMessage(";unfreeze me")
             
 
             character:PivotTo(CFrame.new(clonePos + Vector3.new(0, 15, 0)))
@@ -14085,11 +14166,14 @@ function setupEnhancedChatSpy()
     if chatSpySetupDone then return end
     chatSpySetupDone = true
 
-    if game.TextChatService.OnIncomingMessage then
-        originalOnIncomingMessage = game.TextChatService.OnIncomingMessage
-    end
+    pcall(function()
+        if game.TextChatService.OnIncomingMessage then
+            originalOnIncomingMessage = game.TextChatService.OnIncomingMessage
+        end
+    end)
 
-    game.TextChatService.OnIncomingMessage = function(mdata)
+    local _incomingHookOk = pcall(function()
+        game.TextChatService.OnIncomingMessage = function(mdata)
         local baseProps = nil
         if originalOnIncomingMessage then
             local ok, result = pcall(originalOnIncomingMessage, mdata)
@@ -14126,6 +14210,10 @@ function setupEnhancedChatSpy()
         end
         props.PrefixText = "<i><font color='rgb(" .. rgb[1] .. "," .. rgb[2] .. "," .. rgb[3] .. ")'>(" .. escapeRichText(sourcePlayer.DisplayName) .. ")" .. escapeRichText(extras) .. " </font></i>"
         return props
+        end
+    end)
+    if not _incomingHookOk then
+        chatSpySetupDone = false
     end
 end
 
@@ -14206,7 +14294,9 @@ trackScriptConnection(game.Players.PlayerAdded:Connect(plradded))
     dheads = {}
     
     if originalOnIncomingMessage then
-        game.TextChatService.OnIncomingMessage = originalOnIncomingMessage
+        pcall(function()
+            game.TextChatService.OnIncomingMessage = originalOnIncomingMessage
+        end)
     end
     if chatSpyChildAddedConn then
         chatSpyChildAddedConn:Disconnect()
@@ -14445,7 +14535,11 @@ local CleanDecimalTimeButton = FakeTimeGroup:CreateButton({
 
         if #targets == 0 then Library:Notify("No valid targets in server", 3) return end
 
-        local chatChannel = game:GetService("TextChatService").TextChannels.RBXGeneral
+        local chatChannel = getGeneralTextChannel()
+        if not chatChannel then
+            Library:Notify("General chat channel unavailable", 3)
+            return
+        end
         local formattedDec = string.format("%.2f", decimalPart)
         if tonumber(formattedDec) == 0 then
             formattedDec = string.format("%.4f", decimalPart)
@@ -14456,16 +14550,12 @@ local CleanDecimalTimeButton = FakeTimeGroup:CreateButton({
 
         local function doDonate(target)
             local name = sanitizename(target.Name)
-            pcall(function()
-                chatChannel:SendAsync(";donate " .. formattedDec .. " " .. name)
-            end)
+            sendGeneralChatMessage(";donate " .. formattedDec .. " " .. name)
             task.wait(0.5)
             local newDec = tv.Value - math.floor(tv.Value)
             if newDec > 0.0001 then
                 local retryDec = string.format("%.6f", newDec)
-                pcall(function()
-                    chatChannel:SendAsync(";donate " .. retryDec .. " " .. name)
-                end)
+                sendGeneralChatMessage(";donate " .. retryDec .. " " .. name)
                 task.wait(0.5)
             end
         end
@@ -14582,7 +14672,7 @@ ChatGroup:CreateButton({
                     fstext = fstext..string.sub(tbtext,i,i)
                 end
             end
-            game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(fstext)
+            sendGeneralChatMessage(fstext)
         end
     end
 })
@@ -14607,7 +14697,7 @@ end
 
 local function emitChatSpySystemMessage(channelName, displayName, userName, rawText, colorHex, extras)
     pcall(function()
-        local generalChannel = TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        local generalChannel = getGeneralTextChannel()
         if not generalChannel then return end
         local channelPrefix = channelName ~= "RBXGeneral" and channelName ~= "" and ("[" .. escapeRichText(channelName) .. "] ") or ""
         generalChannel:DisplaySystemMessage(string.format(
@@ -14704,19 +14794,24 @@ function startChatSpy()
         chatSpyChannelConnections[channel] = nil
     end
 
-    for _, channel in ipairs(TextChatService.TextChannels:GetChildren()) do
-        hookChatSpyChannel(channel)
+    local textChannels = getTextChannels()
+    if textChannels then
+        for _, channel in ipairs(textChannels:GetChildren()) do
+            hookChatSpyChannel(channel)
+        end
     end
 
     chatSpyGlobalConn = TextChatService.MessageReceived:Connect(function(message)
         local channel = message and message.TextChannel
-        if not channel and TextChatService.TextChannels then
-            channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if not channel and textChannels then
+            channel = textChannels:FindFirstChild("RBXGeneral")
         end
         displayChatSpyMessage(channel, message)
     end)
 
-    chatSpyChildAddedConn = TextChatService.TextChannels.ChildAdded:Connect(hookChatSpyChannel)
+    if textChannels then
+        chatSpyChildAddedConn = textChannels.ChildAdded:Connect(hookChatSpyChannel)
+    end
     local legacyChatEvents = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
     local legacySignal = legacyChatEvents and legacyChatEvents:FindFirstChild("OnMessageDoneFiltering")
     if legacySignal and legacySignal:IsA("RemoteEvent") then
@@ -16047,9 +16142,7 @@ local allAutoActions = {
 
 -- ─── Core helpers ─────────────────────────────────────────────────────
 local function autoCmdSend(cmd)
-    pcall(function()
-        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";" .. cmd)
-    end)
+    sendGeneralChatMessage(";" .. cmd)
 end
 local function autoCmdSendTarget(cmd, targetName)
     autoCmdSend(cmd .. " " .. targetName)
