@@ -1018,6 +1018,47 @@ do
     -- ── CreateCategory: use modern.lua's real implementation (Apple-style
     --    toggles, interactive sliders, animated dropdowns, etc.).
     --    We inject: sound feedback, OnChanged shim, Refresh alias.
+    local function _normalizeLegacyControlOptions(kind, opts)
+        if type(opts) ~= 'table' then
+            if kind == 'Label' and opts ~= nil then
+                return { Text = tostring(opts) }
+            end
+            return opts or {}
+        end
+
+        if opts.Name == nil and opts.Text ~= nil and kind ~= 'Label' then
+            opts.Name = opts.Text
+        end
+        if opts.Function == nil then
+            opts.Function = opts.Callback or opts.Func
+        end
+
+        if kind == 'Dropdown' then
+            if opts.List == nil then
+                opts.List = opts.Options or opts.Values or {}
+            end
+            if type(opts.List) ~= 'table' then
+                opts.List = {}
+            end
+            if type(opts.Default) == 'number' and opts.List[opts.Default] ~= nil then
+                opts.Default = opts.List[opts.Default]
+            elseif opts.Default == nil and opts.Value ~= nil then
+                opts.Default = opts.Value
+            end
+        elseif kind == 'TextBox' then
+            if opts.Placeholder == nil and opts.PlaceholderText ~= nil then
+                opts.Placeholder = opts.PlaceholderText
+            end
+            if opts.Default == nil and opts.Value ~= nil then
+                opts.Default = opts.Value
+            end
+        elseif kind == 'Label' then
+            opts.Text = opts.Text or opts.Name or ''
+        end
+
+        return opts
+    end
+
     local _modCat = Library.CreateCategory
     function Library:CreateCategory(s)
         s = s or {}
@@ -1033,6 +1074,7 @@ do
                     local _origFn = mod['Create'..nm]
                     if type(_origFn) == 'function' then
                         mod['Create'..nm] = function(self3, opts)
+                            opts = _normalizeLegacyControlOptions(nm, opts)
                             -- Create the component first so modern.lua's init
                             -- (including any Dropdown default-value call) runs
                             -- WITHOUT the sound wrapper, avoiding premature firing.
@@ -1090,6 +1132,7 @@ do
                         local _mc = mod.Children
                         if not _mc then return end
                         s = type(s) == 'table' and s or { Text = tostring(s or '') }
+                        s = _normalizeLegacyControlOptions('Label', s)
                         local _lbl = Instance.new('TextLabel')
                         _lbl.Size = UDim2.new(1, -8, 0, 18)
                         _lbl.BackgroundTransparency = 1
@@ -1142,6 +1185,15 @@ do
                             d.Parent = _mc
                         end
                     end)
+                end
+
+                if mod.CreateTextBox and not mod.CreateInput then
+                    mod.CreateInput = function(self3, opts)
+                        return self3:CreateTextBox(_normalizeLegacyControlOptions('TextBox', opts))
+                    end
+                end
+                if mod.CreateTextBox and not mod.CreateTextbox then
+                    mod.CreateTextbox = mod.CreateTextBox
                 end
 
                 return mod
@@ -1571,6 +1623,7 @@ function Library:CreatePopout(opts)
 
         function grpApi:CreateButton(s)
             s = s or {}
+            s.Function = s.Function or s.Callback or s.Func
             local _btn = Instance.new('TextButton')
             _btn.Size = UDim2.new(1, -8, 0, 26)
             local _gbBase = Library.Color.Light(Library.Palette.Main, 0.07)
@@ -1735,8 +1788,15 @@ function Library:CreatePopout(opts)
 
         function grpApi:CreateDropdown(s)
             s = s or {}
-            local _list = s.List or {}
+            s.Function = s.Function or s.Callback or s.Func
+            local _list = s.List or s.Options or s.Values or {}
+            if type(_list) ~= 'table' then
+                _list = {}
+            end
             local _val = s.Default or _list[1] or ''
+            if type(_val) == 'number' and _list[_val] ~= nil then
+                _val = _list[_val]
+            end
             local _row = Instance.new('Frame')
             _row.Size = UDim2.new(1, -8, 0, 26)
             _row.BackgroundTransparency = 1
@@ -1775,11 +1835,12 @@ function Library:CreatePopout(opts)
 
         function grpApi:CreateTextBox(s)
             s = s or {}
+            s.Function = s.Function or s.Callback or s.Func
             local _tb = Instance.new('TextBox')
             _tb.Size = UDim2.new(1, -8, 0, 26)
             _tb.BackgroundColor3 = Library.Color.Light(Library.Palette.Main, 0.07)
-            _tb.PlaceholderText = s.Placeholder or s.Name or ''
-            _tb.Text = s.Default or ''
+            _tb.PlaceholderText = s.Placeholder or s.PlaceholderText or s.Name or ''
+            _tb.Text = s.Default or s.Value or ''
             _tb.TextColor3 = Library.Palette.Text
             _tb.TextSize = 12
             _tb.FontFace = Library.Palette.Font
@@ -1807,6 +1868,8 @@ function Library:CreatePopout(opts)
             end
             return _api
         end
+
+        grpApi.CreateInput = grpApi.CreateTextBox
 
         function grpApi:CreateLabel(s)
             s = type(s) == 'table' and s or { Text = tostring(s or '') }
@@ -2681,10 +2744,25 @@ local function fetchServers()
         _sbStatus:SetText(_sbCurrentType .. '  |  loading...')
     end
     task.spawn(function()
+        local function _fetchServerPage(url)
+            local body
+            local resp = requestFunc({Url = url, Method = "GET"})
+            local status = resp and tonumber(resp.StatusCode or resp.Status or resp.status_code or 0) or 0
+            if resp and status >= 200 and status < 300 then
+                body = resp.Body or resp.body
+            end
+            if not body or body == '' then
+                body = game:HttpGet(url, true)
+            end
+            if not body or body == '' then
+                return nil
+            end
+            return HttpService:JSONDecode(body)
+        end
+
         local ok, result = pcall(function()
             local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
-            local body = game:HttpGet(url, true)
-            return HttpService:JSONDecode(body)
+            return _fetchServerPage(url)
         end)
         if ok and result and result.data and #result.data > 0 then
             _sbCache = result.data
@@ -2692,8 +2770,7 @@ local function fetchServers()
         else
             local ok2, result2 = pcall(function()
                 local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=10"
-                local body = game:HttpGet(url, true)
-                return HttpService:JSONDecode(body)
+                return _fetchServerPage(url)
             end)
             if ok2 and result2 and result2.data and #result2.data > 0 then
                 _sbCache = result2.data
@@ -2713,6 +2790,13 @@ local function fetchServers()
 end
 
 task.spawn(fetchServers)
+popoutBtn.MouseButton1Click:Connect(function()
+    task.defer(function()
+        if myPopout.Object and myPopout.Object.Visible then
+            fetchServers()
+        end
+    end)
+end)
 task.spawn(function()
     while not Library.Unloaded do
         task.wait(45)
@@ -4215,10 +4299,18 @@ function CreateESP(player)
     end
 end
 
+local function _containerHasArkenstone(container)
+    if not container then return false end
+    local ok, found = pcall(function()
+        return container:FindFirstChild("The Arkenstone", true)
+    end)
+    return ok and found ~= nil
+end
+
 function getPlayerEnlighten(player)
-    if not player or not player.Character then return false end
-    return player.Character:FindFirstChild("The Arkenstone") ~= nil
-        or (player.Backpack and player.Backpack:FindFirstChild("The Arkenstone") ~= nil)
+    if not player then return false end
+    return _containerHasArkenstone(player.Character)
+        or _containerHasArkenstone(player:FindFirstChild("Backpack"))
 end
 
 function getPlayerAdmin(player)
@@ -4693,121 +4785,268 @@ function StopESPUpdateLoop()
     end
 end
 
+local function tintColor(col, delta)
+    local h, s, v = col:ToHSV()
+    return Color3.fromHSV(h, math.clamp(s - (delta > 0 and 0.05 or -0.02), 0, 1), math.clamp(v + delta, 0, 1))
+end
+
+local function lightenColor(col, amount)
+    if Library and Library.Color and Library.Color.Light then
+        return Library.Color.Light(col, amount)
+    end
+    return tintColor(col, math.abs(amount))
+end
+
+local function darkenColor(col, amount)
+    if Library and Library.Color and Library.Color.Dark then
+        return Library.Color.Dark(col, amount)
+    end
+    return tintColor(col, -math.abs(amount))
+end
+
 function createStyledBillboard(player, config)
     if not player or not player.Character then return end
     local head = player.Character:FindFirstChild("Head")
     if not head then return end
-    if head:FindFirstChild(config.bbName) then return end
+
+    local existing = head:FindFirstChild(config.bbName)
+    if existing then
+        existing:Destroy()
+    end
+
+    local palette = (Library and Library.Palette) or {}
+    local accentColor = config.accentColor or palette.AccentColor or Color3.fromRGB(0, 170, 255)
+    local cardColor = darkenColor(palette.Main or Color3.fromRGB(19, 25, 34), 0.02)
+    local textColor = palette.Text or Color3.fromRGB(240, 244, 255)
+    local subTextColor = darkenColor(textColor, 0.26)
+    local mutedTextColor = darkenColor(textColor, 0.4)
+    local edgeColor = lightenColor(accentColor, 0.07)
+    local accentSoft = darkenColor(accentColor, 0.08)
 
     local bb = Instance.new("BillboardGui")
     bb.Name = config.bbName
-bb.Size = UDim2.new(0, 175, 0, 70)
-bb.StudsOffset = Vector3.new(0, 3.2, 0)
-bb.AlwaysOnTop = true
-bb.ResetOnSpawn = false
-bb.MaxDistance = 0
-bb.ClipsDescendants = true
+    bb.Size = UDim2.fromOffset(196, 94)
+    bb.StudsOffset = Vector3.new(0, 3.45, 0)
+    bb.AlwaysOnTop = true
+    bb.ResetOnSpawn = false
+    bb.MaxDistance = 0
+    bb.ClipsDescendants = false
     bb.Parent = head
+    pcall(function()
+        bb.LightInfluence = 0
+    end)
+
+    local shadow = Instance.new("Frame")
+    shadow.Name = "Shadow"
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.58
+    shadow.BorderSizePixel = 0
+    shadow.Position = UDim2.fromOffset(8, 8)
+    shadow.Size = UDim2.new(1, -12, 1, -14)
+    shadow.ZIndex = 0
+    shadow.Parent = bb
+    Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 14)
 
     local card = Instance.new("Frame")
     card.Name = "Card"
-    card.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    card.BackgroundTransparency = 0.08
+    card.BackgroundColor3 = cardColor
+    card.BackgroundTransparency = 0.04
     card.BorderSizePixel = 0
-    card.Size = UDim2.new(1, 0, 1, 0)
+    card.Position = UDim2.fromOffset(4, 0)
+    card.Size = UDim2.new(1, -8, 1, -10)
+    card.ZIndex = 1
     card.Parent = bb
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 12)
+
+    local cardGradient = Instance.new("UIGradient")
+    cardGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, lightenColor(cardColor, 0.03)),
+        ColorSequenceKeypoint.new(1, darkenColor(cardColor, 0.05)),
+    })
+    cardGradient.Rotation = 90
+    cardGradient.Parent = card
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(50, 50, 50)
+    stroke.Color = edgeColor
     stroke.Thickness = 1.2
-    stroke.Transparency = 0.2
+    stroke.Transparency = 0.3
     stroke.Parent = card
 
-    local accent = Instance.new("Frame")
-    accent.Name = "Accent"
-    accent.BackgroundColor3 = config.accentColor
-    accent.BorderSizePixel = 0
-    accent.Size = UDim2.new(1, 0, 0, 2)
-    accent.Parent = card
-    Instance.new("UICorner", accent).CornerRadius = UDim.new(0, 6)
+    local innerStroke = Instance.new("UIStroke")
+    innerStroke.Name = "InnerGlow"
+    innerStroke.Color = lightenColor(cardColor, 0.08)
+    innerStroke.Thickness = 1
+    innerStroke.Transparency = 0.78
+    innerStroke.Parent = card
 
-    local badgeRow = Instance.new("Frame")
-    badgeRow.BackgroundTransparency = 1
-    badgeRow.Position = UDim2.new(0, 0, 0, 4)
-    badgeRow.Size = UDim2.new(1, 0, 0, 18)
-    badgeRow.Parent = card
+    local sheen = Instance.new("Frame")
+    sheen.Name = "Sheen"
+    sheen.AnchorPoint = Vector2.new(1, 0)
+    sheen.Position = UDim2.new(1, 12, 0, -22)
+    sheen.Size = UDim2.fromOffset(84, 72)
+    sheen.BackgroundColor3 = accentColor
+    sheen.BackgroundTransparency = 0.88
+    sheen.BorderSizePixel = 0
+    sheen.Rotation = 14
+    sheen.ZIndex = 1
+    sheen.Parent = card
+    Instance.new("UICorner", sheen).CornerRadius = UDim.new(1, 0)
+
+    local accentLine = Instance.new("Frame")
+    accentLine.Name = "Accent"
+    accentLine.BackgroundColor3 = accentColor
+    accentLine.BackgroundTransparency = 0.1
+    accentLine.BorderSizePixel = 0
+    accentLine.Position = UDim2.new(0.12, 0, 0, 0)
+    accentLine.Size = UDim2.new(0.76, 0, 0, 3)
+    accentLine.ZIndex = 2
+    accentLine.Parent = card
+    Instance.new("UICorner", accentLine).CornerRadius = UDim.new(1, 0)
+
+    local accentLineGradient = Instance.new("UIGradient")
+    accentLineGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, accentSoft),
+        ColorSequenceKeypoint.new(0.5, accentColor),
+        ColorSequenceKeypoint.new(1, accentSoft),
+    })
+    accentLineGradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.2, 0.2),
+        NumberSequenceKeypoint.new(0.8, 0.2),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    accentLineGradient.Parent = accentLine
 
     local badge = Instance.new("Frame")
-    badge.AnchorPoint = Vector2.new(0.5, 0)
-    badge.Position = UDim2.new(0.5, 0, 0, 0)
-    badge.Size = UDim2.new(0, 90, 0, 16)
-    badge.BackgroundColor3 = config.accentColor
-    badge.BackgroundTransparency = 0.15
+    badge.Name = "Badge"
+    badge.Position = UDim2.fromOffset(12, 10)
+    badge.Size = UDim2.fromOffset(104, 22)
+    badge.BackgroundColor3 = darkenColor(accentColor, 0.22)
+    badge.BackgroundTransparency = 0.1
     badge.BorderSizePixel = 0
-    badge.Parent = badgeRow
+    badge.ZIndex = 3
+    badge.Parent = card
     Instance.new("UICorner", badge).CornerRadius = UDim.new(1, 0)
+
+    local badgeStroke = Instance.new("UIStroke")
+    badgeStroke.Color = edgeColor
+    badgeStroke.Thickness = 1
+    badgeStroke.Transparency = 0.45
+    badgeStroke.Parent = badge
+
+    local badgeGlow = Instance.new("UIGradient")
+    badgeGlow.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, darkenColor(accentColor, 0.14)),
+        ColorSequenceKeypoint.new(1, accentColor),
+    })
+    badgeGlow.Rotation = 15
+    badgeGlow.Parent = badge
+
+    local badgeDot = Instance.new("Frame")
+    badgeDot.Size = UDim2.fromOffset(8, 8)
+    badgeDot.Position = UDim2.fromOffset(10, 7)
+    badgeDot.BackgroundColor3 = lightenColor(accentColor, 0.12)
+    badgeDot.BorderSizePixel = 0
+    badgeDot.ZIndex = 4
+    badgeDot.Parent = badge
+    Instance.new("UICorner", badgeDot).CornerRadius = UDim.new(1, 0)
 
     local badgeLabel = Instance.new("TextLabel")
     badgeLabel.BackgroundTransparency = 1
-    badgeLabel.Size = UDim2.new(1, 0, 1, 0)
+    badgeLabel.Position = UDim2.fromOffset(24, 0)
+    badgeLabel.Size = UDim2.new(1, -30, 1, 0)
     badgeLabel.Font = Enum.Font.GothamBold
-    badgeLabel.TextScaled = true
-    badgeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    badgeLabel.TextStrokeTransparency = 0.3
-    badgeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    badgeLabel.TextSize = 11
+    badgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    badgeLabel.TextColor3 = textColor
     badgeLabel.Text = config.roleText
+    badgeLabel.ZIndex = 4
     badgeLabel.Parent = badge
 
     local displayLabel = Instance.new("TextLabel")
     displayLabel.BackgroundTransparency = 1
-    displayLabel.Position = UDim2.new(0, 6, 0, 23)
-    displayLabel.Size = UDim2.new(1, -12, 0, 16)
+    displayLabel.Position = UDim2.fromOffset(12, 34)
+    displayLabel.Size = UDim2.new(1, -24, 0, 18)
     displayLabel.Font = Enum.Font.GothamBold
-    displayLabel.TextScaled = true
-    displayLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    displayLabel.TextStrokeTransparency = 0.2
-    displayLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    displayLabel.TextSize = 15
+    displayLabel.TextXAlignment = Enum.TextXAlignment.Left
+    displayLabel.TextColor3 = textColor
+    displayLabel.TextTruncate = Enum.TextTruncate.AtEnd
     displayLabel.Text = player.DisplayName
+    displayLabel.ZIndex = 3
     displayLabel.Parent = card
 
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Name = "InfoLabel"
     infoLabel.BackgroundTransparency = 1
-    infoLabel.Position = UDim2.new(0, 6, 0, 39)
-    infoLabel.Size = UDim2.new(1, -12, 0, 12)
-    infoLabel.Font = Enum.Font.Gotham
-    infoLabel.TextScaled = true
-    infoLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
-    infoLabel.TextStrokeTransparency = 0.4
-    infoLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    infoLabel.Position = UDim2.fromOffset(12, 52)
+    infoLabel.Size = UDim2.new(1, -24, 0, 14)
+    infoLabel.Font = Enum.Font.GothamMedium
+    infoLabel.TextSize = 11
+    infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    infoLabel.TextColor3 = subTextColor
+    infoLabel.TextTruncate = Enum.TextTruncate.AtEnd
     infoLabel.Text = "@" .. player.Name .. "  |  " .. player.AccountAge .. "d"
+    infoLabel.ZIndex = 3
     infoLabel.Parent = card
+
+    local footer = Instance.new("Frame")
+    footer.Name = "Footer"
+    footer.BackgroundColor3 = darkenColor(cardColor, 0.03)
+    footer.BackgroundTransparency = 0.16
+    footer.BorderSizePixel = 0
+    footer.Position = UDim2.new(0, 12, 1, -18)
+    footer.Size = UDim2.new(1, -24, 0, 16)
+    footer.ZIndex = 3
+    footer.Parent = card
+    Instance.new("UICorner", footer).CornerRadius = UDim.new(1, 0)
+
+    local footerStroke = Instance.new("UIStroke")
+    footerStroke.Color = lightenColor(cardColor, 0.08)
+    footerStroke.Thickness = 1
+    footerStroke.Transparency = 0.72
+    footerStroke.Parent = footer
+
+    local brandChip = Instance.new("Frame")
+    brandChip.Name = "BrandChip"
+    brandChip.BackgroundColor3 = accentColor
+    brandChip.BackgroundTransparency = 0.14
+    brandChip.BorderSizePixel = 0
+    brandChip.Size = UDim2.fromOffset(74, 16)
+    brandChip.Position = UDim2.fromOffset(0, 0)
+    brandChip.ZIndex = 4
+    brandChip.Parent = footer
+    Instance.new("UICorner", brandChip).CornerRadius = UDim.new(1, 0)
+
+    local brandText = Instance.new("TextLabel")
+    brandText.BackgroundTransparency = 1
+    brandText.Size = UDim2.fromScale(1, 1)
+    brandText.Font = Enum.Font.GothamBold
+    brandText.TextSize = 10
+    brandText.TextColor3 = textColor
+    brandText.Text = config.brandText or "pealzware"
+    brandText.ZIndex = 5
+    brandText.Parent = brandChip
 
     local extraLabel = Instance.new("TextLabel")
     extraLabel.Name = "ExtraLabel"
     extraLabel.BackgroundTransparency = 1
-    extraLabel.Position = UDim2.new(0, 6, 0, 52)
-    extraLabel.Size = UDim2.new(1, -12, 0, 12)
-    extraLabel.Font = Enum.Font.Gotham
-    extraLabel.TextScaled = true
-    extraLabel.TextColor3 = config.accentColor
-    extraLabel.TextStrokeTransparency = 0.4
-    extraLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    extraLabel.Position = UDim2.fromOffset(82, 0)
+    extraLabel.Size = UDim2.new(1, -88, 1, 0)
+    extraLabel.Font = Enum.Font.GothamMedium
+    extraLabel.TextSize = 10
+    extraLabel.TextXAlignment = Enum.TextXAlignment.Left
+    extraLabel.TextColor3 = mutedTextColor
+    extraLabel.TextTruncate = Enum.TextTruncate.AtEnd
     extraLabel.Text = config.extraText or ""
-    extraLabel.Parent = card
-
-    local bottomLine = Instance.new("Frame")
-    bottomLine.BackgroundColor3 = config.accentColor
-    bottomLine.BackgroundTransparency = 0.6
-    bottomLine.BorderSizePixel = 0
-    bottomLine.AnchorPoint = Vector2.new(0, 1)
-    bottomLine.Position = UDim2.new(0.05, 0, 1, -2)
-    bottomLine.Size = UDim2.new(0.9, 0, 0, 1)
-    bottomLine.Parent = card
+    extraLabel.ZIndex = 4
+    extraLabel.Parent = footer
 end
 
-local HUB_ROLE_BILLBOARD_NAMES = {
+local PEALZWARE_ROLE_BILLBOARD_NAMES = {
+    PealzwareOwnerTag = true,
+    PealzwarePremiumTag = true,
+    PealzwareUserTag = true,
     OwnerBB = true,
     BuyerBB = true,
     UserBB = true,
@@ -4828,20 +5067,21 @@ local function clearHubRoleBillboards(player, keepName)
     local head = player.Character:FindFirstChild("Head")
     if not head then return end
     for _, child in ipairs(head:GetChildren()) do
-        if child:IsA("BillboardGui") and HUB_ROLE_BILLBOARD_NAMES[child.Name] and child.Name ~= keepName then
+        if child:IsA("BillboardGui") and PEALZWARE_ROLE_BILLBOARD_NAMES[child.Name] and child.Name ~= keepName then
             child:Destroy()
         end
     end
 end
 
-function createBuyerBillboard(player)
+function createPremiumBillboard(player)
     if isHubOwner(player) then return end
-    clearHubRoleBillboards(player, "BuyerBB")
+    clearHubRoleBillboards(player, "PealzwarePremiumTag")
     createStyledBillboard(player, {
-        bbName = "BuyerBB",
-        accentColor = Color3.fromRGB(0, 180, 255),
+        bbName = "PealzwarePremiumTag",
+        accentColor = Color3.fromRGB(56, 214, 255),
         roleText = "PREMIUM",
-        extraText = "pealzware Premium"
+        brandText = "pealzware",
+        extraText = "Premium Access"
     })
 end
 
@@ -4858,14 +5098,14 @@ local function playerHasPremium(p)
     return false
 end
 
-function hookBuyerBillboards()
+function hookPremiumBillboards()
     local function hookPlayer(p)
         local function tryBillboard()
             if playerHasPremium(p) then
-                if p.Character then createBuyerBillboard(p) end
+                if p.Character then createPremiumBillboard(p) end
                 trackScriptConnection(p.CharacterAdded:Connect(function()
                     task.wait(1)
-                    createBuyerBillboard(p)
+                    createPremiumBillboard(p)
                 end))
             end
         end
@@ -4874,23 +5114,24 @@ function hookBuyerBillboards()
     for _, p in ipairs(Players:GetPlayers()) do hookPlayer(p) end
     trackScriptConnection(Players.PlayerAdded:Connect(hookPlayer))
 end
-hookBuyerBillboards()
+hookPremiumBillboards()
 
 function createUserBillboard(player, forced)
     if not player or not player.Character then return end
 
     if isHubOwner(player) then return end
     if playerHasPremium(player) then
-        createBuyerBillboard(player)
+        createPremiumBillboard(player)
         return
     end
 
-    clearHubRoleBillboards(player, "UserBB")
+    clearHubRoleBillboards(player, "PealzwareUserTag")
     createStyledBillboard(player, {
-        bbName = "UserBB",
-        accentColor = Color3.fromRGB(0, 85, 255),
+        bbName = "PealzwareUserTag",
+        accentColor = (Library and Library.Palette and Library.Palette.AccentColor) or Color3.fromRGB(0, 132, 255),
         roleText = "USER",
-        extraText = "pealzware Connected"
+        brandText = "pealzware",
+        extraText = "Connected"
     })
 end
 
@@ -5243,12 +5484,13 @@ task.spawn(function()
 end)
 
  function createOwnerBillboard(player)
-    clearHubRoleBillboards(player, "OwnerBB")
+    clearHubRoleBillboards(player, "PealzwareOwnerTag")
     createStyledBillboard(player, {
-        bbName = "OwnerBB",
-        accentColor = Color3.fromRGB(255, 185, 0),
+        bbName = "PealzwareOwnerTag",
+        accentColor = Color3.fromRGB(255, 184, 76),
         roleText = "OWNER",
-        extraText = "pealzware Developer"
+        brandText = "pealzware",
+        extraText = "Owner Access"
     })
 end
 syncHubRoleBillboard = function(player)
@@ -5258,7 +5500,7 @@ syncHubRoleBillboard = function(player)
         return
     end
     if playerHasPremium(player) then
-        createBuyerBillboard(player)
+        createPremiumBillboard(player)
         return
     end
     if confirmedHubUserIds[player.UserId] then
@@ -6918,9 +7160,8 @@ local function _removeEnlCard(userId)
 end
 
 local function _hasEnlighten(player)
-    local bp = player:FindFirstChild('Backpack')
-    if bp and bp:FindFirstChild('The Arkenstone') then return true end
-    if player.Character and player.Character:FindFirstChild('The Arkenstone') then return true end
+    if _containerHasArkenstone(player:FindFirstChild('Backpack')) then return true end
+    if _containerHasArkenstone(player.Character) then return true end
     if player:GetAttribute('Arken') == true then return true end
     return false
 end
@@ -6956,6 +7197,18 @@ local function _recheckEnlighten(player)
     end
 end
 
+local function _rescanEnlightenNow()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= plr then
+            if _hasEnlighten(player) then
+                _onEnlightenGained(player)
+            else
+                _onEnlightenLost(player)
+            end
+        end
+    end
+end
+
 local function _watchEnlightenFor(player)
     if player == plr then return end
     local conns = {}
@@ -6967,6 +7220,9 @@ local function _watchEnlightenFor(player)
         table.insert(conns, bp.ChildRemoved:Connect(function(item)
             if item.Name == 'The Arkenstone' then _recheckEnlighten(player) end
         end))
+        task.defer(function()
+            _recheckEnlighten(player)
+        end)
     end
 
     local function _watchChar(char)
@@ -6984,7 +7240,9 @@ local function _watchEnlightenFor(player)
 
     -- Watch for new backpack (spawned on join/respawn)
     table.insert(conns, player.ChildAdded:Connect(function(child)
-        if child.Name == 'Backpack' then _watchBp(child) end
+        if child.Name == 'Backpack' then
+            _watchBp(child)
+        end
     end))
 
     -- Watch existing character
@@ -7003,9 +7261,27 @@ for _, pl in ipairs(Players:GetPlayers()) do
     task.spawn(_watchEnlightenFor, pl)
 end
 
+_enlBtn.MouseButton1Click:Connect(function()
+    task.defer(function()
+        if _enlightenPopout.Object and _enlightenPopout.Object.Visible then
+            _rescanEnlightenNow()
+        end
+    end)
+end)
+
+task.spawn(function()
+    while not Library.Unloaded do
+        task.wait(12)
+        if not Library.Unloaded then
+            _rescanEnlightenNow()
+        end
+    end
+end)
+
 trackScriptConnection(Players.PlayerAdded:Connect(function(pl)
     task.wait(2)
     _watchEnlightenFor(pl)
+    _rescanEnlightenNow()
 end))
 
 trackScriptConnection(Players.PlayerRemoving:Connect(function(pl)

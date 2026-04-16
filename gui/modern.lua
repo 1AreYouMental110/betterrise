@@ -818,21 +818,21 @@ components = {
 		bindHoverGroup({button, bkg, label}, function()
 			hovered = true
 			tween:Tween(bkg, uipallet.TweenSmooth, {
-				BackgroundColor3 = color.Light(uipallet.Main, 0.24),
-				Size = UDim2.fromOffset(206, 31),
-				Position = UDim2.fromOffset(7, 0)
+				BackgroundColor3 = color.Light(uipallet.Main, 0.16),
+				Size = UDim2.fromOffset(203, 29),
+				Position = UDim2.fromOffset(9, 1)
 			})
 			tween:Tween(label, uipallet.TweenSmooth, {
 				TextColor3 = uipallet.Text,
-				BackgroundColor3 = color.Light(uipallet.Main, 0.08)
+				BackgroundColor3 = color.Light(uipallet.Main, 0.04)
 			})
 			tween:Tween(stroke, uipallet.TweenSmooth, {
-				Transparency = 0.18,
-				Thickness = 1.35
+				Transparency = 0.7,
+				Thickness = 1.05
 			})
 			tween:Tween(hoverline, uipallet.TweenSmooth, {
-				BackgroundTransparency = 0.12,
-				Size = UDim2.fromOffset(4, 21)
+				BackgroundTransparency = 0.72,
+				Size = UDim2.fromOffset(3, 19)
 			})
 		end, function()
 			hovered = false
@@ -4271,22 +4271,25 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(modulebutton, resolveTooltipText(modulesettings.Name, modulesettings.Tooltip, 'Module'))
 		addTooltip(bind, 'Click to bind')
 		addTooltip(favorite, 'Pin this module to the top of the tab')
-		-- Pin button: positioned to the right of the bind button (right edge of row),
-		-- styled as a small square button so it does not clip over the module name text.
 		favorite.Name = 'Favorite'
-		favorite.Size = UDim2.fromOffset(20, 21)
-		favorite.Position = UDim2.new(1, -60, 0, 9)
+		favorite.Size = UDim2.fromOffset(18, 18)
+		favorite.Position = UDim2.new(1, -58, 0, 11)
 		favorite.AnchorPoint = Vector2.new(1, 0)
-		favorite.BackgroundColor3 = Color3.new(1, 1, 1)
-		favorite.BackgroundTransparency = 0.92
+		favorite.BackgroundColor3 = color.Light(uipallet.Main, 0.08)
+		favorite.BackgroundTransparency = 0.96
 		favorite.BorderSizePixel = 0
 		favorite.AutoButtonColor = false
 		favorite.Image = getcustomasset('pealzware/assets/new/pin.png')
 		favorite.ImageColor3 = color.Dark(uipallet.Text, 0.43)
-		favorite.ImageTransparency = 0.15
+		favorite.ImageTransparency = 0.32
 		favorite.Visible = false
 		favorite.Parent = modulebutton
 		addCorner(favorite, UDim.new(0, 4))
+		local favoritestroke = Instance.new('UIStroke')
+		favoritestroke.Color = uipallet.Text
+		favoritestroke.Thickness = 1
+		favoritestroke.Transparency = 1
+		favoritestroke.Parent = favorite
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
 		bind.Position = UDim2.new(1, -36, 0, 9)
@@ -4379,18 +4382,23 @@ function mainapi:CreateCategory(categorysettings)
 		local function updateFavoriteVisual(instant)
 			-- Pin is now a fixed-size button on the right edge — only tween colour/transparency.
 			local targetColor = moduleapi.Favorited and uipallet.Text or ((favoriteHovered or hovered) and uipallet.Text or color.Dark(uipallet.Text, 0.43))
-			local targetBkgTransp = moduleapi.Favorited and 0.7 or (favoriteHovered and 0.74 or 0.92)
-			local targetTransparency = moduleapi.Favorited and 0 or (favoriteHovered and 0 or 0.15)
+			local targetBkgTransp = moduleapi.Favorited and 0.8 or (favoriteHovered and 0.88 or (hovered and 0.92 or 0.96))
+			local targetTransparency = moduleapi.Favorited and 0.04 or (favoriteHovered and 0.08 or (hovered and 0.16 or 0.32))
+			local targetStroke = moduleapi.Favorited and 0.74 or (favoriteHovered and 0.88 or 1)
 			if instant then
 				favorite.ImageColor3 = targetColor
 				favorite.ImageTransparency = targetTransparency
 				favorite.BackgroundTransparency = targetBkgTransp
+				favoritestroke.Transparency = targetStroke
 				return
 			end
 			tween:Tween(favorite, uipallet.TweenSmooth, {
 				ImageColor3 = targetColor,
 				ImageTransparency = targetTransparency,
 				BackgroundTransparency = targetBkgTransp
+			})
+			tween:Tween(favoritestroke, uipallet.TweenSmooth, {
+				Transparency = targetStroke
 			})
 		end
 
@@ -4519,15 +4527,12 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		favorite.MouseButton1Down:Connect(function()
 			tween:Tween(favorite, uipallet.TweenClick, {
-				BackgroundTransparency = 0.5
+				BackgroundTransparency = 0.74
 			})
 		end)
 		favorite.InputEnded:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				-- Size is fixed; just restore background transparency.
-				tween:Tween(favorite, uipallet.TweenBounce, {
-					BackgroundTransparency = favoriteHovered and 0.74 or 0.92
-				})
+				updateFavoriteVisual()
 			end
 		end)
 		favorite.MouseButton1Click:Connect(function()
@@ -4559,15 +4564,15 @@ function mainapi:CreateCategory(categorysettings)
 			end
 			-- Glow stroke (accent outline) + left hoverline sidebar.
 			tween:Tween(modulestroke, uipallet.TweenSmooth, {
-				Transparency = 0.18,
-				Thickness = 1.35
+				Transparency = 0.72,
+				Thickness = 1.05
 			})
 			tween:Tween(hoverline, uipallet.TweenSmooth, {
-				BackgroundTransparency = 0.08,
-				Size = UDim2.fromOffset(4, 30)
+				BackgroundTransparency = 0.76,
+				Size = UDim2.fromOffset(3, 28)
 			})
 			tween:Tween(bind, uipallet.TweenSmooth, {
-				BackgroundTransparency = 0.74
+				BackgroundTransparency = 0.82
 			})
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favorite.Visible = true
@@ -4807,13 +4812,21 @@ function mainapi:CreateOverlay(categorysettings)
 	title.Parent = window
 	local pin = Instance.new('ImageButton')
 	pin.Name = 'Pin'
-	pin.Size = UDim2.fromOffset(16, 16)
-	pin.Position = UDim2.new(1, -47, 0, 12)
-	pin.BackgroundTransparency = 1
+	pin.Size = UDim2.fromOffset(18, 18)
+	pin.Position = UDim2.new(1, -49, 0, 11)
+	pin.BackgroundColor3 = color.Light(uipallet.Main, 0.08)
+	pin.BackgroundTransparency = 0.97
+	pin.BorderSizePixel = 0
 	pin.AutoButtonColor = false
 	pin.Image = getcustomasset('pealzware/assets/new/pin.png')
 	pin.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	pin.Parent = window
+	addCorner(pin, UDim.new(0, 5))
+	local pinstroke = Instance.new('UIStroke')
+	pinstroke.Color = uipallet.Text
+	pinstroke.Thickness = 1
+	pinstroke.Transparency = 1
+	pinstroke.Parent = pin
 	local dotsbutton = Instance.new('TextButton')
 	dotsbutton.Name = 'Dots'
 	dotsbutton.Size = UDim2.fromOffset(17, 40)
@@ -4851,6 +4864,29 @@ function mainapi:CreateOverlay(categorysettings)
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	windowlist.Parent = children
 	addMaid(categoryapi)
+	local pinHovered = false
+
+	local function updatePinVisual(instant)
+		local targetColor = categoryapi.Pinned and uipallet.AccentColor or ((pinHovered or categoryapi.Expanded) and uipallet.Text or color.Dark(uipallet.Text, 0.43))
+		local targetBkg = categoryapi.Pinned and 0.82 or (pinHovered and 0.9 or 0.97)
+		local targetImgTrans = categoryapi.Pinned and 0.04 or (pinHovered and 0.08 or 0.26)
+		local targetStroke = categoryapi.Pinned and 0.78 or (pinHovered and 0.9 or 1)
+		if instant then
+			pin.ImageColor3 = targetColor
+			pin.BackgroundTransparency = targetBkg
+			pin.ImageTransparency = targetImgTrans
+			pinstroke.Transparency = targetStroke
+			return
+		end
+		tween:Tween(pin, uipallet.TweenSmooth, {
+			ImageColor3 = targetColor,
+			BackgroundTransparency = targetBkg,
+			ImageTransparency = targetImgTrans
+		})
+		tween:Tween(pinstroke, uipallet.TweenSmooth, {
+			Transparency = targetStroke
+		})
+	end
 
 	function categoryapi:Expand(check)
 		if check and not blur.Visible then return end
@@ -4866,7 +4902,7 @@ function mainapi:CreateOverlay(categorysettings)
 
 	function categoryapi:Pin()
 		self.Pinned = not self.Pinned
-		pin.ImageColor3 = self.Pinned and uipallet.Text or color.Dark(uipallet.Text, 0.43)
+		updatePinVisual()
 	end
 
 	function categoryapi:Update()
@@ -4915,6 +4951,24 @@ function mainapi:CreateOverlay(categorysettings)
 	dotsbutton.MouseButton2Click:Connect(function()
 		categoryapi:Expand(true)
 	end)
+	pin.MouseEnter:Connect(function()
+		pinHovered = true
+		updatePinVisual()
+	end)
+	pin.MouseLeave:Connect(function()
+		pinHovered = false
+		updatePinVisual()
+	end)
+	pin.MouseButton1Down:Connect(function()
+		tween:Tween(pin, uipallet.TweenClick, {
+			BackgroundTransparency = 0.78
+		})
+	end)
+	pin.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			updatePinVisual()
+		end
+	end)
 	pin.MouseButton1Click:Connect(function()
 		categoryapi:Pin()
 	end)
@@ -4934,6 +4988,7 @@ function mainapi:CreateOverlay(categorysettings)
 		categoryapi:Update()
 	end))
 
+	updatePinVisual(true)
 	categoryapi:Update()
 	categoryapi.Object = window
 	categoryapi.Children = customchildren
