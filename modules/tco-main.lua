@@ -1313,6 +1313,15 @@ end
 -- Overlay bar: let modern.lua's real CreateOverlayBar run (previously stubbed out,
 -- which broke Text GUI / Target Info overlays and left a blank bar in the sidebar)
 
+-- Bridge Library.Overlays: modern.lua sets mainapi.Overlays inside CreateOverlayBar(),
+-- but Library is the same object as mainapi — so Library.Overlays is already set.
+-- This task.defer ensures we capture it after modern.lua finishes its top-level setup.
+task.defer(function()
+    if not Library.Overlays and Library.Categories and Library.Categories.Main then
+        -- Force the overlay bar to re-init if it somehow wasn't created
+        pcall(function() Library.Categories.Main:CreateOverlayBar() end)
+    end
+end)
 
 -- Fix search to include all modules across all categories instead of just paint bad ew
 local origCreateSearch = Library.CreateSearch
@@ -2823,6 +2832,24 @@ end
 
 ToggleBtn = Library:CreateToggleButton({Icon = Library.Assets.Get('vape')})
 _mainFrame = Library.ClickGui
+
+-- Disable Roblox chat + leaderboard while the GUI is open so clicks aren't eaten
+-- by the CoreGui overlay sitting behind the pealzware window.
+do
+    local _cg = Library.ClickGui
+    local _starterGui = game:GetService('StarterGui')
+    local function _setRobloxUiEnabled(enabled)
+        pcall(function() _starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, enabled) end)
+        pcall(function() _starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, enabled) end)
+    end
+    if _cg then
+        _cg:GetPropertyChangedSignal('Visible'):Connect(function()
+            _setRobloxUiEnabled(not _cg.Visible)
+        end)
+        -- Apply immediately in case the GUI starts visible
+        _setRobloxUiEnabled(not _cg.Visible)
+    end
+end
 
  HomeTab = Library:CreateHomeTab({
     ScriptName  = 'pealzware',
@@ -11011,7 +11038,7 @@ local _hotCharConn = nil
 local function _hotApplyToHead(head)
     if not head then return end
     for _, child in ipairs(head:GetChildren()) do
-        if child:IsA("BillboardGui") and HUB_ROLE_BILLBOARD_NAMES[child.Name] then
+        if child:IsA("BillboardGui") and PEALZWARE_ROLE_BILLBOARD_NAMES[child.Name] then
             child.Enabled = not _hotHideEnabled
         end
     end
@@ -11021,7 +11048,7 @@ local function _hotHookHead(head)
     if _hotDescConn then _hotDescConn:Disconnect(); _hotDescConn = nil end
     if not head then return end
     _hotDescConn = head.ChildAdded:Connect(function(child)
-        if _hotHideEnabled and child:IsA("BillboardGui") and HUB_ROLE_BILLBOARD_NAMES[child.Name] then
+        if _hotHideEnabled and child:IsA("BillboardGui") and PEALZWARE_ROLE_BILLBOARD_NAMES[child.Name] then
             child.Enabled = false
         end
     end)
@@ -16302,144 +16329,7 @@ SaveManager:SetIgnoreIndexes({ 'MenuKeybind', 'PlayersESP', 'BuildingsESP', 'Too
 ThemeManager:SetFolder('pealzwareHub')
 SaveManager:SetFolder('pealzwareHub')
 
-ThemeManager:ApplyToTab(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
-
--- ══ Settings standalone toggle button ══
--- Hide the Settings sidebar nav entry; expose it as a popout-style toggle
--- button that sits alongside Servers / Enlighten / Builds / Special.
-task.defer(function()
-    pcall(function()
-        if Tabs.Settings.Button and Tabs.Settings.Button.Object then
-            Tabs.Settings.Button.Object.Visible = false
-        end
-
-        local _sWin = Tabs.Settings.Object
-        if not _sWin then return end
-        _sWin.Visible = false
-
-        local _tsS    = game:GetService('TweenService')
-        local _sSlot  = _popoutToggleCount
-        _popoutToggleCount = _popoutToggleCount + 1
-
-        local _sOuter = Instance.new('Frame')
-        _sOuter.Name  = 'PopoutToggle_Settings'
-        _sOuter.Size  = UDim2.fromOffset(82, 30)
-        _sOuter.Position = UDim2.new(1, -92, 0, 6 + _sSlot * 36)
-        _sOuter.BackgroundColor3 = Library.Color.Dark(Library.Palette.Main, 0.02)
-        _sOuter.BorderSizePixel = 0
-        _sOuter.ZIndex = 10
-        _sOuter.Parent = Library.ScaledGui
-        Library.Utility.AddBlur(_sOuter)
-        Library.Utility.AddCorner(_sOuter, UDim.new(0, 7))
-
-        local _sStroke = Instance.new('UIStroke')
-        _sStroke.Color = Library.Palette.AccentColor
-        _sStroke.Thickness = 1.2
-        _sStroke.Transparency = 0.45
-        _sStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        _sStroke.Parent = _sOuter
-
-        local _sBtn = Instance.new('TextButton')
-        _sBtn.Size = UDim2.fromScale(1, 1)
-        _sBtn.BackgroundTransparency = 1
-        _sBtn.BorderSizePixel = 0
-        _sBtn.AutoButtonColor = false
-        _sBtn.Text = ''
-        _sBtn.ZIndex = 11
-        _sBtn.Parent = _sOuter
-
-        local _sLabel = Instance.new('TextLabel')
-        _sLabel.Size = UDim2.fromScale(1, 1)
-        _sLabel.BackgroundTransparency = 1
-        _sLabel.Text = '\xe2\x9a\x99  Settings'
-        _sLabel.TextColor3 = Library.Palette.Text
-        _sLabel.TextSize = 12
-        _sLabel.FontFace = Library.Palette.FontSemiBold or Library.Palette.Font
-        _sLabel.TextXAlignment = Enum.TextXAlignment.Center
-        _sLabel.ZIndex = 12
-        _sLabel.Parent = _sOuter
-
-        local _sDot = Instance.new('Frame')
-        _sDot.Size = UDim2.fromOffset(4, 4)
-        _sDot.Position = UDim2.fromOffset(6, 13)
-        _sDot.BackgroundColor3 = Library.Palette.AccentColor
-        _sDot.BackgroundTransparency = 1
-        _sDot.BorderSizePixel = 0
-        _sDot.ZIndex = 13
-        _sDot.Parent = _sOuter
-        Library.Utility.AddCorner(_sDot, UDim.new(1, 0))
-
-        local _sActive = false
-        local function _sSetActive(state)
-            _sActive = state
-            _tsS:Create(_sDot,    TweenInfo.new(0.15), { BackgroundTransparency = state and 0 or 1 }):Play()
-            _tsS:Create(_sStroke, TweenInfo.new(0.15), { Transparency = state and 0.1 or 0.45 }):Play()
-            _tsS:Create(_sLabel,  TweenInfo.new(0.15), {
-                TextColor3 = state and Library.Palette.AccentColor or Library.Palette.Text
-            }):Play()
-        end
-
-        -- Capture the panel size once the window has been laid out
-        local _sPanelSize = nil
-        local function _getPanelSize()
-            if _sPanelSize then return _sPanelSize end
-            local s = _sWin.Size
-            _sPanelSize = (s.Y.Offset > 80) and s or UDim2.fromOffset(220, 560)
-            return _sPanelSize
-        end
-
-        _sBtn.MouseButton1Click:Connect(function()
-            local sz = _getPanelSize()
-            if _sWin.Visible then
-                _tsS:Create(_sWin,
-                    TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
-                    { BackgroundTransparency = 1,
-                      Size = UDim2.fromOffset(sz.X.Offset, sz.Y.Offset - 16) }):Play()
-                task.delay(0.18, function()
-                    _sWin.Visible = false
-                    _sWin.BackgroundTransparency = 0
-                    _sWin.Size = sz
-                end)
-                _sSetActive(false)
-            else
-                _sWin.Size = UDim2.fromOffset(sz.X.Offset, sz.Y.Offset - 16)
-                _sWin.BackgroundTransparency = 1
-                _sWin.Visible = true
-                if not Tabs.Settings.Expanded then
-                    Tabs.Settings.Expanded = true
-                    local _kids = _sWin:FindFirstChild('Children')
-                    if _kids then _kids.Visible = true end
-                    _sWin.Size = UDim2.fromOffset(220, 601)
-                    _sPanelSize = _sWin.Size
-                end
-                _tsS:Create(_sWin,
-                    TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-                    { BackgroundTransparency = 0, Size = sz }):Play()
-                _sSetActive(true)
-            end
-        end)
-        _sBtn.MouseEnter:Connect(function()
-            _tsS:Create(_sOuter, TweenInfo.new(0.1),
-                { BackgroundColor3 = Library.Color.Light(Library.Palette.Main, 0.12) }):Play()
-            _tsS:Create(_sStroke, TweenInfo.new(0.1), { Transparency = 0.2 }):Play()
-        end)
-        _sBtn.MouseLeave:Connect(function()
-            _tsS:Create(_sOuter, TweenInfo.new(0.12),
-                { BackgroundColor3 = Library.Color.Dark(Library.Palette.Main, 0.02) }):Play()
-            _tsS:Create(_sStroke, TweenInfo.new(0.12),
-                { Transparency = _sActive and 0.1 or 0.45 }):Play()
-        end)
-        _sBtn.MouseButton1Down:Connect(function()
-            _tsS:Create(_sOuter, TweenInfo.new(0.05),
-                { BackgroundColor3 = Library.Color.Light(Library.Palette.Main, 0.05) }):Play()
-        end)
-        _sBtn.MouseButton1Up:Connect(function()
-            _tsS:Create(_sOuter, TweenInfo.new(0.1),
-                { BackgroundColor3 = Library.Color.Light(Library.Palette.Main, 0.12) }):Play()
-        end)
-    end)
-end)
+-- Settings tab is the standard gear-icon sidebar tab — no extra floating windows
 
 -- ══ Minimap Overlay ══════════════════════════════════════════════════════════
 -- A top-down minimap similar to Xaero's Minimap in Minecraft.
@@ -17488,15 +17378,10 @@ local _rainbowToggle = MenuGroup:CreateToggle({
 })
 _rainbowToggle:OnChanged(function(enabled)
     pcall(function()
-        if enabled then
-            if not Library.GUIColor.Rainbow then
-                Library.GUIColor.Rainbow = true
-                table.insert(Library.RainbowTable, Library.GUIColor)
-            end
-        else
-            Library.GUIColor.Rainbow = false
-            local idx = table.find(Library.RainbowTable, Library.GUIColor)
-            if idx then table.remove(Library.RainbowTable, idx) end
+        -- Library.GUIColor is a GUISlider optionapi — Toggle() is the proper way
+        -- to enable rainbow (it starts the knob animation thread and inserts into RainbowTable)
+        if enabled ~= Library.GUIColor.Rainbow then
+            Library.GUIColor:Toggle()
         end
     end)
 end)
@@ -17705,12 +17590,8 @@ task.spawn(function()
                     Library.GUIColor.Sat = tonumber(_dc.gui.accentSat) or Library.GUIColor.Sat
                     Library.GUIColor.Value = tonumber(_dc.gui.accentVal) or Library.GUIColor.Value
                 end
-                if _dc.gui.rainbowEnabled then
-                    -- Enable rainbow on the GUIColor slider (the actual mechanism in modern.lua)
-                    if Library.GUIColor and not Library.GUIColor.Rainbow then
-                        Library.GUIColor.Rainbow = true
-                        table.insert(Library.RainbowTable, Library.GUIColor)
-                    end
+                if _dc.gui.rainbowEnabled and Library.GUIColor and not Library.GUIColor.Rainbow then
+                    pcall(function() Library.GUIColor:Toggle() end)
                 end
                 if _dc.gui.rainbowSpeed then
                     Library.RainbowSpeed.Value = tonumber(_dc.gui.rainbowSpeed) or 1
