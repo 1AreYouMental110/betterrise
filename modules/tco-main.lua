@@ -736,7 +736,7 @@ end
 do
     local _bwPreCats = {
         'Combat','Blatant','Render','Utility','World','Misc','Inventory','Minigames',
-        'Friends','Profiles','Targets'
+        'Friends','Targets'
     }
     for _, _n in ipairs(_bwPreCats) do
         local _c = Library.Categories[_n]
